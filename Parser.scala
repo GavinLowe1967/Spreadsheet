@@ -1,47 +1,5 @@
 package spreadsheet
 
-/** An input corresponding to `text` from `pos` onwards. */
-class Input(text: Array[Char], pos: Int = 0){
-  /** Auxilliary constructor. */
-  def this(st: String) = this(st.toArray)
-
-  private val len = text.length
-
-  require(pos <= len,
-    s"Advanced beyond end of ${text.mkString}: pos = $pos; len = $len")
-
-  /** Is this empty, i.e. all the original text has been consumed. */
-  def isEmpty = pos == len
-
-  /** The first character of the text. */
-  def head = text(pos)
-
-  /** Does this start with `st`? */
-  def startsWith(st: String): Boolean = {
-    if(st.length > len-pos) false
-    else{
-      var i = 0; 
-      while(i < st.length && st(i) == text(pos+i)) i += 1
-      i == st.length
-    }
-  }
-
-  /** An `Input` corresponding to advancing `k` places in this. */
-  def advance(k: Int) = new Input(text, pos+k)
-
-  /** An `Input` corresponding to dropping all white space from the start of
-    * this. */
-  def dropWhite = {
-    def isWhite(c: Char) = c == ' ' || c == '\t' || c == '\n'
-    var p = pos; while(p < len && isWhite(text(p))) p += 1
-    if(p == pos) this else new Input(text, p)
-  }
-
-  override def toString = s"${text.drop(pos).mkString}"
-}
-
-// ==================================================================
-
 /** The result of a Parser. */
 sealed abstract class ParseResult[+T]{
   /** Get the result associated with this.  Pre: this is a `Success`. */
@@ -85,7 +43,8 @@ abstract class Parser[+A] extends (Input => ParseResult[A]){
   /** The sequential composition of this and `q`, possibly with white space
     * between. */
   def ~ [B](q: => Parser[B]): Parser[(A,B)] =
-    (this ~~ Parser.consumeWhite) ~~ q > { case ((l,_),r) => (l,r) }
+    this ~~ (Parser.consumeWhite ~~ q) > { case (l, (_,r)) => (l,r) }
+    // (this ~~ Parser.consumeWhite) ~~ q > { case ((l,_),r) => (l,r) }
 
   /** Sequential composition of this and `q`, possibly with white space between,
     * returning the result of this. */
@@ -166,7 +125,7 @@ object Parser{
 
   /** A parser that applies p repeatedly, with no intermediate white space. */
   def repeat1[A](p: => Parser[A]): Parser[List[A]] = (
-    p ~~ repeat(p) > toPair(_::_) 
+    p ~~ repeat1(p) > toPair(_::_) 
     | success(List())
   )
 
@@ -242,9 +201,11 @@ object Parser{
 
   /** A parser for a Scala-style identifier: (a-z)(a-zA-Z0-9)*. */
   val name: Parser[String] =
-    spot(_.isLower) ~ repeat1(spot(_.isLetterOrDigit)) > 
+    spot(_.isLower) ~~ repeat1(spot(_.isLetterOrDigit)) > 
       toPair(_::_) > (_.mkString) 
 
+  val name0 =
+    spot(_.isLower) ~~ repeat1(spot(_.isLetterOrDigit)) 
   // =====
 
   /** Some tests. */
@@ -272,7 +233,9 @@ object Parser{
 
     assert(parseAll(name, " fooBar5 ") == "fooBar5")
     assert(name("foo!Bar").get == "foo") //   println(name("foo!Bar"))
-    assert(name("FooBar").isInstanceOf[Failure])  // println(name("FooBar"))
+    assert(name("FooBar").isInstanceOf[Failure])  // 
+    println(name("foo bar"))
+    println(name0("foo bar"))
 
     println("Done")
   }

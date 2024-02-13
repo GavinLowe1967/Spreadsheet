@@ -4,13 +4,30 @@ package spreadsheet
 trait Exp{
   /** Evaluate this in environment `env`. */
   def eval(env: Environment): Value
+
+  /** The Extent representing the string from which this was produced. */
+  protected var extent: Extent = null
+
+  def getExtent = extent
+
+  /** Set the Extent representing the string from which this was produced. */
+  def setExtent(e: Extent) = extent = e  
+
+  protected def mkErr(expected: String, found: Value) = {
+    val source = found.source; assert(source != null)
+    s"Expected $expected, found value ${found.forError} from "+
+      s"\"${source.asString}\" in \"${extent.asString}\""
+  }
 }
 
 // ==================================================================
 
 /** A name. */
 case class NameExp(name: String) extends Exp{
-  def eval(env: Environment) = ???
+  def eval(env: Environment) = env.get(name) match{
+    case Some(value) => value
+    case None => ???
+  }
 
   override def toString = name
 }
@@ -19,7 +36,7 @@ case class NameExp(name: String) extends Exp{
 
 /** An integer expression. */
 case class IntExp(value: Int) extends Exp{
-  def eval(env: Environment) = IntValue(value)
+  def eval(env: Environment) = IntValue(value).withSource(extent)
 
   override def toString = value.toString
 }
@@ -29,15 +46,19 @@ case class IntExp(value: Int) extends Exp{
 /** An application of a binary operator. */
 case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
   def eval(env: Environment) = {
-    doBinOp(left.eval(env), op, right.eval(env))
+    assert(left.getExtent != null, left.toString)
+    assert(right.getExtent != null, "right"+right.toString)
+    val ex = left.getExtent.until(right.getExtent)
+    doBinOp(left.eval(env), op, right.eval(env)).withSource(ex)
   }
 
-  import Exp.{lift, mkErr}
+  import Exp.{lift}
 
   /** Apply the operation represented by `op` to values `v1` and `v2`. */
-  private def doBinOp(v1: Value, op: String, v2: Value): Value = op match{
+  private def doBinOp(v1: Value, op: String, v2: Value): Value = (op match{
+    // (Int, Int) operators
     case "+" | "-" | "*" | "/" | "==" | "!=" | "<" | "<=" | ">" | ">=" =>
-      // (Int, Int) => Int operators 
+      // println(s"$v1  ${v1.source} $op  $v2  ${v2.source}")
       lift(_ match{
         case IntValue(n1) => 
           lift(_ match{
@@ -55,6 +76,7 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
       }, // end of outer anonymous match
       v1, mkErr("Int", v1)) // end of outer lift
 
+    // Boolean operators  
     case "&&" | "||" => 
       lift(_ match{
         case BoolValue(b1) => 
@@ -66,7 +88,7 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
           v2, mkErr("Boolean", v2)) // end of inner lift
       },                                      // end of inner anonymous match
       v1, mkErr("Boolean", v1))     // end of outer lift
-  }
+  }).withSource(v1.source until v2.source)
   // TODO: Give better error for division.
 
   // Note: the following is for testing only: it over-uses parentheses.
@@ -122,14 +144,20 @@ case class CellExp(column: Exp, row: Exp) extends Exp{
 // ==================================================================
 
 object Exp{
-  def mkErr(expected: String, found: Any) = 
-    s"Expected $expected, found \"$found\""
+  // def mkErr(expected: String, found: Value) = {
+  //   val source = found.source; assert(source != null)
+  //   s"Expected $expected, found value ${found.forError} from expression \""+
+  //     source.asString+"\""
+  // }
 
   /** Extend f(v) to: (1) cases where v is an ErrorValue (passing on the error),
     * and (2) other types, returning a TypeError(err). */ 
   def lift(f: PartialFunction[Value, Value], v: Value, err: String)
       : Value = {
-    if(f.isDefinedAt(v)) f(v) 
-    else v match{ case ev: ErrorValue => ev; case _ => TypeError(err) }
+    if(f.isDefinedAt(v) /* && !f(v).isInstanceOf[ErrorValue] */) f(v) 
+    else v match{ 
+      case ev: ErrorValue => ev; 
+      case _ => TypeError(err) // +v.extent.asString
+    }
   }
 }

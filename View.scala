@@ -27,6 +27,7 @@ class View(model: Model) extends MainFrame with ViewT{
 
   private val selectionBox = new TextArea{
     editable = false; font = theFont
+    wordWrap = true; lineWrap = true
     maximumSize =  new Dimension(600, 80)
     rows = 2
   }  

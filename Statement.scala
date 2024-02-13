@@ -9,3 +9,5 @@ case class Directive(cell: CellExp, exp: Exp) extends Statement{
   override def toString = s"$cell = $exp"
 
 }
+
+case class ValueDeclaration(name: String, exp: Exp) extends Statement

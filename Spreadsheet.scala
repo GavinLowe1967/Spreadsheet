@@ -20,7 +20,9 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
   private val calculated = model.calculated
 
   /** The strings entered by users. */
-  private val strings = Array.fill(height, width)("")
+  // private val strings = Array.fill(height, width)("")
+
+  private val spreadsheetModel = model
 
   /** An editable text field. */
   class MyTextField(text: String) extends TextField(text){
@@ -48,18 +50,21 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
       isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int)
         : Component = {
       if(hasFocus) {
-        val text = userData(column, row)
-        view.showSelection(text); // ****
+        val text =  // userData(column, row)
+          cells(column)(row).asCell
+          // if(calculated(column)(row)) cells(column)(row).asCell
+          // else strings(column)(row)
+        view.showSelection(text) // ****
         new MyTextField(text)
       }
-      else if(calculated(column)(row)){
+      else /* if(calculated(column)(row)) */ {
         val v = cells(column)(row); assert(v != null)
-        new MyLabel(v.asCell, true)
+        new MyLabel(v.asCell, calculated(column)(row))
       }
-      else{
-        val st = strings(column)(row); assert(st != null)
-        new MyLabel(st, false)
-      }
+      // else{
+      //   val st = strings(column)(row); assert(st != null)
+      //   new MyLabel(st, false)
+      // }
     } // end of rendererComponent
 
     /** String to represent the entry in (row, column). */
@@ -68,15 +73,18 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
       if(v == null) "" else v.toString
     }
 
-
     reactions += {
       case TableUpdated(table, rows, column) =>
         for(row <- rows){
           val v = this(row, column)
           if(v != null){
-            strings(column)(row) = v.toString
+            // strings(column)(row) = v.toString
             //calculated(column)(row) = false
-            cells(column)(row) = ExpParser.parseUserValue(v.toString)
+            val vString = v.toString
+            cells(column)(row) = 
+              if(vString.isEmpty) Empty() 
+              else ExpParser.parseUserValue(vString)
+            spreadsheetModel.update()
           }
           println(s"($column, $row): ${userData(column,row)}, "+
             cells(column)(row))

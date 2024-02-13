@@ -10,7 +10,7 @@ class Model(val height: Int, val width: Int){
 
   /** The cells holding the content.  Note: indexing is done by (row,
     * coordinate), following the spreadsheet convention. */
-  val cells = Array.fill[Cell](width, height)(Empty)
+  val cells = Array.fill[Cell](width, height)(Empty())
 
   /** Record of which cells were calculated. */
   val calculated = Array.fill(width, height)(false)
@@ -26,38 +26,58 @@ class Model(val height: Int, val width: Int){
       case Left(ss) => statements = ss
       case Right(msg) => println(s"Error!$msg")
     }
+    update()
   }
 
   /** Update all cells based on statements. */
   def update() = {
-    import Exp.{mkErr}
     val env = new Environment(cells)
-    for(Directive(CellExp(ce,re), expr) <- statements){
-      ce.eval(env) match{
-        case ColumnValue(c) => 
-          if(0 <= c && c < width) re.eval(env) match{
-            case RowValue(r) =>
-              if(0 <= r && r < height) expr.eval(env) match{
-                case ev: ErrorValue => 
-                  cells(c)(r) = ev; calculated(c)(r) = true; println(ev.msg)
-                // Note: ErrorValue <: Cell, so the ordering is important.
-                case v1: Cell => 
-                  println(s"($c,$r) = $v1")
-                  cells(c)(r) = v1; calculated(c)(r) = true
-                case v => println(v); ??? // FIXME?
-              }
-              else println("Indexing error for row: found $r")
-              // end of case RowValue(r)
-
-            case rr => println(mkErr("row number", rr))
-          } // end of re.eval(env) match
-            // end of case ColumnValue(c)
-
-          else println("Indexing error for column: found $c")
-
-        case cc => println(mkErr("row identifier", cc))
-      } // end of cc match
+    for(stmt <- statements) stmt match{
+      case dir: Directive =>  performDirective(env, dir)
+      case valDec: ValueDeclaration => processValDec(env, valDec)
     }
+  }
+
+  /** Perform directive `dir` within `env`. */
+  private def performDirective(env: Environment, dir: Directive) = {
+    val Directive(CellExp(ce,re), expr) = dir
+    ce.eval(env) match{
+      case ColumnValue(c) =>
+        if(0 <= c && c < width) re.eval(env) match{
+          case RowValue(r) =>
+            if(0 <= r && r < height) expr.eval(env) match{
+              case ev: ErrorValue =>
+                cells(c)(r) = ev; calculated(c)(r) = true; println(ev.msg)
+              // Note: ErrorValue <: Cell, so the ordering is important.
+              case v1: Cell =>
+                println(s"($c,$r) = $v1")
+                cells(c)(r) = v1; calculated(c)(r) = true
+              case v => println(v); ??? // FIXME?
+            }
+            else println("Indexing error for row: found $r")
+            // end of case RowValue(r)
+
+          case rr => println(mkErr("row number", rr))
+        } // end of re.eval(env) match
+          // end of case ColumnValue(c)
+
+        else println("Indexing error for column: found $c")
+
+      case cc => println(mkErr("row identifier", cc))
+    } // end of ce.eval(env) match
+  }
+
+  private def processValDec(env: Environment, valDec: ValueDeclaration) = {
+    println(valDec)
+    val ValueDeclaration(name, e) = valDec
+    val v = e.eval(env); println(v)
+    env.update(name, v)
+  }
+
+  private def mkErr(expected: String, found: Value) = {
+    val source = found.source; assert(source != null)
+    s"Expected $expected, found value ${found.forError} from \""+
+      source.asString+"\""
   }
 
 

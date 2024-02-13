@@ -16,6 +16,7 @@ object SpreadsheetApp extends SimpleSwingApplication{
   override def main(args: Array[String]) = {
     val fname = args(0)
     model.loadFile(fname)
+    view.redisplay()
 
     super.main(args) // Starts GUI
 
