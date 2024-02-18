@@ -85,6 +85,7 @@ object Parser{
     def apply(in: Input) = Success(x, in)
   }
 
+  /** A parser that fails, with message `msg`. */
   def failure(msg: String) = new Parser[Nothing]{
     def apply(in: Input) = Failure(msg, in)
   }
@@ -108,6 +109,7 @@ object Parser{
       }
     }
   }
+
 
   // ===== Operations on parsers
 
@@ -167,6 +169,12 @@ object Parser{
 
 
   // ========= Specific parsers
+
+  /** Parser that consumes white space up to the end of the line. */
+  def toLineEnd: Parser[String] = {
+    def ws(c: Char) = c == ' ' || c == '\t'
+    repeat1(spot(ws)) ~~ lit("\n") > { case (cs,st) => cs.mkString+st } 
+  }
 
   /** A parser that consumes all white space at the start of its input. */
   val consumeWhite = new Parser[Unit]{

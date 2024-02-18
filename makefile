@@ -14,11 +14,12 @@ $(DIR)/Exp.class: $(DIR)/Value.class $(DIR)/Environment.class
 
 $(DIR)/Parser.class: $(DIR)/Input.class
 
-$(DIR)/ExpParser.class: $(DIR)/Parser.class $(DIR)/Exp.class
+# $(DIR)/ExpParser.class: $(DIR)/Parser.class $(DIR)/Exp.class
 
-$(DIR)/Statement.class: $(DIR)/Exp.class
+$(DIR)/Statement.class: $(DIR)/Exp.class $(DIR)/ViewT.class
 
-$(DIR)/StatementParser.class: $(DIR)/ExpParser.class $(DIR)/Statement.class
+$(DIR)/StatementParser.class:  $(DIR)/Statement.class
+# $(DIR)/StatementParser.class: $(DIR)/ExpParser.class $(DIR)/Statement.class
 
 # ===== Model
 
@@ -28,7 +29,10 @@ $(DIR)/Model.class: $(DIR)/ViewT.class $(DIR)/StatementParser.class
 
 # ===== View
 
-$(DIR)/Spreadsheet.class: $(DIR)/ExpParser.class $(DIR)/ViewT.class $(DIR)/Model.class 
+# $(DIR)/Spreadsheet.class: $(DIR)/ExpParser.class $(DIR)/ViewT.class $(DIR)/Model.class
+
+$(DIR)/Spreadsheet.class: $(DIR)/StatementParser.class $(DIR)/ViewT.class	\
+  $(DIR)/Model.class
 
 $(DIR)/View.class: $(DIR)/Model.class $(DIR)/Spreadsheet.class $(DIR)/ViewT.class
 

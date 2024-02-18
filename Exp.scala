@@ -1,10 +1,7 @@
 package spreadsheet
 
-/** Representation of an expression. */
-trait Exp{
-  /** Evaluate this in environment `env`. */
-  def eval(env: Environment): Value
-
+/** The result of a parse with an Extent. */
+trait HasExtent{
   /** The Extent representing the string from which this was produced. */
   protected var extent: Extent = null
 
@@ -13,18 +10,31 @@ trait Exp{
   /** Set the Extent representing the string from which this was produced. */
   def setExtent(e: Extent) = extent = e  
 
+  /** Lift an error value, by tagging on the extent of this. */
+  def liftError(error: ErrorValue) = error match{
+    case TypeError(msg) => TypeError(s"$msg\n\tin \"${extent.asString}\"")
+    case EvalError(msg) => EvalError(s"$msg\n\tin \"${extent.asString}\"")
+  }
+}
+
+// =======================================================
+
+/** Representation of an expression. */
+trait Exp extends HasExtent{
+  /** Evaluate this in environment `env`. */
+  def eval(env: Environment): Value
+
   /** Make an error message, saying that `found` was found when `expected` was
     * expected`. */
   protected def mkErr(expected: String, found: Value): String = {
-    val source = found.source; assert(source != null)
+    val source = found.source; assert(source != null, s"No source for $found")
     s"Expected $expected, found ${found.forError} in "+
-      s"\"${source.asString}\"\n\tin \"${extent.asString}\""
-  }
-
-  /** Lift an error value, by tagging on the extent of this. */
-  private def liftError(error: ErrorValue) = error match{
-    case TypeError(msg) => TypeError(s"$msg\n\tin \"${extent.asString}\"")
-    case EvalError(msg) => EvalError(s"$msg\n\tin \"${extent.asString}\"")
+    (source match{
+      case cs: CellSource => cs.asString       // don't include quotes here
+      case ex: Extent => s"\"${ex.asString}\"" // but do here
+    }) +
+    //s"\"${source.asString}\"
+    s"\n\tin \"${extent.asString}\""
   }
 
   /** Extend f(v) to: (1) cases where v is an ErrorValue (passing on the error),
@@ -44,8 +54,8 @@ trait Exp{
 /** A name. */
 case class NameExp(name: String) extends Exp{
   def eval(env: Environment) = env.get(name) match{
-    case Some(value) => value
-    case None => ???
+    case Some(value) => value.withSource(extent)
+    case None => EvalError(s"Name not found: $name").withSource(extent)
   }
 
   override def toString = name
@@ -152,11 +162,8 @@ case class ColumnExp(column: String) extends Exp{
 /** A reference to a Cell.  Note: the coordinates are in the order
   * (column,row), matching standard spreadsheet usage. */
 case class CellExp(column: Exp, row: Exp) extends Exp{
-  //import Exp.lift
-
   def eval(env: Environment) = {
     val cc = column.eval(env)
-    // val ColumnValue(c) = column.eval(env)
     lift(_ match{
       case ColumnValue(c) => 
         val rr = row.eval(env)
@@ -172,22 +179,5 @@ case class CellExp(column: Exp, row: Exp) extends Exp{
 // ==================================================================
 
 object Exp{
-  // def mkErr(expected: String, found: Value) = {
-  //   val source = found.source; assert(source != null)
-  //   s"Expected $expected, found value ${found.forError} from expression \""+
-  //     source.asString+"\""
-  // }
 
-  /** Extend f(v) to: (1) cases where v is an ErrorValue (passing on the error),
-    * and (2) other types, returning a TypeError(err). */ 
-/*
-  def lift(f: PartialFunction[Value, Value], v: Value, err: String)
-      : Value = {
-    if(f.isDefinedAt(v) /* && !f(v).isInstanceOf[ErrorValue] */) f(v) 
-    else v match{ 
-      case ev: ErrorValue => ev; 
-      case _ => TypeError(err) // +v.extent.asString
-    }
-  }
- */
 }

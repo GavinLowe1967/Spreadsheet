@@ -86,8 +86,8 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
               else ExpParser.parseUserValue(vString)
             spreadsheetModel.update()
           }
-          println(s"($column, $row): ${userData(column,row)}, "+
-            cells(column)(row))
+          // println(s"($column, $row): ${userData(column,row)}, "+
+          //   cells(column)(row))
         }
     }
 

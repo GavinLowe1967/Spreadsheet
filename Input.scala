@@ -55,6 +55,8 @@ trait Source{
   def until(other: Source): Source
 }
 
+// =======================================================
+
 /** The source of a parsed expression.  This represents the string
   * text[start..end). */
 case class Extent(private val text: Array[Char], 
@@ -67,13 +69,8 @@ case class Extent(private val text: Array[Char],
     assert(e.text eq text); new Extent(text, start, e.end)
   }
 
+  /** The extension of this with other. */
   def until(other: Source) = CompoundSource(this, other)
-  // other match{
-  //   case e: Extent => 
-  //     assert(e.text eq text); new Extent(text, start, e.end)
-
-  //   case s => CompoundSource(this, s)
-  // }
 
   override def toString = s"Extent($asString)"
 
@@ -105,12 +102,3 @@ case class CompoundSource(s1: Source, s2: Source) extends Source{
 
   def until(other: Source) = CompoundSource(this, other)
 }
-
-// /** Companiion object for CellSource. */
-// object CellSource{
-//   /** String name for column c. */
-//   def colName(c: Int): String = {
-//     require(0 <= c && c < 26); (c+'A').toChar.toString
-//   }
-//   // Note: I'm not sure if this is the best place for this function. 
-// }

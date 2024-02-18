@@ -28,8 +28,8 @@ class View(model: Model) extends MainFrame with ViewT{
   private val selectionBox = new TextArea{
     editable = false; font = theFont
     wordWrap = true; lineWrap = true
-    maximumSize =  new Dimension(600, 80)
-    rows = 4
+    rows = 10
+    // maximumSize =  new Dimension(600, 80)
   }  
 
 /*
@@ -52,7 +52,10 @@ class View(model: Model) extends MainFrame with ViewT{
     contents += Swing.VStrut(5)
     contents += buttonPanel
     contents += Swing.VStrut(5)
-    contents += selectionBox
+    // contents += selectionBox
+    contents += new ScrollPane(selectionBox){    
+      preferredSize = new Dimension(600,120) 
+    }
     // contents += Swing.VStrut(5)
     // contents += infoBox
     // contents += Swing.VStrut(5)
