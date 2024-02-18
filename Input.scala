@@ -62,26 +62,42 @@ case class Extent(private val text: Array[Char],
 
   def asString = text.slice(start, end).mkString
 
-  def until(other: Source) = other match{
-    case e: Extent => 
-      assert(e.text eq text); new Extent(text, start, e.end)
-
-    case s => CompoundSource(this, s)
-  }
-
-  override def toString = s"Extent($asString)"
-}
-
-/** A source corresponding to cell(column, row). */
-case class CellSource(column: Int, row: Int) extends Source{
-  def asString = {
-    val cName = CellSource.colName(column)
-    s"#$cName$row"
-    // s"Cell(#$cName, $row)"
+  /** The extension of this until e. */
+  def until(e: Extent): Extent = {
+    assert(e.text eq text); new Extent(text, start, e.end)
   }
 
   def until(other: Source) = CompoundSource(this, other)
+  // other match{
+  //   case e: Extent => 
+  //     assert(e.text eq text); new Extent(text, start, e.end)
+
+  //   case s => CompoundSource(this, s)
+  // }
+
+  override def toString = s"Extent($asString)"
+
+  override def equals(other: Any) = other match{
+    case e: Extent => text == e.text && start == e.start && end == e.end
+  }
 }
+
+// =======================================================
+
+/** A source corresponding to cell(column, row). */
+case class CellSource(column: Int, row: Int) extends Source{
+  /** String name for column c. */
+  private def colName(c: Int): String = {
+    require(0 <= c && c < 26); (c+'A').toChar.toString
+  }
+  // Note: I'm not sure if this is the best place for this function. 
+
+  def asString = { val cName = colName(column); s"#$cName$row" }
+
+  def until(other: Source) = CompoundSource(this, other)
+}
+
+// =======================================================
 
 /** A compound source. */
 case class CompoundSource(s1: Source, s2: Source) extends Source{
@@ -90,11 +106,11 @@ case class CompoundSource(s1: Source, s2: Source) extends Source{
   def until(other: Source) = CompoundSource(this, other)
 }
 
-/** Companiion object for CellSource. */
-object CellSource{
-  /** String name for column c. */
-  def colName(c: Int): String = {
-    require(0 <= c && c < 26); (c+'A').toChar.toString
-  }
-  // Note: I'm not sure if this is the best place for this function. 
-}
+// /** Companiion object for CellSource. */
+// object CellSource{
+//   /** String name for column c. */
+//   def colName(c: Int): String = {
+//     require(0 <= c && c < 26); (c+'A').toChar.toString
+//   }
+//   // Note: I'm not sure if this is the best place for this function. 
+// }

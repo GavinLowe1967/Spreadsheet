@@ -20,11 +20,11 @@ object ExpParser{
   )
 
   /** A parser for expressions. */
-  def expr: Parser[Exp] = withExtent(infix(0))
+  def expr: Parser[Exp] = infix(0)
 
   /** A parser for expressions involving binary operators of precedence at least
     * `fixity`. */
-  private def infix(fixity: Int): Parser[Exp] = withExtent(
+  private def infix(fixity: Int): Parser[Exp] = /*withExtent*/(
     if(fixity == operators.length) factor
     else{
       // Parser for an "op term" subexpression, where term uses operators of
@@ -38,16 +38,20 @@ object ExpParser{
     }
   )
 
+  /** Convert f and ofs into an Exp, by associating to the left. */
+  private def mkBin(f: Exp, ofs: List[(String, Exp)]): Exp = 
+    if(ofs.isEmpty) f 
+    else{ 
+      val (op, f1) = ofs.head; val term1 = BinOp(f, op, f1)
+      // Set the extent of the first term -- done by BinOp constructor.
+      // term1.setExtent(f.getExtent.until(f1.getExtent))
+      mkBin(term1, ofs.tail)
+    }
 
-/*
-    else{
-      def p0(op: String) = consumeWhite ~> lit(op) ~ infix(fixity)
+/*    def p0(op: String) = consumeWhite ~> lit(op) ~ infix(fixity)
       val p1 = | ( for(op <- operators(fixity)) yield p0(op) )
-
       infix(fixity+1) ~~ opt(p1) > { 
         case (e, None) => e; case (e1, Some((op,e2))) => BinOp(e1, op, e2)
-      }
-    }
  */
     // else(
     //   infix(fixity+1) ~
@@ -55,26 +59,15 @@ object ExpParser{
     //     ) .* > { toPair(mkBin) }
     // )
 
-  /** Convert f and ofs into an Exp, by associating to the left. */
-  private def mkBin(f: Exp, ofs: List[(String, Exp)]): Exp = 
-    if(ofs.isEmpty) f 
-    else{ 
-      val (op, f1) = ofs.head; val term1 = BinOp(f, op, f1)
-      // Set the extent of the first term
-      term1.setExtent(f.getExtent.until(f1.getExtent).asInstanceOf[Extent])
-// IMPROVE
-      mkBin(term1, ofs.tail)
-      // mkBin(BinOp(f, op, f1), ofs.tail)
-    }
 
   /** A parser for expressions that use no infix operators outside of
     * parentheses: atomic terms and parenthesised expressions. */
-  private def factor: Parser[Exp] = (
+  private def factor: Parser[Exp] = withExtent( 
     int > IntExp
     | name > NameExp
     | cell1
-    | lit("#") ~> hashTerm 
-    | inParens(expr) 
+    | lit("#") ~> hashTerm  
+    | inParens(expr) // Note: sets extent to include parentheses.
        // TO DO: add function application, ...
   )
 
@@ -115,20 +108,27 @@ object ExpParser{
   // =======================================================
 
   def main(args: Array[String]) = {
-    // Parse as expression
-    def p(st: String) = parseAll(expr, st)
+    def isWhite(c: Char) = c == ' ' || c == '\t' || c == '\n'
+    // Remove leading and training whilespace from st
+    def trim(st: String) =
+      st.dropWhile(isWhite).reverse.dropWhile(isWhite).reverse
+    // Check that ext matches st
+    def checkExtent(ext: Extent, st: String) = {
+      val st1 = trim(st); val st2 = ext.asString
+      assert(st2 == st1, s"\"$st2\" != \"$st1\"")
+    }
 
+    // Parse as expression
+    def p0(st: String): Exp = parseAll(expr, st)
+    // Parse as expression, and check extent
+    def p(st: String): Exp = {
+      val e = parseAll(expr, st); checkExtent(e.getExtent, st); e
+    }
     // Parse and print the extent
     def pp(st: String) = {
-      val e = parseAll(expr, st); println(e); 
+      val e = parseAll(expr, st); println(e); checkExtent(e.getExtent, st)
       println("\""+e.getExtent.asString+"\"")
     }
-    // pp("123"); pp("2*3")
-    // pp("(2+3)*4 <= 6 && 6*7 ==   42")
-    // pp("  2 + 2 + two  ")
-    // pp("  2    ")
-    // println(int(new Input("2  ")))
-    // println(expr(new Input("2 + 2    ")))
 
     assert(p("123") == IntExp(123))
     assert(p(" ( -123 ) ") == IntExp(-123))
@@ -140,21 +140,25 @@ object ExpParser{
     assert(p("2+3-4") == BinOp(BinOp(IntExp(2), "+", IntExp(3)), "-", IntExp(4)))
 
     val env = new Environment(null)
+
     // Parse and evaluate st
-    def pe(st: String) = p(st).eval(env)
-
-    def pep(st: String) = {
-      val v = pe(st); println(v); println(v.source)
+    def pe(st: String) = {
+      val v = p(st).eval(env)
+      if(v.source == null) println(s"$st -> $v")
+      checkExtent(v.source.asInstanceOf[Extent], st)
+      v
     }
-    // pep("2+3"); pep("(2==3) + (4==5)")
-    pep("2 + 3")
-    pep("2 + 3 + 4")
+    // Parse and evaluate st; print result and source
+    def pep(st: String) = {
+      val v = pe(st); println(v); println(v.source); 
+    }
+    pe("2 + 3"); pe("2 + 3 + 4")
 
-    // println(pe("2 + (3 == 4)"))
     assert(pe("2+3*4") == IntValue(14))
     assert(pe("2*3+4") == IntValue(10))
+    assert(pe("(2+3)") == IntValue(5))
     assert(pe("(2+3)*4 == 6") == BoolValue(false))
-    assert(pe("(2+3)*4 == 60/3") == BoolValue(true))
+    assert(pe("(1+4)*4 == 60/3") == BoolValue(true))
     assert(pe("(2+3)*4 != 6") == BoolValue(true))
     assert(pe("(2+3)*4 != 60/3") == BoolValue(false))
     assert(pe("(2+3)*4 > 6") == BoolValue(true))

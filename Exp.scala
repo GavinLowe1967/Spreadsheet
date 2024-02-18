@@ -13,10 +13,29 @@ trait Exp{
   /** Set the Extent representing the string from which this was produced. */
   def setExtent(e: Extent) = extent = e  
 
-  protected def mkErr(expected: String, found: Value) = {
+  /** Make an error message, saying that `found` was found when `expected` was
+    * expected`. */
+  protected def mkErr(expected: String, found: Value): String = {
     val source = found.source; assert(source != null)
-    s"Expected $expected, found value ${found.forError} from "+
-      s"\"${source.asString}\" in \"${extent.asString}\""
+    s"Expected $expected, found ${found.forError} in "+
+      s"\"${source.asString}\"\n\tin \"${extent.asString}\""
+  }
+
+  /** Lift an error value, by tagging on the extent of this. */
+  private def liftError(error: ErrorValue) = error match{
+    case TypeError(msg) => TypeError(s"$msg\n\tin \"${extent.asString}\"")
+    case EvalError(msg) => EvalError(s"$msg\n\tin \"${extent.asString}\"")
+  }
+
+  /** Extend f(v) to: (1) cases where v is an ErrorValue (passing on the error),
+    * and (2) other types, returning a TypeError(err). */ 
+  protected def lift(f: PartialFunction[Value, Value], v: Value, err: String)
+      : Value = {
+    if(f.isDefinedAt(v)) f(v) 
+    else v match{ 
+      case ev: ErrorValue => liftError(ev); 
+      case _ => TypeError(err)
+    }
   }
 }
 
@@ -45,14 +64,21 @@ case class IntExp(value: Int) extends Exp{
  
 /** An application of a binary operator. */
 case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
+  // Set extent. 
+  if(left.getExtent != null && right.getExtent != null)
+    // Note: the guard will hold for expressions created by the parser.
+    extent = left.getExtent.until(right.getExtent)
+  // Note: extent might be overwritten if the corresponding syntax is in
+  // parentheses.  This is normally what we want. 
+
   def eval(env: Environment) = {
     assert(left.getExtent != null, left.toString)
     assert(right.getExtent != null, "right"+right.toString)
-    val ex = left.getExtent.until(right.getExtent)
-    doBinOp(left.eval(env), op, right.eval(env)).withSource(ex)
+    assert(extent != null)
+    doBinOp(left.eval(env), op, right.eval(env)).withSource(extent)
   }
 
-  import Exp.{lift}
+  //import Exp.{lift}
 
   /** Apply the operation represented by `op` to values `v1` and `v2`. */
   private def doBinOp(v1: Value, op: String, v2: Value): Value = (op match{
@@ -84,9 +110,9 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
             case BoolValue(b2) => op match{
               case "&&" => BoolValue(b1 && b2); case "||" => BoolValue(b1 || b2)
             }
-          },                                  // end of inner anonymous match
+          },                        // end of inner anonymous match
           v2, mkErr("Boolean", v2)) // end of inner lift
-      },                                      // end of inner anonymous match
+      },                            // end of outer anonymous match
       v1, mkErr("Boolean", v1))     // end of outer lift
   }).withSource(v1.source until v2.source)
   // TODO: Give better error for division.
@@ -99,10 +125,12 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
 
 /** A row literal. */
 case class RowExp(row: Int) extends Exp{
-  def eval(env: Environment) = RowValue(row)
+  def eval(env: Environment) = RowValue(row).withSource(extent)
 
   override def toString = s"#$row"
 }
+
+// ==================================================================
 
 /** A column literal. */
 case class ColumnExp(column: String) extends Exp{
@@ -114,7 +142,7 @@ case class ColumnExp(column: String) extends Exp{
     if(column.length == 1) column(0)-'A' 
     else (column(0)-'A'+1)*26 + column(1)-'A'
 
-  def eval(env: Environment) = ColumnValue(asInt)
+  def eval(env: Environment) = ColumnValue(asInt).withSource(extent)
 
   override def toString = s"#$column"
 }
@@ -124,7 +152,7 @@ case class ColumnExp(column: String) extends Exp{
 /** A reference to a Cell.  Note: the coordinates are in the order
   * (column,row), matching standard spreadsheet usage. */
 case class CellExp(column: Exp, row: Exp) extends Exp{
-  import Exp.lift
+  //import Exp.lift
 
   def eval(env: Environment) = {
     val cc = column.eval(env)
@@ -152,6 +180,7 @@ object Exp{
 
   /** Extend f(v) to: (1) cases where v is an ErrorValue (passing on the error),
     * and (2) other types, returning a TypeError(err). */ 
+/*
   def lift(f: PartialFunction[Value, Value], v: Value, err: String)
       : Value = {
     if(f.isDefinedAt(v) /* && !f(v).isInstanceOf[ErrorValue] */) f(v) 
@@ -160,4 +189,5 @@ object Exp{
       case _ => TypeError(err) // +v.extent.asString
     }
   }
+ */
 }

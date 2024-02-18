@@ -29,14 +29,16 @@ class View(model: Model) extends MainFrame with ViewT{
     editable = false; font = theFont
     wordWrap = true; lineWrap = true
     maximumSize =  new Dimension(600, 80)
-    rows = 2
+    rows = 4
   }  
 
+/*
   private val infoBox = new TextArea{
     editable = false; font = theFont
     maximumSize =  new Dimension(600, 80)
     rows = 4
   }  
+ */
 
   // ========= Set up the frame
 
@@ -46,13 +48,13 @@ class View(model: Model) extends MainFrame with ViewT{
 
   contents = new BoxPanel(Orientation.Vertical) {
     border = Swing.EmptyBorder(10)
-    contents += selectionBox
-    contents += Swing.VStrut(5)
     contents += spreadsheet
     contents += Swing.VStrut(5)
     contents += buttonPanel
     contents += Swing.VStrut(5)
-    contents += infoBox
+    contents += selectionBox
+    // contents += Swing.VStrut(5)
+    // contents += infoBox
     // contents += Swing.VStrut(5)
     // contents += textfield
   }

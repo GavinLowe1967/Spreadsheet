@@ -18,9 +18,6 @@ trait Cell extends Value{
   def asCell: String = forError
 }
 
-/** Values that can be entered as user input. */
-//trait UserValue extends Cell
-
 /** An empty cell. */
 case class Empty() extends Cell{
   override def asCell = ""
