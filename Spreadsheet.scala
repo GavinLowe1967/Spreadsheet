@@ -22,18 +22,28 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
   /** The strings entered by users. */
   // private val strings = Array.fill(height, width)("")
 
-  private val spreadsheetModel = model
+  /** The text of the currently selected cell. */
+  // private var selectedText: String = null
+
+  // def showSelectedText() = view.showSelection(selectedText)
+
+  private val spreadsheetModel = model // Avoid aliasing by Table!
 
   /** An editable text field. */
   class MyTextField(text: String) extends TextField(text){
     background = UserDataBackground; // peer.setOpaque = true
   }
 
-  /** An uneditable text field containing `text`.   */
-  class MyLabel(text: String, calc: Boolean) extends Label(text){
+  /** An uneditable text field containing `text`.  
+    * @param calc was the value in this field calculated by a directive? */
+  class MyLabel(text: String, calc: Boolean, hasFocus: Boolean)
+      extends Label(text){
+    // editable = false
     background = 
       if(text.isEmpty) EmptyBackground 
-      else if(calc) CalculatedBackground 
+      else if(calc){
+        if(hasFocus) CalculatedWithFocusBackground else CalculatedBackground
+      }
       else UserDataBackground
     peer.setOpaque(true)
     xAlignment = Alignment.Right
@@ -49,18 +59,21 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
     override def rendererComponent(
       isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int)
         : Component = {
-      if(hasFocus) {
-        val text =  // userData(column, row)
-          cells(column)(row).asCell
-          // if(calculated(column)(row)) cells(column)(row).asCell
-          // else strings(column)(row)
-        view.showSelection(text) // ****
-        new MyTextField(text)
-      }
-      else /* if(calculated(column)(row)) */ {
-        val v = cells(column)(row); assert(v != null)
-        new MyLabel(v.asCell, calculated(column)(row))
-      }
+      val text = cells(column)(row).asCell; val calc = calculated(column)(row)
+      if(hasFocus) view.showSelection(text)
+      if(hasFocus && !calc) new MyTextField(text)
+      else new MyLabel(text, calc, hasFocus)
+
+      // if(hasFocus) {
+      //   val text = cells(column)(row).asCell
+      //   view.showSelection(text) // ****
+      //   if(calculated(column)(row)) new MyLabel(text, true, true)
+      //   else new MyTextField(text)
+      // }
+      // else /* if(calculated(column)(row)) */ {
+      //   val v = cells(column)(row); assert(v != null)
+      //   new MyLabel(v.asCell, calculated(column)(row), hasFocus)
+      // }
       // else{
       //   val st = strings(column)(row); assert(st != null)
       //   new MyLabel(st, false)
@@ -78,17 +91,14 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
         for(row <- rows){
           val v = this(row, column)
           if(v != null){
-            // strings(column)(row) = v.toString
-            //calculated(column)(row) = false
             val vString = v.toString
             cells(column)(row) = 
               if(vString.isEmpty) Empty() 
               else ExpParser.parseUserValue(vString)
             spreadsheetModel.update()
           }
-          // println(s"($column, $row): ${userData(column,row)}, "+
-          //   cells(column)(row))
         }
+      case e => println(e)
     }
 
   }
@@ -107,5 +117,6 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
 object Spreadsheet{
   val EmptyBackground = new Color(240,240,240)
   val UserDataBackground = new Color(220,255,255)
-  val CalculatedBackground = new Color(220,255,220)
+  val CalculatedBackground = new Color(230,255,230)
+  val CalculatedWithFocusBackground = new Color(180,255,180)
 }

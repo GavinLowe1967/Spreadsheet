@@ -1,14 +1,25 @@
 package spreadsheet
 
-/** An input corresponding to `text` from `pos` onwards. */
-class Input(private val text: Array[Char], private val pos: Int = 0){
+
+/** An input corresponding to `text` from `pos` onwards.
+  * @param lineEnds an array giving the indices of ends of lines (including -1
+  * and the overall length). */
+class Input(
+    private val text: Array[Char], private val pos: Int = 0,
+    private val lineEnds: Array[Int]
+){
   /** Auxilliary constructor. */
-  def this(st: String) = this(st.toArray)
+  def this(st: String) = this(st.toArray, 0, Input.getLineEnds(st.toArray))
 
   private val len = text.length
 
   require(pos <= len,
     s"Advanced beyond end of ${text.mkString}: pos = $pos; len = $len")
+
+  /** Indices of ends of lines. */
+  // private val lineEnds: Array[Int] = {
+  //   val les = new ArrayBuffer[Int]
+  // }
 
   /** Is this empty, i.e. all the original text has been consumed. */
   def isEmpty = pos == len
@@ -27,14 +38,14 @@ class Input(private val text: Array[Char], private val pos: Int = 0){
   }
 
   /** An `Input` corresponding to advancing `k` places in this. */
-  def advance(k: Int) = new Input(text, pos+k)
+  def advance(k: Int) = new Input(text, pos+k, lineEnds)
 
   /** An `Input` corresponding to dropping all white space from the start of
     * this. */
   def dropWhite = {
     def isWhite(c: Char) = c == ' ' || c == '\t' || c == '\n'
     var p = pos; while(p < len && isWhite(text(p))) p += 1
-    if(p == pos) this else new Input(text, p)
+    if(p == pos) this else new Input(text, p, lineEnds)
   }
 
   /** Create an Extent corresponding to the prefix of this up until the start of
@@ -43,7 +54,53 @@ class Input(private val text: Array[Char], private val pos: Int = 0){
     assert(other.text eq text); new Extent(text, pos, other.pos)
   }
 
+  def max(other: Input) = {
+    assert(other.text eq text)
+    if(pos >= other.pos) this else other
+  }
+
+  /** Is this more advanced than `other`? */
+  def >= (other: Input) = {
+    assert(other.text eq text); pos >= other.pos
+  }
+
   override def toString = s"${text.drop(pos).mkString}"
+
+  /** A truncated version of this: minimum of the rest of the line or 20
+    * characters. */
+  def trim: String = {
+    var i = pos
+    while(i < len && text(i) != '\n') i += 1
+    text.drop(pos).take(i-pos max 20).mkString
+  }
+
+  /** Get the current line: line number, column number, and contents. */
+  def getCurrentLine: (Int, Int, String) = {
+    // Find j s.t. le[0..j) <= pos < le[j..)
+    // Inv le[0..i) <= pos < le[j..)
+    var i = 0; var j = lineEnds.length
+    while(i < j){
+      val m = (i+j)/2 // i <= m < j
+      if(lineEnds(m) <= pos) i = m+1 else j = m
+    }
+    assert(j > 0) 
+    (j, pos-lineEnds(j-1)-1, text.slice(lineEnds(j-1)+1, lineEnds(j)).mkString)
+  }
+}
+
+// ==================================================================
+
+object Input{
+  /** Get the indices of ends of lines in st. */
+  def getLineEnds(st: Array[Char]): Array[Int] = {
+    val le = new scala.collection.mutable.ArrayBuffer[Int]; le += -1
+    var i = 0; val len = st.length
+    while(i < len){
+      if(st(i) == '\n') le += i 
+      i += 1
+    }
+    le += len; le.toArray
+  }
 }
 
 // =======================================================
@@ -83,15 +140,18 @@ case class Extent(private val text: Array[Char],
 
 /** A source corresponding to cell(column, row). */
 case class CellSource(column: Int, row: Int) extends Source{
+
+  def asString = { val cName = CellSource.colName(column); s"#$cName$row" }
+
+  def until(other: Source) = CompoundSource(this, other)
+}
+
+object CellSource{
   /** String name for column c. */
-  private def colName(c: Int): String = {
+  def colName(c: Int): String = {
     require(0 <= c && c < 26); (c+'A').toChar.toString
   }
   // Note: I'm not sure if this is the best place for this function. 
-
-  def asString = { val cName = colName(column); s"#$cName$row" }
-
-  def until(other: Source) = CompoundSource(this, other)
 }
 
 // =======================================================

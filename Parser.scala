@@ -15,6 +15,10 @@ case class Success[T](result: T, rest: Input) extends ParseResult[T]{
 /** An unsuccessful parse on `in`, explained by `msg`. */ 
 case class Failure(msg: String, in: Input) extends ParseResult[Nothing]{
   def get = ???
+
+  /** Whichever of this and other that is most advanced. */
+  def max(other: Failure) = 
+    if(this.in >= other.in) this else other
 }
 
 // ==================================================================
@@ -58,7 +62,10 @@ abstract class Parser[+A] extends (Input => ParseResult[A]){
   def | [B >: A] (q: Parser[B]) = new Parser[B]{
     def apply(in: Input) = p(in) match{
       case s1: Success[A] => s1
-      case failure => q(in)
+      case failure1 @ Failure(msg1, in1) => q(in) match{
+        case s2: Success[B] => s2
+        case failure2 @ Failure(msg2, in2) => failure1.max(failure2)
+      }
     }
   }
 
@@ -131,6 +138,13 @@ object Parser{
     | success(List())
   )
 
+  /** A parser that expects to find a sequence of expressions matching `p`,
+    * separated by `sep`. */
+  def repSep[A](p: Parser[A], sep: String): Parser[List[A]] = (
+    p ~ repeat(lit(sep) ~> p) > toPair(_::_)
+    | success(List())
+  )
+
   /** A parser that optionally applies `p`. */
   def opt[A](p: => Parser[A]): Parser[Option[A]] = 
     (p > (x => Some(x))) | success(None)
@@ -150,7 +164,9 @@ object Parser{
       case Success(result, rest) =>
         if(rest.dropWhite.isEmpty) Left(result)
         else Right(s"Parser error: extra lost: \"$rest\"")
-      case Failure(msg, _) => Right(msg)
+      case Failure(msg, in) => 
+        val (lineNum, colNum, currLine) = in.getCurrentLine
+        Right(s"$msg at line $lineNum: \n$currLine\n${" "*colNum}^")
     }
 
   /** Parse `input` using `p`, allowing initial and trailing white space.
@@ -170,16 +186,24 @@ object Parser{
 
   // ========= Specific parsers
 
+  /** Parser that consumes spaces and tabs but not newlines. */
+  def consumeWhiteNoNL: Parser[String] = {
+    def ws(c: Char) = c == ' ' || c == '\t'
+    repeat1(spot(ws)) > (_.mkString)
+  }
+
   /** Parser that consumes white space up to the end of the line. */
   def toLineEnd: Parser[String] = {
-    def ws(c: Char) = c == ' ' || c == '\t'
-    repeat1(spot(ws)) ~~ lit("\n") > { case (cs,st) => cs.mkString+st } 
+    // def ws(c: Char) = c == ' ' || c == '\t'
+    // repeat1(spot(ws)) ~~ lit("\n") > { case (cs,st) => cs.mkString+st } 
+    consumeWhiteNoNL ~~ lit("\n") > toPair(_+_)
   }
 
   /** A parser that consumes all white space at the start of its input. */
   val consumeWhite = new Parser[Unit]{
     def apply(in: Input) = Success((), in.dropWhite)
   }
+
 
   /** A parser that succeeds if at the end of the input. */
   def atEnd = new Parser[Unit]{
@@ -212,8 +236,13 @@ object Parser{
     spot(_.isLower) ~~ repeat1(spot(_.isLetterOrDigit)) > 
       toPair(_::_) > (_.mkString) 
 
-  val name0 =
-    spot(_.isLower) ~~ repeat1(spot(_.isLetterOrDigit)) 
+  /** A parser for a name starting with an upper-case letter. */
+  val upperName: Parser[String] = 
+    spot(_.isUpper) ~~ repeat1(spot(_.isLetterOrDigit)) > 
+      toPair(_::_) > (_.mkString) 
+
+  // val name0 =
+  //   spot(_.isLower) ~~ repeat1(spot(_.isLetterOrDigit)) 
   // =====
 
   /** Some tests. */
@@ -243,7 +272,7 @@ object Parser{
     assert(name("foo!Bar").get == "foo") //   println(name("foo!Bar"))
     assert(name("FooBar").isInstanceOf[Failure])  // 
     println(name("foo bar"))
-    println(name0("foo bar"))
+    // println(name0("foo bar"))
 
     println("Done")
   }

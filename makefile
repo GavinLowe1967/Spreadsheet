@@ -2,34 +2,42 @@ CP = .:/home/gavin/Scala/lib/scala-swing_2.13-3.0.0.jar
 
 DIR = spreadsheet
 
-all: $(DIR)/StatementParser.class $(DIR)/SpreadsheetApp.class
+all: $(DIR)/ParserTest.class $(DIR)/SpreadsheetApp.class $(DIR)/TypeCheckerTest.class 
 
 # ===== Language
 
-$(DIR)/Value.class: $(DIR)/Input.class
+$(DIR)/Value.class: $(DIR)/Input.class $(DIR)/TypeT.class
 
 $(DIR)/Environment.class: $(DIR)/Value.class
 
 $(DIR)/Exp.class: $(DIR)/Value.class $(DIR)/Environment.class
 
-$(DIR)/Parser.class: $(DIR)/Input.class
-
-# $(DIR)/ExpParser.class: $(DIR)/Parser.class $(DIR)/Exp.class
+$(DIR)/FunctionValue.class: $(DIR)/Exp.class
 
 $(DIR)/Statement.class: $(DIR)/Exp.class $(DIR)/ViewT.class
 
-$(DIR)/StatementParser.class:  $(DIR)/Statement.class
-# $(DIR)/StatementParser.class: $(DIR)/ExpParser.class $(DIR)/Statement.class
+$(DIR)/BlockExp.class: $(DIR)/Statement.class
 
+# Parsing
+
+$(DIR)/Parser.class: $(DIR)/Input.class
+
+$(DIR)/StatementParser.class: $(DIR)/Parser.class $(DIR)/FunctionValue.class	\
+  $(DIR)/BlockExp.class
+
+$(DIR)/ParserTest.class: $(DIR)/StatementParser.class
+
+$(DIR)/Substitution.class: $(DIR)/TypeT.class
+
+$(DIR)/TypeChecker.class: $(DIR)/Substitution.class $(DIR)/Exp.class	\
+  $(DIR)/FunctionValue.class $(DIR)/BlockExp.class
+
+$(DIR)/TypeCheckerTest.class: $(DIR)/TypeChecker.class
 # ===== Model
-
-# $(DIR)/Cell.class: $(DIR)/Value.class
 
 $(DIR)/Model.class: $(DIR)/ViewT.class $(DIR)/StatementParser.class
 
 # ===== View
-
-# $(DIR)/Spreadsheet.class: $(DIR)/ExpParser.class $(DIR)/ViewT.class $(DIR)/Model.class
 
 $(DIR)/Spreadsheet.class: $(DIR)/StatementParser.class $(DIR)/ViewT.class	\
   $(DIR)/Model.class

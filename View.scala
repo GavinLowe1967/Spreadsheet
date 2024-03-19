@@ -17,29 +17,36 @@ class View(model: Model) extends MainFrame with ViewT{
     model.update(); redisplay()
   }
 
+  private val reloadButton = Button("Reload"){
+    model.reloadFile(); redisplay()
+    // spreadsheet.showSelectedText();
+  }
+
   private val buttonPanel = new BoxPanel(Orientation.Horizontal){
     contents += updateButton
+    contents += reloadButton
   }
 
   // ========= Text boxes
 
-  private val theFont = new Font("SansSerif", Font.PLAIN, 16)
+  /** The font to be used in the boxes.  Needs to be fixed-with to get correct
+    * alignment in parse errors. */
+  private val theFont = new Font(Font.MONOSPACED, Font.PLAIN, 16) 
+  //new Font("SansSerif", Font.PLAIN, 16)
 
+  /** A box giving the value of the currently selected cell. */
   private val selectionBox = new TextArea{
     editable = false; font = theFont
     wordWrap = true; lineWrap = true
     rows = 10
-    // maximumSize =  new Dimension(600, 80)
   }  
 
-/*
+  /** A box giving information, e.g. errors. */
   private val infoBox = new TextArea{
     editable = false; font = theFont
-    maximumSize =  new Dimension(600, 80)
-    rows = 4
+    rows = 10
   }  
- */
-
+ 
   // ========= Set up the frame
 
   private val spreadsheet = new Spreadsheet(model, this)
@@ -48,14 +55,17 @@ class View(model: Model) extends MainFrame with ViewT{
 
   contents = new BoxPanel(Orientation.Vertical) {
     border = Swing.EmptyBorder(10)
+    contents += new ScrollPane(selectionBox){    
+      preferredSize = new Dimension(600,100) 
+    }
     contents += spreadsheet
     contents += Swing.VStrut(5)
     contents += buttonPanel
     contents += Swing.VStrut(5)
-    // contents += selectionBox
-    contents += new ScrollPane(selectionBox){    
-      preferredSize = new Dimension(600,120) 
+    contents += new ScrollPane(infoBox){
+      preferredSize = new Dimension(600,140) 
     }
+    // contents += selectionBox
     // contents += Swing.VStrut(5)
     // contents += infoBox
     // contents += Swing.VStrut(5)
@@ -71,6 +81,14 @@ class View(model: Model) extends MainFrame with ViewT{
 
   def redisplay() = spreadsheet.repaint()
 
+  /** Show `text` in the selection box. */
   def showSelection(text: String) = selectionBox.text = text 
 
+  /** Add `text` to the information box. */
+  def addInfo(text: String) = {
+    infoBox.text += (text+"\n")
+    infoBox.peer.select(0,0) // Move scrollbar to top of infoBox
+  }
+
+  def clearInfo() = infoBox.text = ""
 }

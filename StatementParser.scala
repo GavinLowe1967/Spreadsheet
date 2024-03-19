@@ -1,6 +1,6 @@
 package spreadsheet
 
-/* Note: ExpParser and StatementParser are mutually exclusive, so they're
+/* Note: ExpParser and StatementParser are mutually recursive, so they're
  * defined in the same file. */
 
 import Parser._
@@ -23,8 +23,16 @@ object ExpParser{
     List("+", "-"), List("*", "/")  // 6-7
   )
 
+  /** A parser for an "if" expression. */
+  private def ifP: Parser[IfExp] = withExtent(
+    lit("if") ~> inParens(expr) ~ expr ~ (lit("else") ~> expr) > {
+      case ((test, thenClause), elseClause) => 
+        IfExp(test, thenClause, elseClause)
+    }
+  )
+
   /** A parser for expressions. */
-  def expr: Parser[Exp] = infix(0)
+  def expr: Parser[Exp] = ifP | infix(0)
 
   /** A parser for expressions involving binary operators of precedence at least
     * `fixity`. */
@@ -38,7 +46,7 @@ object ExpParser{
       val p1 = | ( for(op <- operators(fixity)) yield p0(op) )
       // And repeat
       infix(fixity+1) ~~ repeat1(p1) > { toPair(mkBin) }
-      // Note: above is designed not to consume training white space. 
+      // Note: above is designed not to consume trailing white space. 
     }
   )
 
@@ -52,15 +60,52 @@ object ExpParser{
       mkBin(term1, ofs.tail)
     }
 
+  /** Parser for the arguments of a function, with no preceding newline.
+    * Note: should be sequenced to its left-hand argument using `~~`. */
+  private def params: Parser[Option[List[Exp]]] =
+    opt( consumeWhiteNoNL ~~ inParens(repSep(expr, ",")) > (_._2))
+
+  /** A name, translating reserved names into their values. */
+  def name1: Parser[Exp] = withExtent(
+    name > {
+      case "true" => BoolExp(true)
+      case "false" => BoolExp(false)
+      case n => NameExp(n)
+    }
+  )
+
   /** A parser for expressions that use no infix operators outside of
     * parentheses: atomic terms and parenthesised expressions. */
   private def factor: Parser[Exp] = withExtent( 
     int > IntExp
-    | name > NameExp
+    // Name or application of named function 
+    | name1 ~~ params > {
+      case (n, None) => n
+      case (n, Some(ps)) => FunctionApp(n, ps)
+    }
+    // FIXME: allow more general definitions of the function.  
+//    | name > NameExp 
     | cell1
     | lit("#") ~> hashTerm  
     | inParens(expr) // Note: sets extent to include parentheses.
-       // TO DO: add function application, ...
+    | list
+    | block
+  )
+
+  import StatementParser.{listOf,declaration,separator}
+
+  /** A parser for a block expression. */
+  private def block: Parser[BlockExp] = {
+    def body: Parser[(List[Declaration], Exp)] = (
+      listOf(withExtent(declaration)) ~~ (separator ~> expr)
+      | expr > { e => (List[Declaration](), e) }
+    )
+    (lit("{") ~> body) <~ lit("}") > toPair(BlockExp)
+  }
+
+  /** A parser for a list expression. */
+  private def list: Parser[ListLiteral] = (
+    (lit("[") ~> repSep(expr, ",")) <~ lit("]") > ListLiteral
   )
 
   /** Parse a subexpression folling a "#". */
@@ -94,81 +139,6 @@ object ExpParser{
 
   /** Parse a value input into a cell.  Called by Spreadsheet. */
   def parseUserValue(st: String): Cell = parseAll(userValue, st)
-
-  // =====================================
-
-  def main(args: Array[String]) = {
-    def isWhite(c: Char) = c == ' ' || c == '\t' || c == '\n'
-    // Remove leading and training whilespace from st
-    def trim(st: String) =
-      st.dropWhile(isWhite).reverse.dropWhile(isWhite).reverse
-    // Check that ext matches st
-    def checkExtent(ext: Extent, st: String) = {
-      val st1 = trim(st); val st2 = ext.asString
-      assert(st2 == st1, s"\"$st2\" != \"$st1\"")
-    }
-
-    // Parse as expression
-    def p0(st: String): Exp = parseAll(expr, st)
-    // Parse as expression, and check extent
-    def p(st: String): Exp = {
-      val e = parseAll(expr, st); checkExtent(e.getExtent, st); e
-    }
-    // Parse and print the extent
-    def pp(st: String) = {
-      val e = parseAll(expr, st); println(e); checkExtent(e.getExtent, st)
-      println("\""+e.getExtent.asString+"\"")
-    }
-
-    assert(p("123") == IntExp(123))
-    assert(p(" ( -123 ) ") == IntExp(-123))
-    assert(p("foo") == NameExp("foo"))
-    assert(p(" ( foo ) ") == NameExp("foo"))
-
-    assert(p("2+3") == BinOp(IntExp(2), "+", IntExp(3)))
-    assert(p("2+-3") == BinOp(IntExp(2), "+", IntExp(-3)))
-    assert(p("2+3-4") == BinOp(BinOp(IntExp(2), "+", IntExp(3)), "-", IntExp(4)))
-
-    val env = new Environment(null, null)
-
-    // Parse and evaluate st
-    def pe(st: String) = {
-      val v = p(st).eval(env)
-      if(v.source == null) println(s"$st -> $v")
-      checkExtent(v.source.asInstanceOf[Extent], st)
-      v
-    }
-    // Parse and evaluate st; print result and source
-    def pep(st: String) = {
-      val v = pe(st); println(v); println(v.source); 
-    }
-    pe("2 + 3"); pe("2 + 3 + 4")
-
-    assert(pe("2+3*4") == IntValue(14))
-    assert(pe("2*3+4") == IntValue(10))
-    assert(pe("(2+3)") == IntValue(5))
-    assert(pe("(2+3)*4 == 6") == BoolValue(false))
-    assert(pe("(1+4)*4 == 60/3") == BoolValue(true))
-    assert(pe("(2+3)*4 != 6") == BoolValue(true))
-    assert(pe("(2+3)*4 != 60/3") == BoolValue(false))
-    assert(pe("(2+3)*4 > 6") == BoolValue(true))
-    assert(pe("(2+3)*4 <= 6 || 6*7 == 42") == BoolValue(true))
-    assert(pe("(2+3)*4 <= 6 && 6*7 == 42") == BoolValue(false))
-
-    assert(pe("#23") == RowValue(23))
-    assert(pe("#Z") == ColumnValue(25)); assert(pe("#AB") == ColumnValue(27))
-    // Is the following what we want?? 
-    assert(expr("#Aa").asInstanceOf[Success[Exp]].result == ColumnExp("A"))
-    assert(expr("#a").isInstanceOf[Failure])
-
-    //println(p("Cell(#A, #2)"))
-    assert(p("Cell(#HW, #23)") == CellExp(ColumnExp("HW"), RowExp(23)))
-
-    // println(p("#A2 + #A3"))
-
-    println("Done")
-  }
-
 }
 
 // =======================================================
@@ -180,61 +150,73 @@ object StatementParser{
   private def directive: Parser[Directive] = 
     (cell <~ lit("=")) ~ expr > toPair(Directive) 
 
+  /** A parser for a value declaration, "val <name> = <expr>". */
   private def valDec: Parser[ValueDeclaration] =
     lit("val") ~> name ~ (lit("=") ~> expr) > toPair(ValueDeclaration)
+
+  /** A parser for a type. */
+  def typeP: Parser[TypeT] = upperName > {
+    case "Int" => IntType
+    case "Boolean" => BoolType
+    case "Row" => RowType
+    case "Column" => ColumnType
+      // FIXME: and more
+  }
+
+  /** A parser for a list of parameters, "name1: type1, ..., namek: typek". */
+  def params: Parser[List[(String,TypeT)]] = {
+    def param: Parser[(String,TypeT)] = (name <~ lit(":"))~typeP
+    repSep(param, ",")
+  }
+
+  /** A parser for a function declaration "def <name>(<params>) = <expr>". */
+  def funDec: Parser[FunctionDeclaration] = 
+    (lit("def") ~> name ~ inParens(params)) ~ 
+      ((lit(":") ~> typeP) ~ (lit("=") ~> expr)) >
+    { case ((n,ps), (rt,e)) => FunctionDeclaration(n, ps, rt, e) }
+ 
+  /** A parser for a declaration: either a value or function declaration. */
+  def declaration = valDec | funDec
+
+  /** A parser for a statement. */
+  def statement: Parser[Statement] = withExtent(
+    directive | declaration
+  )
 
   /** A parser for a separator between statements, either a newline or a
     * semicolon.  Note: this consumes white space at the start of its input:
     * it should be sequenced with the preceding parser using `~~`. */
-  private def separator: Parser[String] = toLineEnd | consumeWhite ~> lit(";") 
+  def separator: Parser[String] = toLineEnd | consumeWhite ~> lit(";")
 
-  private def statement: Parser[Statement] = withExtent(
-    directive | valDec
+  /** A parser running `p` repeatedly. */
+  def listOf[A <: Statement](p: Parser[A]): Parser[List[A]] = 
+    p ~~ repeat1(separator ~> p) > toPair(_::_)
+
+  /** Parse repeatedly with `p`, separated by `sep`, until `endMarker` is
+    * reached. */
+  def repeatUntil[A,B,C](p: Parser[A], sep: Parser[B], endMarker: Parser[C])
+      : Parser[(List[A], C)] = (
+    p ~~ (
+      sep ~> repeatUntil(p, sep, endMarker) 
+      |
+      consumeWhite ~> endMarker > { end => (List[A](), end) }
+    ) > { case (r1, (rs,end)) => (r1::rs, end) }
   )
-  // TODO: or definitions
 
   /** A parser for one or more statements. */
   def statements: Parser[List[Statement]] = 
-    statement ~~ repeat1(separator ~> statement) > toPair(_::_)
+    repeatUntil(statement, separator, atEnd) > (_._1)
+    // listOf(statement)
+  // statement ~~ repeat1(separator ~> statement) > toPair(_::_)
 
   /** Try to parse `input`, returning either the result or an error message. */
   def parseStatements(input: String): Either[List[Statement], String] = {
     val stmts = parseWith(statements, input)
     stmts match{ 
       case Left(ss) => println(ss.mkString("\n"))
-      case Right(msg) => println(msg)
+      case Right(msg) => //  println(msg)
     }
     stmts
   }
 
-  def main(args: Array[String]) = {
-    val vDec = "val three = 1+2"
-    val vDecR = ValueDeclaration("three", BinOp(IntExp(1), "+", IntExp(2)))
-    // println(parseAll(statement, vDec))
-    assert(parseAll(statement, vDec) == vDecR)
-
-    def cellExp(c: String, r: Int) = CellExp(ColumnExp(c), RowExp(r))
-    val dir1 = "Cell(#A, #3) = Cell(#A, #1) + Cell(#A, #2)"
-    val dir1R = 
-      Directive(cellExp("A",3), BinOp(cellExp("A",1), "+", cellExp("A",2)))
-    // println(parseAll(directive, dir1))
-    assert(parseAll(directive, dir1) == dir1R)
-
-    val dir2 = "#B3 = #B1 + #B2 - three" 
-    val dir2R = Directive(
-      cellExp("B",3),
-      BinOp( BinOp(cellExp("B",1), "+", cellExp("B",2)),  "-", NameExp("three") )
-    )
-    assert(parseAll(directive, dir2) == dir2R)
-    // println(parseAll(directive, dir2))
-
-    assert(parseAll(statements, s"$dir1\n$dir2\n$vDec") == 
-      List(dir1R, dir2R, vDecR) )
-    // println(statements(s"$dir1\n$dir2\n$vDec"))
-    // println(parseAll(statements, s"$dir1\n$dir2\n$vDec"))
-
-    assert(parseAll(statements, s"$vDec;$dir1;$dir2") ==
-      List(vDecR, dir1R, dir2R))
-    // println(parseAll(statements, s"$vDec\n$dir1\n$dir2\n"))
-  }
 }

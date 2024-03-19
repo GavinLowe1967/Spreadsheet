@@ -3,10 +3,13 @@ package spreadsheet
 /** A Statement corresponds to either a definition of a directive in a
   * file. */
 trait Statement extends HasExtent{
-
-  /** Perform this in `env`, sending messsages to `view`. */
-  def perform(env: Environment, view: ViewT): Boolean 
+  /** Perform this in `env`, handling errors with `handleError`. 
+    * @return false if an error occurred in a declaration. */
+  def perform(env: Environment, handleError: ErrorValue => Unit): Boolean 
 }
+
+/** Trait of declarations.  These can appear in expression blocks. */
+trait Declaration extends Statement
 
 // =======================================================
 
@@ -16,6 +19,18 @@ object Statement{
     s"Expected $expected, found value ${found.forError} from \""+
       source.asString+"\""
   }
+
+  /** Execute the elements of `statements` in `env`, handling errors with
+    * `handleError`.  Stop if an error occurs.
+    * @return true if all succeeded.  */
+  def performAll(
+    statements: List[Statement], env: Environment, 
+    handleError: ErrorValue => Unit) 
+      : Boolean = {
+    var ok = true; val iter = statements.iterator
+    while(ok && iter.hasNext) ok = iter.next().perform(env, handleError)
+    ok
+  }
 }
 
 // =======================================================
@@ -24,8 +39,8 @@ object Statement{
 case class Directive(cell: CellExp, expr: Exp) extends Statement{
   import Statement.mkErr
 
-  /** Perform this in `env`, sending messsages to `view`. */
-  def perform(env: Environment, view: ViewT): Boolean = {
+  /** Perform this in `env`, handling errors with `handleError`. */
+  def perform(env: Environment, handleError: ErrorValue => Unit): Boolean = {
     val CellExp(ce,re) = cell
     ce.eval(env) match{
       case ColumnValue(c) =>
@@ -34,7 +49,7 @@ case class Directive(cell: CellExp, expr: Exp) extends Statement{
             if(0 <= r && r < env.height) expr.eval(env) match{
               case ev: ErrorValue =>
                 val ev1 = liftError(ev); env.setCell(c, r, ev1)
-                println(ev1.msg)
+                handleError(ev1) 
               // Note: ErrorValue <: Cell, so the ordering is important.
               case v1: Cell => env.setCell(c, r, v1) // println(s"($c,$r) = $v1")
               case v => println(v); ??? // FIXME?
@@ -58,28 +73,21 @@ case class Directive(cell: CellExp, expr: Exp) extends Statement{
 
 // =======================================================
 
-/** A declaration of the form `name = exp`. */
-case class ValueDeclaration(name: String, exp: Exp) extends Statement{
-  /** Perform this in `env`, sending messsages to `view`. */
-  def perform(env: Environment, view: ViewT): Boolean = {
+/** A declaration of the form `val name = exp`. */
+case class ValueDeclaration(name: String, exp: Exp) extends Declaration{
+  /** Perform this in `env`, handling errors with `handleError`.  The effect is
+    * to update the environment, mapping `name` to the value of `exp`.*/
+  def perform(env: Environment, handleError: ErrorValue => Unit): Boolean = {
     val v = exp.eval(env)
     v match{
       case ev: ErrorValue => 
         val ev1 = liftError(ev); 
-        println(ev1.msg); view.showSelection(ev1.msg); false
+        // println(ev1.msg); // view.showSelection(ev1.msg); 
+        handleError(ev1); false
       case _ => env.update(name, v); true
     }
   }
-
 }
 
-// =======================================================
-
-/** A declaration of the form { stmt_1; ...; stmt_n; exp }. */ 
-case class BlockExp(stmts: List[Statement], exp: Exp) extends Statement{
-  /** Perform this in `env`, sending messsages to `view`. */
-  def perform(env: Environment, view: ViewT): Boolean = {
-    ???
-
-  }
-}
+// ========= Note =========
+// FunctionValue.scala contains another subclass, FunctionDeclaration.
