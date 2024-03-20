@@ -2,6 +2,7 @@ package spreadsheet
 
 import scala.collection.mutable.HashMap
 
+/** A class representing results from typechecking. */
 abstract class Reply[+A]{
   /** If successful, apply `f` to the contents of this. */
   def map[B](f: A => Reply[B]): Reply[B]
@@ -11,12 +12,14 @@ abstract class Reply[+A]{
   def mapOrLift[B](exp: HasExtent, f: A => Reply[B]): Reply[B]
 }
 
+/** The result of a successful typechecking, corresponding to x. */
 case class Ok[+A](x: A) extends Reply[A]{
   def map[B](f: A => Reply[B]) = f(x)
 
   def mapOrLift[B](exp: HasExtent, f: A => Reply[B]) = f(x)
 }
 
+/** The result of an unsuccessful typechecking, as explained by err. */
 case class FailureR(err: String) extends Reply[Nothing]{
   def map[B](f: Nothing => Reply[B]) = this // FailureR(err)
 
@@ -55,15 +58,6 @@ class Substitution(private var map: TypeMap){
     case _ => t
   }
 
-  /** Apply the substitution tv -> t to t1. */ 
-  private def reMap(tv: TypeID, t: TypeT, t1: TypeT): TypeT = t1 match{
-    case TypeVar(tv1) => if(tv1 == tv) t else t1
-    case ListType(underlying) => ListType(reMap(tv, t, underlying))
-    case FunctionType(domain, range) =>
-      FunctionType(domain.map(reMap(tv, t, _)), reMap(tv, t, range))
-    case _ => t1
-  }
-
   /** Extend this according to the constaint TypeVar(tv) = t, unless that
     * creates an infinite type. */
   private def extend(tv: TypeID, t: TypeT): Reply[Unit] = {
@@ -73,7 +67,7 @@ class Substitution(private var map: TypeMap){
     else if(t.typeVars.contains(tv)) FailureR(s"Can't unify $t with $tv")
     else{ 
       // For each (tv1 -> t1) in map, apply the substitution tv -> t to t1.
-      map = map.map{ case (tv1,t1) => (tv1, reMap(tv, t, t1)) } 
+      map = map.map{ case (tv1,t1) => (tv1, Substitution.reMap(tv, t, t1)) } 
       map += tv -> t; Ok(())
     } 
   }
@@ -111,6 +105,16 @@ class Substitution(private var map: TypeMap){
 }
 
 object Substitution{
+
+  /** Apply the substitution tv -> t to t1. */ 
+  def reMap(tv: TypeID, t: TypeT, t1: TypeT): TypeT = t1 match{
+    case TypeVar(tv1) => if(tv1 == tv) t else t1
+    case ListType(underlying) => ListType(reMap(tv, t, underlying))
+    case FunctionType(domain, range) =>
+      FunctionType(domain.map(reMap(tv, t, _)), reMap(tv, t, range))
+    case _ => t1
+  }
+
 
   type TypeMap = HashMap[TypeID, TypeT]
 

@@ -161,6 +161,7 @@ object StatementParser{
     case "Row" => RowType
     case "Column" => ColumnType
       // FIXME: and more
+      // FIXME: catch other values
   }
 
   /** A parser for a list of parameters, "name1: type1, ..., namek: typek". */

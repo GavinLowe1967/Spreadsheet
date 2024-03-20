@@ -17,6 +17,8 @@ trait TypeT{
   def typeVars: List[TypeID]
 }
 
+// ==================================================================
+
 /** A type variable. */
 case class TypeVar(tv: TypeID) extends TypeT{
   def asString = toString
@@ -35,6 +37,7 @@ object TypeVar{
   def get: TypeVar = { next += 1; TypeVar(next-1) }
 }
 
+// ==================================================================
 
 case object AnyType extends TypeT{
   def asString = "Any"
@@ -42,7 +45,7 @@ case object AnyType extends TypeT{
   def typeVars = List()
 }
 
-
+// ==================================================================
 
 case object IntType extends TypeT{
   def asString = "Int"

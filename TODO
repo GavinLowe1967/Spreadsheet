@@ -1,0 +1,84 @@
+https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-paper-suffers-database-error/
+
+Language
+--------
+
+Typechecking:
+- Test captured variables are uncaptured - done
+- Tidy up TypeEnv - add functions - done
+- BlockExp - done
+- Cell type - in progress; do binOps
+- Improve errors in TypeChecker.unify
+- directives
+- polymorphism (def id[A](x: A): A = x)
+- type classes (def equal[A <: Eq](x: A, y: A): Boolean = x == y)
+- Num type class
+- empty list
+
+- Parser for strings in script
+- Allow Bool in cells
+- Do we need Substitution?  
+- Do we need MemberOfConstraints in TypeEnv.Constraints? 
+
+
+Lists:
+-  ::, null
+- [_ .. _]
+
+* Think more about subclassing
+
+Function declarations and applications
+- parse function application -- done, but only for function names
+- ensure distinct param names - static analysis
+- More typenames, including in parser and ** catch incorrect types
+
+
+Improve parse error messages.
+* Comments.
+
+* In parse errors, print relevant line, highlighting position; trim excessive
+  text - done
+
+"for"s. 
+
+Behaviour
+---------
+
+Don't allow directives to overwrite user data.
+
+Data load and save.
+
+
+Appearance
+----------
+
+Index cells from 1
+
+Code
+----
+
+
+
+===================================== DONE
+
+Line numbers in error messages - done
+* On reload, refresh top box -- but no longer a selected cell
+Reload directives button -- DONE
+* Check return type of function - done
+- Allow "true", "false" literals -- done
+- evaluate function application -- done
+- Parse functions -- done
+- perform functions - store in environment -- done
+* Include source in declarations, for error messages. -- DONE
+
+Require statements to be separated by "\n" or ";" -- DONE
+
+Tidy up StatementParser -- all tests to separate object. -- DONE
+
+Blocks in declarations.  That makes Exp and Statement recursive. Or define
+Block extends Exp in Statement.  But ExpParser depends on StatementParser.  -- DONE 
+
+In BlockExp.eval, need to catch errors in performing stmts.  Replace view in
+Statement.perform by function handleError: ErrorValue => Unit -- DONE
+
+clear calculated in Model -- DONE

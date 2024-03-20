@@ -4,7 +4,7 @@ import scala.collection.immutable.{Map,HashMap}
 
 /** Tests on the type checker. */
 object TypeCheckerTest{
-  import TypeChecker._
+  import TypeChecker._; import TypeEnv._
   import Parser.parseAll; import ExpParser.expr
   import StatementParser.{statement,statements}
   import NameExp.Name // Names of identifiers (Strings)
@@ -20,10 +20,11 @@ object TypeCheckerTest{
   /* Assert that r is an Ok for type t. */
   def assertEq(r: Reply[TypeCheckRes], t: TypeT) =
     assert(r.isInstanceOf[Ok[TypeCheckRes]] &&
-      r.asInstanceOf[Ok[TypeCheckRes]].x._2 == t)
+      r.asInstanceOf[Ok[TypeCheckRes]].x._2 == t, 
+      s"Expected $t, found "+r.asInstanceOf[Ok[TypeCheckRes]].x._2)
   
   /* Get new type environment. */
-  def newEnv = new HashMap[Name, TypeScheme]
+  def newEnv: TypeEnv = TypeEnv(new NameMap, new Constraints)
   
   /* Parse and typecheck expression given by st. */
   def tcp(st: String, env: TypeEnv = newEnv) = {
@@ -93,15 +94,8 @@ object TypeCheckerTest{
     assertFail(tcp("four(4)", te2))
   }
 
-  // =======================================================
-
-  def main(args: Array[String]) = {
-    // printErrors = true
-    expTests()
-    singleDecTests()
-
-    printErrors = true
-
+  /** Tests on scripts and blocks. */
+  def scriptTests() = {
     val script = 
       List(
         "def f(x: Int): Int = h(x+1,true)",
@@ -111,19 +105,70 @@ object TypeCheckerTest{
         "val four = 4"
       ).mkString("\n")
     val Ok(te) = tcpss(script)
-    assert(te("f") == TypeScheme(FunctionType(List(IntType), IntType)))
-    assert(te("g") == TypeScheme(FunctionType(List(BoolType,IntType), IntType)))
-    assert(te("fact") == TypeScheme(FunctionType(List(IntType), IntType)))
-    assert(te("h") == TypeScheme(FunctionType(List(IntType,BoolType), IntType)))
-    assert(te("four") == TypeScheme(IntType))
+    assert(te("f") == FunctionType(List(IntType), IntType))
+    assert(te("g") == FunctionType(List(BoolType,IntType), IntType))
+    assert(te("fact") == FunctionType(List(IntType), IntType))
+    assert(te("h") == FunctionType(List(IntType,BoolType), IntType))
+    assert(te("four") == IntType)
 
     val faultyScript = script+"; def ff(x: Int): Int = if(x) 3 else 2"
-
     assertFail(tcpss(faultyScript))
 
+    // Tests on block expressions
     assertEq(tcp("{"+script+"; fact(4) }"), IntType)
     assertFail(tcp("{"+script+"; fact(true) }"))
     assertFail(tcp("{"+faultyScript+"; fact(4) }"))
+  }
+
+  // =======================================================
+
+  def main(args: Array[String]) = {
+    // printErrors = true
+    expTests()
+    singleDecTests()
+    scriptTests()
+
+    // printErrors = true
+
+    val script = "val x = Cell(#B, #2); def f(y: Int): Int = 3"
+    tcpss(script) match{ case Ok(te) => 
+      // x is just a Cell here
+      te("x") match{ case TypeVar(t) => assert(te(t) == MemberOf(CellTypes)) }
+      tcp("if(x) 3 else 4", te) match{ case Ok((te2, IntType)) =>
+        assert(te2("x") == BoolType) // But now it's a Bool
+        assertFail(tcp("f(x)", te2))
+      }
+    }
+    val script2 = "val x = Cell(#B, #2); val ys = [x, 1]"
+    tcpss(script2) match{ case Ok(te) => 
+      assert(te("x") == IntType && te("ys") == ListType(IntType))
+    }
+    val script3 = "val x = Cell(#B, #2); val ys = [1, x]"
+    tcpss(script3) match{ case Ok(te) => 
+      assert(te("x") == IntType && te("ys") == ListType(IntType))
+    }
+    val script4 = "val x = Cell(#B, #2); val y = #A1; val ys = [y, x]"
+    tcpss(script4) match{ case Ok(te) => 
+      te("x") match{ case TypeVar(t) =>
+        assert(te("y") == TypeVar(t) && te("ys") == ListType(TypeVar(t)) &&
+          te(t) == MemberOf(CellTypes))
+        tcp("[y, 2]", te) match{ case Ok((te2, ListType(IntType))) => 
+          assert(te2("x") == IntType) // Now it's an Int
+        }
+      }
+    }
+    val script5 = "val x = #C3; def f(y: Int): Int = 3; val z = f(x)"
+    tcpss(script5) match{ case Ok(te) => 
+      assert(te("x") == IntType && te("z") == IntType)
+    }
+    val script6 = "val x = #C3; val y = #A2; "+
+        "def f(y: Int, b: Boolean): Int = 3; val z = f(x,y)"
+    tcpss(script6) match{ case Ok(te) => 
+      assert(te("x") == IntType && te("y") == BoolType && te("z") == IntType)
+    }
+    val script7 =
+      "val x = #C3; def f(y: Int, b: Boolean): Int = 3; val z = f(x,x)"
+    assertFail(tcpss(script7))
 
     println("Done")
   }

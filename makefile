@@ -27,12 +27,20 @@ $(DIR)/StatementParser.class: $(DIR)/Parser.class $(DIR)/FunctionValue.class	\
 
 $(DIR)/ParserTest.class: $(DIR)/StatementParser.class
 
+# Type checking
+
+$(DIR)/TypeConstraint.class: $(DIR)/TypeT.class
+
 $(DIR)/Substitution.class: $(DIR)/TypeT.class
 
-$(DIR)/TypeChecker.class: $(DIR)/Substitution.class $(DIR)/Exp.class	\
-  $(DIR)/FunctionValue.class $(DIR)/BlockExp.class
+$(DIR)/TypeEnv.class: $(DIR)/TypeConstraint.class
+
+$(DIR)/TypeChecker.class: $(DIR)/Substitution.class				\
+  $(DIR)/TypeEnv.class $(DIR)/Exp.class $(DIR)/FunctionValue.class	\
+  $(DIR)/BlockExp.class
 
 $(DIR)/TypeCheckerTest.class: $(DIR)/TypeChecker.class
+
 # ===== Model
 
 $(DIR)/Model.class: $(DIR)/ViewT.class $(DIR)/StatementParser.class
