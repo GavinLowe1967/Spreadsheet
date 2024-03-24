@@ -3,22 +3,26 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Language
 --------
 
-Typechecking:
-- Test captured variables are uncaptured - done
-- Tidy up TypeEnv - add functions - done
-- BlockExp - done
-- Cell type - in progress; do binOps
-- Improve errors in TypeChecker.unify
-- directives
+- directives -- done
+- EqTypeConstraint.intersection -- test **
+- Test "==" with Cell types, find failures to match -- done
+
+- Incorporate with GUI
+
+- line numbers in type errors - done
+- clear sheet before reloading - done
+- errors in window
+- use typeenv when reading cells
+
 - polymorphism (def id[A](x: A): A = x)
 - type classes (def equal[A <: Eq](x: A, y: A): Boolean = x == y)
 - Num type class
 - empty list
 
 - Parser for strings in script
+- Parser for Floats (script and cells), and eval.
 - Allow Bool in cells
-- Do we need Substitution?  
-- Do we need MemberOfConstraints in TypeEnv.Constraints? 
+- Do we need Substitution?  Or just Reply from it? 
 
 
 Lists:
@@ -61,6 +65,22 @@ Code
 
 ===================================== DONE
 
+- Cell type - in progress; do binOps
+- Improve errors in TypeChecker.unify
+- Test captured variables are uncaptured - done
+- Tidy up TypeEnv - add functions - done
+- BlockExp - done
+- Better error message in unify.fail for TypeVar -- done
+- correct BlockExpr type checking -- done
+val x = #A3; val y = x; def f(x: Bool) = y+3; f(true) 
+
+(+) : Num a => (a,a) -> a; (==) : Eq a => (a,a) -> Bool; (&&) : (Bool,Bool) -> Bool, (<=) :: Num a => (a,a) -> Bool etc.  To apply to args, generate TypeVar(t) with
+constraint Num.  Try to unify with types of args.  To unify concrete type with
+Num, succeed if it is numeric.  To combine two constraints, take intersection.
+constraints need operations 
+def satisfied(t: TypeT) : Boolean
+def intersection(c: Constraint): Constraint 
+constraints correspond to Cell, Eq, Num
 Line numbers in error messages - done
 * On reload, refresh top box -- but no longer a selected cell
 Reload directives button -- DONE

@@ -51,7 +51,8 @@ class Input(
   /** Create an Extent corresponding to the prefix of this up until the start of
     * other. */
   def until(other: Input) = {
-    assert(other.text eq text); new Extent(text, pos, other.pos)
+    assert(other.text eq text)
+    new Extent(text, pos, other.pos, getCurrentLine._1)
   }
 
   def max(other: Input) = {
@@ -116,14 +117,16 @@ trait Source{
 
 /** The source of a parsed expression.  This represents the string
   * text[start..end). */
-case class Extent(private val text: Array[Char], 
-    private val start: Int, private val end: Int) extends Source{
+class Extent(
+  private val text: Array[Char],
+  private val start: Int, private val end: Int, val lineNumber: Int)
+    extends Source{
 
   def asString = text.slice(start, end).mkString
 
   /** The extension of this until e. */
   def until(e: Extent): Extent = {
-    assert(e.text eq text); new Extent(text, start, e.end)
+    assert(e.text eq text); new Extent(text, start, e.end, lineNumber)
   }
 
   /** The extension of this with other. */
@@ -134,6 +137,7 @@ case class Extent(private val text: Array[Char],
   override def equals(other: Any) = other match{
     case e: Extent => text == e.text && start == e.start && end == e.end
   }
+
 }
 
 // =======================================================

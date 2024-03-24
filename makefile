@@ -43,7 +43,7 @@ $(DIR)/TypeCheckerTest.class: $(DIR)/TypeChecker.class
 
 # ===== Model
 
-$(DIR)/Model.class: $(DIR)/ViewT.class $(DIR)/StatementParser.class
+$(DIR)/Model.class: $(DIR)/ViewT.class $(DIR)/StatementParser.class   $(DIR)/TypeChecker.class
 
 # ===== View
 

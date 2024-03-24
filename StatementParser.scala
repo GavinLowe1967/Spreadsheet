@@ -213,10 +213,10 @@ object StatementParser{
   /** Try to parse `input`, returning either the result or an error message. */
   def parseStatements(input: String): Either[List[Statement], String] = {
     val stmts = parseWith(statements, input)
-    stmts match{ 
-      case Left(ss) => println(ss.mkString("\n"))
-      case Right(msg) => //  println(msg)
-    }
+    // stmts match{ 
+    //   case Left(ss) => println(ss.mkString("\n"))
+    //   case Right(msg) => //  println(msg)
+    // }
     stmts
   }
 

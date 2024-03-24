@@ -12,9 +12,12 @@ trait TypeT{
 
   def comparable(t: TypeT) = 
     t.isSubclassOf(this) || this.isSubclassOf(t)
+// TODO: do we need the above two? 
 
   /** The type variables included in this type. */
   def typeVars: List[TypeID]
+
+  def isEqType: Boolean
 }
 
 // ==================================================================
@@ -24,6 +27,8 @@ case class TypeVar(tv: TypeID) extends TypeT{
   def asString = toString
 
   def typeVars = List(tv)
+
+  def isEqType = ???                  // FIXME
 }
 
 object TypeVar{
@@ -39,43 +44,63 @@ object TypeVar{
 
 // ==================================================================
 
-case object AnyType extends TypeT{
-  def asString = "Any"
+// trait oncreteType
 
-  def typeVars = List()
-}
+// case object AnyType extends TypeT{
+//   def asString = "Any"
+
+//   def typeVars = List()
+// }
 
 // ==================================================================
 
-case object IntType extends TypeT{
+/** A marker trait for atomic equality types. */
+// trait EqType extends TypeT{
+//   def isEqType = true
+// }
+
+
+
+case object IntType extends TypeT {
   def asString = "Int"
   def typeVars = List()
+  def isEqType = true
+}
+
+case object FloatType extends TypeT{
+  def asString = "Float"
+  def typeVars = List()
+  def isEqType = true
 }
 
 case object BoolType extends TypeT{
   def asString = "Boolean"
   def typeVars = List()
+  def isEqType = true
 }
 
-case object EmptyType extends TypeT{
-  def asString = "Empty"
-  def typeVars = List()
-}
+// case object EmptyType extends TypeT{
+//   def asString = "Empty"
+//   def typeVars = List()
+// }
 // Note: this type shouldn't appear in a function declaration. 
 
 case object StringType extends TypeT{
   def asString = "String"
   def typeVars = List()
+  def isEqType = true
 }
 
 case object RowType extends TypeT{
   def asString = "Row"
   def typeVars = List()
+  def isEqType = true
 }
 
 case object ColumnType extends TypeT{
   def asString = "Column"
   def typeVars = List()
+  def isEqType = true
 }
 
 /** The type of lists with underlying type `underlying`. */
@@ -89,6 +114,8 @@ case class ListType(underlying: TypeT) extends TypeT{
   }
 
   def typeVars = underlying.typeVars
+
+  def isEqType = ???                   // FIXME
 }
 
 /** The type of functions from `domain` to `range`. */
@@ -99,4 +126,6 @@ case class FunctionType(domain: List[TypeT], range: TypeT) extends TypeT{
   // FIXME: override isSubclassOf?
 
   def typeVars = domain.flatMap(_.typeVars) ++ range.typeVars
+
+  def isEqType = false
 }

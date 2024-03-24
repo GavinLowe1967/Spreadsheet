@@ -27,19 +27,36 @@ class Model(val height: Int, val width: Int){
 
   /** Reload statements from the saved filename. */
   def reloadFile() = {
+    clearCells(); view.clearInfo()
     val fContents = scala.io.Source.fromFile(filename).mkString
     StatementParser.parseStatements(fContents) match{
-      case Left(ss) => statements = ss; update()
-      case Right(msg) => view.addInfo(s"Parse error: $msg"); println(s"Error!$msg")
+      case Left(ss) => 
+        TypeChecker(ss) match{
+          case Ok(typeEnv) => statements = ss; update1()
+          case FailureR(err) => view.addInfo(s"Type error: $err")
+        }
+// IMPROVE: store type env in first case. 
+
+      case Right(msg) => 
+        view.addInfo(s"Parse error: $msg"); println(s"Error!$msg")
     }
   }
 
-  /** Update cells based on statements. */
+  /** Clear calculated cells. */
+  private def clearCells() = 
+    for(c <- 0 until width; r <- 0 until height; if calculated(c)(r)){
+      calculated(c)(r) = false; cells(c)(r) = Empty() 
+    }
+
+  /** Update cells based on statements.  Called by view. */
   def update() = {
-    // Clear calculated
-    for(c <- 0 until width; r <- 0 until height) calculated(c)(r) = false
+    clearCells(); view.clearInfo(); update1()
+  }
+
+  /** Update cells based on statements.  Called internally. */
+  private def update1() = {
     val env = new Environment(cells, calculated, height, width)
-    view.clearInfo()
+   
     // Iterate over statements, unless an error is found.
     //var ok = true; val iter = statements.iterator
     def handleError(err: ErrorValue) = {view.addInfo(err.msg)}
