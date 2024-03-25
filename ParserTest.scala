@@ -33,7 +33,7 @@ object ParserTest{
     println("\""+e.getExtent.asString+"\""); checkExtent(e.getExtent, st)
   }
 
-  val env = new Environment(null, null)
+  val env = new Environment(null, null, 0, 0, null, null)
 
   // Parse and evaluate st, and check the extent
   def pe(st: String) = {

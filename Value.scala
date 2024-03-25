@@ -156,7 +156,7 @@ trait ErrorValue extends Cell{
 
 /** A type error arising from evaluation of an expression. */
 case class TypeError(msg: String) extends ErrorValue{
-  override def forError = s"Type error: $msg"
+  override def forError = s"Type error: $msg\n\t$source"
 }
 
 /** An error arising from evaluation of an expression, such as division by

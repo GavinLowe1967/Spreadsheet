@@ -313,11 +313,27 @@ case class CellExp(column: Exp, row: Exp) extends Exp{
     lift(_ match{
       case ColumnValue(c) => 
         val rr = row.eval(env)
-        lift(_ match{ case RowValue(r) => env.getCell(c, r) },
+        lift(_ match{ case RowValue(r) => 
+          assert(theType != null); val v = env.getCell(c, r); 
+          // println(s"$v $typeId")
+          env.checkType(v, theType) match{
+            case Ok(()) => v
+            case FailureR(msg) => liftError(TypeError(msg))
+          }
+        },
           rr, s"Expected row number, found ${rr.forError}")
     }, 
     cc, s"Expected column identifier, found ${cc.forError}")
   }
+
+  /** The type associated with this read of a cell.  It might be a TypeVar, in
+    * which case the corresponding TypeEnv will have a constraint upon it. */
+  private var theType: TypeT = null
+
+  def setType(t: TypeT) = { /*println(s"$this.setType($t)");*/ theType = t }
+
+  // def getTypeId = { require(typeId >= 0); typeId }
+
 
   override def toString = s"Cell($column, $row)"
 }

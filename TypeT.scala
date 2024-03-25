@@ -44,64 +44,48 @@ object TypeVar{
 
 // ==================================================================
 
-// trait oncreteType
-
-// case object AnyType extends TypeT{
-//   def asString = "Any"
-
-//   def typeVars = List()
-// }
-
-// ==================================================================
-
 /** A marker trait for atomic equality types. */
-// trait EqType extends TypeT{
-//   def isEqType = true
-// }
+trait EqType extends TypeT{
+  def isEqType = true
+}
 
-
-
-case object IntType extends TypeT {
+case object IntType extends EqType {
   def asString = "Int"
   def typeVars = List()
-  def isEqType = true
+  //def isEqType = true
 }
 
-case object FloatType extends TypeT{
+case object FloatType extends EqType{
   def asString = "Float"
   def typeVars = List()
-  def isEqType = true
+  //def isEqType = true
 }
 
-case object BoolType extends TypeT{
+case object BoolType extends EqType{
   def asString = "Boolean"
   def typeVars = List()
-  def isEqType = true
+  // def isEqType = true
 }
 
-// case object EmptyType extends TypeT{
-//   def asString = "Empty"
-//   def typeVars = List()
-// }
-// Note: this type shouldn't appear in a function declaration. 
-
-case object StringType extends TypeT{
+case object StringType extends EqType{
   def asString = "String"
   def typeVars = List()
-  def isEqType = true
+  // def isEqType = true
 }
 
-case object RowType extends TypeT{
+case object RowType extends EqType{
   def asString = "Row"
   def typeVars = List()
-  def isEqType = true
+  // def isEqType = true
 }
 
-case object ColumnType extends TypeT{
+case object ColumnType extends EqType{
   def asString = "Column"
   def typeVars = List()
-  def isEqType = true
+  // def isEqType = true
 }
+
+// ==================================================================
 
 /** The type of lists with underlying type `underlying`. */
 case class ListType(underlying: TypeT) extends TypeT{
@@ -117,6 +101,8 @@ case class ListType(underlying: TypeT) extends TypeT{
 
   def isEqType = ???                   // FIXME
 }
+
+// ==================================================================
 
 /** The type of functions from `domain` to `range`. */
 case class FunctionType(domain: List[TypeT], range: TypeT) extends TypeT{

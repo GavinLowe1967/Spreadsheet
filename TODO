@@ -11,17 +11,25 @@ Language
 
 - line numbers in type errors - done
 - clear sheet before reloading - done
-- errors in window
-- use typeenv when reading cells
+- errors in window -- done
+- use typeEnv when reading cells -- done, test with Floats
+- test ParserTest -- done
+
+-- Move def of CellTypes
+-- Environment.checkType, update typeEnv -- done
+
+error with "val column = #B"
+
+
+- Parser for Floats (script and cells), and eval.
+- Parser for strings in script
+- Allow Bool in cells
 
 - polymorphism (def id[A](x: A): A = x)
 - type classes (def equal[A <: Eq](x: A, y: A): Boolean = x == y)
 - Num type class
 - empty list
 
-- Parser for strings in script
-- Parser for Floats (script and cells), and eval.
-- Allow Bool in cells
 - Do we need Substitution?  Or just Reply from it? 
 
 
@@ -64,6 +72,19 @@ Code
 
 
 ===================================== DONE
+
+Need to allow types to be refined in TypeEnv.replace, if tId associated with another cell
+Either:
+1. In TypeEnv, maintain map TypeID -> List(CellExpr), update in CellExpr within replace (consider case where t is TypeVar)
+2. In TypeEnv.constraints, include map to singleton type
+
+No, 1 goes wrong, as changes to the sheet won't get propsagated.  But yes -- do 1 when typechecking, but 2 at evaluation time
+
+
+-- If TypeVar(x) has SingletonTypeConstraint(TypeVar(y)), then gets updated,
+   also need to update y
+
+-- Get rid of cellReadMap - NO
 
 - Cell type - in progress; do binOps
 - Improve errors in TypeChecker.unify

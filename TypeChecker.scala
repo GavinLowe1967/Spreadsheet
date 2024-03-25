@@ -2,7 +2,7 @@ package spreadsheet
 
 // import scala.collection.immutable.{Map,HashMap}
 
-object TypeChecker{
+object TypeChecker extends TypeCheckerT{
   import TypeVar.TypeID // Type variables (Ints)
   import NameExp.Name // Names of identifiers (Strings)
 
@@ -15,8 +15,7 @@ object TypeChecker{
   /** Try to unify t1 and t2.  If successful, return updated typeEnv and unified
     * type.  t2 is expected to be the "expected" type, and t1 the type that is
     * being matched against it. */
-  private def unify(typeEnv: TypeEnv, t1: TypeT, t2: TypeT)
-      : Reply[(TypeEnv, TypeT)] = {
+  def unify(typeEnv: TypeEnv, t1: TypeT, t2: TypeT): Reply[(TypeEnv, TypeT)] = {
     def fail = FailureR(
       s"Expected "+typeEnv.showType(t2)+", found "+typeEnv.showType(t1))
     if(t1 == t2) Ok(typeEnv, t1)
@@ -45,20 +44,32 @@ object TypeChecker{
     }
   }
 
+  /** Try to unify t1 and t2, at runtime.  Do not update any typing in cells
+    * (within typeEnv.replace).  Pre: t1 is a concrete type (but t2 might be a
+    * TypeVar). */
+  def unifyEvalTime(typeEnv: TypeEnv, t1: TypeT, t2: TypeT)
+      : Reply[(TypeEnv, TypeT)] = {
+    def fail = FailureR(
+      s"Expected "+typeEnv.showType(t2)+", found "+typeEnv.showType(t1))
+    require(!t1.isInstanceOf[TypeVar])
+    t2 match{
+      case TypeVar(tId2) => 
+        if(typeEnv(tId2).satisfiedBy(t1)) 
+          Ok(typeEnv.replace(tId2, t1, true), t1)
+        else fail
+
+      case _ => if(t1 == t2) Ok(typeEnv, t2) else fail
+    }
+  }
+
+  // IMPROVE: avoid repeated code!
+
   /** Make a FailureR: expected `eType` found `fType` in `exp`. */
   private def mkErr(eType: TypeT, fType: TypeT, exp: Exp) = {
     val source = exp.getExtent.asString
     FailureR(s"Expected ${eType.asString}, found "+fType.asString+
       s"\n\tin $source")
   }
-
-  // /** Make a FailureR: expected `eTypes` found `fType` in `exp`. */
-  // private def mkErr(eTypes: List[TypeT], fType: TypeT, exp: Exp) = {
-  //   assert(exp.getExtent != null, exp)
-  //   val source = exp.getExtent.asString
-  //   val expected = eTypes.map(_.asString).mkString(" or ")
-  //   FailureR(s"Expected $expected, found ${fType.asString}\n\tin $source")
-  // }
 
   /** Types that can appear in a cell. */
   val CellTypes = List(IntType, FloatType, StringType, BoolType)
@@ -75,7 +86,6 @@ object TypeChecker{
     case NameExp(n) => typeEnv.get(n) match{
       case Some(t) => Ok((typeEnv,t))
       case None => FailureR("Name not found").lift(exp, true)
-        //FailureR(s"Name $n not found at line "+exp.getExtent.lineNumber)
     }
 
     case IntExp(v) => Ok((typeEnv,IntType))
@@ -114,14 +124,18 @@ object TypeChecker{
         }
       }.lift(exp)
 
-    case CellExp(column, row) => 
+    case ce @ CellExp(column, row) => 
       typeCheck(typeEnv, column).mapOrLift(exp, { case (te1, tc) => 
         if(tc != ColumnType) mkErr(ColumnType, tc, column)
         else typeCheck(te1, row).mapOrLift(exp, { case (te2, tr) => 
           if(tr != RowType) mkErr(RowType, tr, row)
           else{
-            val typeId = nextTypeID()
-            Ok((typeEnv + (typeId, MemberOf(CellTypes)), TypeVar(typeId)))
+            // Associate type identifier with this read.
+            val typeId = nextTypeID(); val typeVar = TypeVar(typeId); 
+            ce.setType(typeVar)
+            // println(s"$ce -> $typeId") 
+            Ok((typeEnv.addCellConstraint(typeId, ce), typeVar))
+            // Ok((typeEnv + (typeId, MemberOf(CellTypes)), typeVar))
           }
         })
       }).lift(exp)
@@ -168,7 +182,6 @@ object TypeChecker{
   private def typeCheckUnify(typeEnv: TypeEnv, exp: Exp, eType: TypeT)
       : Reply[(TypeEnv, TypeT)] =
     typeCheck(typeEnv, exp).map{ case (te1,t) =>
-      // println(exp)
       unify(te1, t, eType).lift(exp, true) // add line number here
     }
 
@@ -196,11 +209,8 @@ object TypeChecker{
       : Reply[TypeEnv] = 
     if(es.isEmpty){ assert(ts.isEmpty); Ok(typeEnv) }
     else typeCheckUnify(typeEnv, es.head, ts.head).map{ case (te2, t11) =>
-// typeCheck(typeEnv, es.head).map{ case (te1,t1) => 
-//       unify(te1, t1, ts.head).mapOrLift( es.head, { case (te2, t11) => 
       assert(t11 == ts.head) // ts.head should be concrete
       typeCheckListUnify(te2, es.tail, ts.tail)
-    //  })
     }
 
   /** Typecheck the statement `stmt`. 
@@ -209,10 +219,10 @@ object TypeChecker{
   def typeCheckStmt(typeEnv: TypeEnv, stmt: Statement): Reply[TypeEnv] = 
     stmt match{
       case Directive(cell, expr) => 
-        typeCheck(typeEnv, expr).map{ case (te1, t) => // FIXME: check cell type
+        typeCheck(typeEnv, expr).map{ case (te1, t) => 
           typeCheck(te1, cell).map{ case(te2, TypeVar(tId)) => 
             assert(te2(tId) == MemberOf(CellTypes))
-            // Unify t with above constraint
+            // Unify t with above constraint: expr should give a cell value
             unify(te2, t, TypeVar(tId)).map{ case (te3, tt) => 
               Ok(te3) 
             }.lift(expr, true)
@@ -230,13 +240,9 @@ object TypeChecker{
         // Create a new scope, and extend with params
         val te1 = typeEnv.newScope ++ params
         // Typecheck body, and make sure return type matches rt
-        typeCheckUnify(te1, body, rt).map{ case (te3, tt) =>
+        typeCheckUnify(te1, body, rt).mapOrLift(stmt, { case (te3, tt) =>
           Ok(te3.endScope) // back to the old scope
-        // typeCheck(te1, body).map { case (te2, t) => 
-        //   // check return type t matches rt
-        //   unify(te2, t, rt).mapOrLift(body, {
-        //  })
-        }.lift(stmt)
+        })
 
     } // end of "stmt match"
 

@@ -15,8 +15,12 @@ class Model(val height: Int, val width: Int){
   /** Record of which cells were calculated. */
   val calculated = Array.fill(width, height)(false)
 
-  /** The statements defined in a file.  Set by loadFile. */
+  /** The statements defined in the script.  Set by loadFile. */
   private var statements = List[Statement]()
+
+  /** The type environment resulting from checking the script.  Set by
+    * loadFile. */
+  private var typeEnv: TypeEnv = null
 
   private var filename: String = null
 
@@ -32,7 +36,10 @@ class Model(val height: Int, val width: Int){
     StatementParser.parseStatements(fContents) match{
       case Left(ss) => 
         TypeChecker(ss) match{
-          case Ok(typeEnv) => statements = ss; update1()
+          case Ok(te) => 
+            statements = ss; typeEnv = te; // println(typeEnv); 
+            update1()
+
           case FailureR(err) => view.addInfo(s"Type error: $err")
         }
 // IMPROVE: store type env in first case. 
@@ -55,13 +62,13 @@ class Model(val height: Int, val width: Int){
 
   /** Update cells based on statements.  Called internally. */
   private def update1() = {
-    val env = new Environment(cells, calculated, height, width)
-   
+    val env = new Environment(
+      cells, calculated, height, width, typeEnv, TypeChecker)
     // Iterate over statements, unless an error is found.
-    //var ok = true; val iter = statements.iterator
     def handleError(err: ErrorValue) = {view.addInfo(err.msg)}
     //while(ok && iter.hasNext) ok = iter.next().perform(env, handleError)
     Statement.performAll(statements, env, handleError)
+    view.redisplay()
   }
 
 

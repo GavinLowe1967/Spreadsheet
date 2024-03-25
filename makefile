@@ -8,9 +8,11 @@ all: $(DIR)/ParserTest.class $(DIR)/SpreadsheetApp.class $(DIR)/TypeCheckerTest.
 
 $(DIR)/Value.class: $(DIR)/Input.class $(DIR)/TypeT.class
 
-$(DIR)/Environment.class: $(DIR)/Value.class
+$(DIR)/TypeCheckerT.class: $(DIR)/TypeEnv.class
 
-$(DIR)/Exp.class: $(DIR)/Value.class $(DIR)/Environment.class
+$(DIR)/Environment.class: $(DIR)/Value.class $(DIR)/TypeCheckerT.class
+
+$(DIR)/Exp.class: $(DIR)/Value.class $(DIR)/Environment.class $(DIR)/TypeEnv.class
 
 $(DIR)/FunctionValue.class: $(DIR)/Exp.class
 

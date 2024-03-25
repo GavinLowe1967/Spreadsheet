@@ -6,9 +6,6 @@ trait TypeConstraint
 /** A type constraint representing a contradiction. */
 case object EmptyTypeConstraint extends TypeConstraint
 
-/** A type constraint representing a single type t. */
-case class SingletonTypeConstraint(t: TypeT) extends TypeConstraint
-
 /* Note: the above two cases can be returned by the intersection operation on
  * a StoredTypeConstraint, but are not themselves stored. */ 
 
@@ -28,6 +25,16 @@ trait StoredTypeConstraint extends TypeConstraint{
 }
 
 // ==================================================================
+
+/** A type constraint representing a single type t.  Note: these are stored
+  * when the value of a type variable is completely decided. */
+case class SingletonTypeConstraint(t: TypeT) extends StoredTypeConstraint{
+  def satisfiedBy(t1: TypeT) = t1 == t
+
+  def intersection(other: StoredTypeConstraint) = ???
+
+  def asString = t.asString
+}
 
 /** A constraint that a type variable represents a type within ts. */
 case class MemberOf(ts: List[TypeT]) extends StoredTypeConstraint{

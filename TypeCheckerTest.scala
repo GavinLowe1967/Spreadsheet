@@ -207,12 +207,15 @@ object TypeCheckerTest{
     val script13 = 
       "val x = #C3; val y = #C4; val w = if(x) y+3 else 4; val z = x == y"
     assertFail(tcpss(script13))
+    println(tcp("3 + Cell(#B, #1) + Cell(#B, #2)"))
+    println(tcp("3 + Cell(#B, #1)"))
+    println(tcpss("val x = Cell(#B, #1); val xx = x; val y = 3+xx"))
   }
 
   // =======================================================
 
   def main(args: Array[String]) = {
-    //printErrors = true
+    // printErrors = true
     expTests()
     singleDecTests()
     scriptTests()
@@ -221,6 +224,7 @@ object TypeCheckerTest{
 
     printErrors = true
 
+    // Tests writing to cells
     tcpss("#A3 = 5") match{ case Ok(_) => {} }
     assertFail(tcpss("def f(y: Int): Int = 3; #A3 = f"))
     assertFail(tcpss("#A3 = true+5"))
