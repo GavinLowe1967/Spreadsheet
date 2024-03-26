@@ -56,12 +56,12 @@ object TypeEnv{
       (for(name <- tempNames) yield getOldName(name) -> nameMap(name)) -- 
       tempNames
     }
-  }
+  }                   // End of Frame
 
   /** An initial TypeEnv. */
   def apply() =
     new TypeEnv(
-      new NameMap, new Constraints, new CellReadMap,  new Frame, List[Frame]())
+      new NameMap, new Constraints, new CellReadMap, new Frame, List[Frame]())
 } 
 
 // ==================================================================
@@ -91,11 +91,11 @@ class TypeEnv(
 
   /** The constraint associated with tid. */
   def apply(tid: TypeID) : StoredTypeConstraint = constraints(tid) match{
-    case SingletonTypeConstraint(TypeVar(tid1)) =>
+    case SingletonTypeConstraint(TypeVar(tid1)) =>       // IMPROVE, unreachable?
+      assert(false) 
       println(s"TypeEnv.apply: $tid -> $tid1"); apply(tid1)
     case c => c 
   }
-// IMPROVE: comment
 
   /** The TypeEnv formed by adding the mapping name -> t. */
   def + (name: Name, t: TypeT) : TypeEnv = {
@@ -129,46 +129,49 @@ class TypeEnv(
 
   def addCellConstraint(typeId: TypeID, cell: CellExp): TypeEnv = {
     assert(!cellReadMap.contains(typeId))
-    val newConstraints = constraints + (typeId -> MemberOf(CellTypes))
+    val newConstraints = constraints + (typeId -> MemberOf(TypeT.CellTypes))
     val newCellReadMap = cellReadMap + (typeId -> List(cell))
     new TypeEnv(nameMap, newConstraints, newCellReadMap, frame, stack)
   }
 
-  val CellTypes = List(IntType, FloatType, StringType, BoolType) // FIXME: move - repeated in TypeChecker
+  /** Replace tId by t in nameMap. */
+  private def subInNameMap(nameMap: NameMap, tId: TypeID, t: TypeT) : NameMap =
+    nameMap.map{ case (n,t1) => (n, Substitution.reMap(tId, t, t1)) }
 
-  /** The TypeEnv formed from this by replacing TypeVar(tId) with t.
-    * @param evalTime Is this at evaluation time (as opposed to during
-    * typechecking)?  If so, do not propagate updates to cell expressions.  */
-  def replace(tId: TypeID, t: TypeT, evalTime: Boolean = false): TypeEnv = {
+  /** The TypeEnv formed from this by replacing TypeVar(tId) with t, as used
+    * during type checking.  Updates are propogated to cell expressions.  */
+  def replace(tId: TypeID, t: TypeT): TypeEnv = {
     // Update relevant cell expressions with type t.  Build new CellReadMap
-    val newCellReadMap = 
-      if(evalTime) cellReadMap
-      else cellReadMap.get(tId) match {
+    val newCellReadMap = cellReadMap.get(tId) match {
         case Some(cellEs) =>
           // println(s"TypeEnv.replace: $cells -> $t")
           for(cellE <- cellEs) cellE.setType(t)
           t match{
-            case TypeVar(tId1) =>
-              // Add cells1 to celllReadMap(tId1)
-              cellReadMap.get(tId1) match{
-                case Some(cellEs1) => cellReadMap + (tId1 -> (cellEs1++cellEs))
-                case None => cellReadMap + (tId1 -> cellEs)
+            case TypeVar(tId1) =>       // Add cellEs to celllReadMap(tId1)
+              val newCellEs = cellReadMap.get(tId1) match{
+                case Some(cellEs1) => cellEs1++cellEs; case None => cellEs
               }
+              cellReadMap - tId + (tId1 -> newCellEs)
+
             case _ => cellReadMap - tId
-          }
+          } // end of "t match"
+
         case None => cellReadMap
       }                //  end of definition of newCellReadMap
+    val newNameMap = subInNameMap(nameMap, tId, t)
+    new TypeEnv(newNameMap, constraints, newCellReadMap, frame, stack)
+    //new TypeEnv(newNameMap, constraints - tId, newCellReadMap, frame, stack)
+  }
+
+  /** The TypeEnv formed from this by replacing TypeVar(tId) with t, as used at
+    * evaluation time: updates are not propagated to cell expressions. */
+  def replaceEvalTime(tId: TypeID, t: TypeT): TypeEnv = {
     // Note: we don't propagate updates to cell expressions during evaluation,
     // since if there are subsequent changes to the spreadsheet, the updates
-    // to cell expressions would be invalid.
-    val newNameMap =
-      nameMap.map{ case (n,t1) => (n, Substitution.reMap(tId, t, t1)) }
-    val newConstraints = 
-      if(evalTime) constraints + (tId -> SingletonTypeConstraint(t))
-      else constraints
-    new TypeEnv(newNameMap, newConstraints, newCellReadMap, frame, stack)
-    // Note: we keep tId in constraints, because it might be associated
-    // with a CellExpr.  We could propagate this update to the CellExpr.
+    // to cell expressions would be invalid.  We just update constraints.
+    val newNameMap = subInNameMap(nameMap, tId, t)
+    val newConstraints = constraints + (tId -> SingletonTypeConstraint(t))
+    new TypeEnv(newNameMap, newConstraints, cellReadMap, frame, stack)
   }
 
   /** Record that a new scope is being entered. */

@@ -4,6 +4,7 @@ import scala.collection.immutable.{Map,HashMap}
 
 /** Tests on the type checker. */
 object TypeCheckerTest{
+  import TypeT._
   import TypeChecker._; import TypeEnv._
   import TypeChecker.TestHooks._
   import Parser.parseAll; import ExpParser.expr

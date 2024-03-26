@@ -115,8 +115,8 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
 // =======================================================
 
 object Spreadsheet{
-  val EmptyBackground = new Color(240,240,240)
-  val UserDataBackground = new Color(220,255,255)
-  val CalculatedBackground = new Color(230,255,230)
+  val EmptyBackground = new Color(250,250,250)
+  val UserDataBackground = new Color(200,250,255) // light blue
+  val CalculatedBackground = new Color(220,255,220) // light green
   val CalculatedWithFocusBackground = new Color(180,255,180)
 }

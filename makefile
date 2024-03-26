@@ -8,9 +8,9 @@ all: $(DIR)/ParserTest.class $(DIR)/SpreadsheetApp.class $(DIR)/TypeCheckerTest.
 
 $(DIR)/Value.class: $(DIR)/Input.class $(DIR)/TypeT.class
 
-$(DIR)/TypeCheckerT.class: $(DIR)/TypeEnv.class
+$(DIR)/EvaluationTypeChecker.class: $(DIR)/TypeEnv.class
 
-$(DIR)/Environment.class: $(DIR)/Value.class $(DIR)/TypeCheckerT.class
+$(DIR)/Environment.class: $(DIR)/Value.class $(DIR)/EvaluationTypeChecker.class
 
 $(DIR)/Exp.class: $(DIR)/Value.class $(DIR)/Environment.class $(DIR)/TypeEnv.class
 
@@ -37,9 +37,9 @@ $(DIR)/Substitution.class: $(DIR)/TypeT.class
 
 $(DIR)/TypeEnv.class: $(DIR)/TypeConstraint.class
 
-$(DIR)/TypeChecker.class: $(DIR)/Substitution.class				\
-  $(DIR)/TypeEnv.class $(DIR)/Exp.class $(DIR)/FunctionValue.class	\
-  $(DIR)/BlockExp.class
+$(DIR)/TypeChecker.class: $(DIR)/EvaluationTypeChecker.class			\
+  $(DIR)/Substitution.class $(DIR)/TypeEnv.class $(DIR)/Exp.class	\
+  $(DIR)/FunctionValue.class $(DIR)/BlockExp.class
 
 $(DIR)/TypeCheckerTest.class: $(DIR)/TypeChecker.class
 

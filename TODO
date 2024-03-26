@@ -3,39 +3,38 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Language
 --------
 
-- directives -- done
+- Clear boxes on reload
+
 - EqTypeConstraint.intersection -- test **
-- Test "==" with Cell types, find failures to match -- done
-
-- Incorporate with GUI
-
-- line numbers in type errors - done
-- clear sheet before reloading - done
-- errors in window -- done
 - use typeEnv when reading cells -- done, test with Floats
-- test ParserTest -- done
+- TypeVar.isEqType
 
--- Move def of CellTypes
--- Environment.checkType, update typeEnv -- done
+Current: 
 
-error with "val column = #B"
+- Parser for Floats (script and cells), and eval. -- done
+-- Change FloatValue to Cell -- done
 
+-- Any type errors should not now arise in Exp.eval -- check this
+-- Tidy up BinOp
 
-- Parser for Floats (script and cells), and eval.
 - Parser for strings in script
-- Allow Bool in cells
+- Allow Bool in cells -- done
 
 - polymorphism (def id[A](x: A): A = x)
 - type classes (def equal[A <: Eq](x: A, y: A): Boolean = x == y)
 - Num type class
 - empty list
 
-- Do we need Substitution?  Or just Reply from it? 
+- Do we need Substitution?  Or just Reply from it?  We do use reMap
 
 
 Lists:
 -  ::, null
 - [_ .. _]
+- isEqType
+- Do tests with types
+
+FunctionType.isSubclassOf
 
 * Think more about subclassing
 
@@ -72,6 +71,18 @@ Code
 
 
 ===================================== DONE
+
+error with "val column = #B" -- fixed
+-- Move def of CellTypes -- done
+-- Environment.checkType, update typeEnv -- done
+- Incorporate with GUI
+
+- line numbers in type errors - done
+- clear sheet before reloading - done
+- errors in window -- done
+- test ParserTest -- done
+- directives -- done
+- Test "==" with Cell types, find failures to match -- done
 
 Need to allow types to be refined in TypeEnv.replace, if tId associated with another cell
 Either:

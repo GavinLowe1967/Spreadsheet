@@ -57,17 +57,17 @@ trait Exp extends HasExtent{
   }
 
   /** Make a TypeError, that `found` was found when `expected` was expected`. */
-  protected def mkTypeError(expected: String, found: Value) = 
-    TypeError(mkErr(expected, found))
+  // protected def mkTypeError(expected: String, found: Value) = 
+  //   TypeError(mkErr(expected, found))
 
-  /** Extend f(v) to: (1) cases where v is an ErrorValue (passing on the error),
-    * and (2) other types, returning a TypeError(err). */ 
-  protected def lift(f: PartialFunction[Value, Value], v: Value, err: String)
+  /** Extend f(v) to: cases where v is an ErrorValue (passing on the error).
+    * Other cases shouldn't happen. */ 
+  protected def lift(f: PartialFunction[Value, Value], v: Value)
       : Value = {
     if(f.isDefinedAt(v)) f(v) 
     else v match{ 
-      case ev: ErrorValue => liftError(ev); 
-      case _ => TypeError(err).withSource(extent)
+      case ev: ErrorValue => liftError(ev)
+      case _ => sys.error(s"unexpected value: $v")
     }
   }
 }
@@ -97,6 +97,14 @@ object NameExp{
 /** An integer constant expression. */
 case class IntExp(value: Int) extends Exp{
   def eval0(env: Environment) = IntValue(value) 
+
+  override def toString = value.toString
+}
+
+// ==================================================================
+
+case class FloatExp(value: Float) extends Exp{
+  def eval0(env: Environment) = FloatValue(value)
 
   override def toString = value.toString
 }
@@ -140,134 +148,179 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
   /** Shorthand for a partial function Value => A. */
   type PF[A] = PartialFunction[Value, A]
 
-  /** Information about a non-overloaded binary operator: its representation as
-    * a curried partial function, and the types of its two arguments. */
-  type BinOpInfo = (PF[PF[Value]], TypeT, TypeT)
+  /** Information about an overloaded binary operator: its representation is a
+    * partial function, which (on application to the first argument) gives a
+    * partial function and the expected type of the second argument. */
+  // type BinOpInfo = PF[(PF[Value], TypeT)] // 
 
-  /** Make information about an (Int,Int) => Int binary operator corresponding
-    * to f. */
-  private def mkIntBinOp(f: (Int,Int) => Int): BinOpInfo = (
-    { case IntValue(n1) => { case IntValue(n2) => IntValue(f(n1,n2)) } },
-    IntType, IntType
-  )
+  // type BinOpInfoX = (PF[PF[Value]], TypeT, TypeT)
 
-  /** Information for the "/" binary operator. */
-  private def div: BinOpInfo = ({
-    case IntValue(n1) => { 
-      case IntValue(n2) =>
-        if(n2 == 0) liftError(EvalError("Division by zero")) // IMPROVE?
-        else IntValue(n1/n2) 
-    }},
-    IntType, IntType
-  )
+  // /** Make a function (IntType,IntType) -> Value or (FloatType,FloatType) ->
+  //   * Value by lifting fi and ff. */
+  // private def mkBinOp(fi: (Int,Int) => Value, ff: (Float,Float) => Value)
+  //     : BinOpInfo = {
+  //   case IntValue(n1) =>
+  //     ({ case IntValue(n2) => fi(n1,n2) }, IntType)
+  //   case FloatValue(x1) =>
+  //     ({ case FloatValue(x2) => ff(x1,x2) }, FloatType)
+  // }
 
-  /** Make information about an (Int,Int) => Boolean binary relation operator
-    * corresponding to f. */
-  private def mkIntRel(f: (Int,Int) => Boolean): BinOpInfo  = (
-    { case IntValue(n1) => { case IntValue(n2) => BoolValue(f(n1,n2)) } },
-    IntType, IntType
-  )
+  // /** Specialise to (Num,Num) -> Num functions. */
+  // private def mkBinNumOp(fi: (Int,Int) => Int, ff: (Float,Float) => Float)
+  //     : BinOpInfo =
+  //   mkBinOp({case (n1,n2) => IntValue(fi(n1,n2))}, 
+  //           {case (x1,x2) => FloatValue(ff(x1,x2))} )
 
-  /** Information about the "==" (if `eq`) or "!=" (otherwise) operator.
-    * Returns a pair `(f,ts)` where (a) `f` is a partial function (over the
-    * first argument) that returns a pair `(f2,t2)`, where `f2` is the
-    * resulting partial function on the second argument, and `t2` is the
-    * expected type of the second argument; (b) `ts` is the list of types
-    * accepted for the first argument. */
-  private def equalOp(eq: Boolean): (PF[(PF[Value], TypeT)], List[TypeT]) = (
-    {
-      case IntValue(n1) =>
-        ({ case IntValue(n2) => BoolValue((n1 == n2) == eq ) }, IntType)
-      case BoolValue(b1) =>
-        ({ case BoolValue(b2) => BoolValue((b1 == b2) == eq) }, BoolType)
-      case l1 : ListValue => 
-        ({ case l2 : ListValue if l1.underlying.comparable(l2.underlying) =>
-             BoolValue((l1.elems == l2.elems) == eq) }, 
-          ListType(l1.underlying))
-        // Note: we allow equality tests only between lists with comparable
-        // underlying types.  So we allow "tail([1]) == []", but not
-        // "tail([1]) == tail([false])"
-    },
-    List(IntType, BoolType, ListType(AnyType))
-  )
+  // /** Specialise to (Num,Num) -> Bool functions. */
+  // private def mkBinRelOp(fi: (Int,Int) => Boolean, ff: (Float,Float) => Boolean)
+  //     : BinOpInfo =
+  //   mkBinOp({case (n1,n2) => BoolValue(fi(n1,n2))}, 
+  //           {case (x1,x2) => BoolValue(ff(x1,x2))} )
 
-  /** Make information about an (Boolean,Boolean) => Boolean binary relation
-    * operator corresponding to f. */
-  private def mkBoolBinOp(f: (Boolean,Boolean) => Boolean): BinOpInfo = (
-    { case BoolValue(b1) => { case BoolValue(b2) => BoolValue(f(b1,b2)) } },
-    BoolType, BoolType
-  )
 
-  /** Apply the operation represented by `op` to values `v1` and `v2`. */
-  private def doBinOp(v1: Value, op: String, v2: Value): Value = {
-    // Create an ErrorValue, corresponding to `v` being found when an argument
-    // of type described by `typeString` was expected.
-    def mkError0(v: Value, typeString: String) = v match{
-      case ev: ErrorValue => liftError(ev);
-      case _ => TypeError(mkErr(typeString, v)).withSource(extent)
-    }
-    def mkError(v: Value, t: TypeT) = mkError0(v, t.asString)
-    def mkErrorX(v: Value, ts: List[TypeT]) =
-      mkError0(v, ts.map(_.asString).mkString(" or "))
+  // /** Information about the "==" (if `eq`) or "!=" (otherwise) operator.
+  //   * Returns a pair `(f,ts)` where (a) `f` is a partial function (over the
+  //   * first argument) that returns a pair `(f2,t2)`, where `f2` is the
+  //   * resulting partial function on the second argument, and `t2` is the
+  //   * expected type of the second argument; (b) `ts` is the list of types
+  //   * accepted for the first argument. */
+  // private def equalOp(eq: Boolean): (PF[(PF[Value], TypeT)], List[TypeT]) = (
+  //   {
+  //     case IntValue(n1) =>
+  //       ({ case IntValue(n2) => BoolValue((n1 == n2) == eq ) }, IntType)
+  //     case BoolValue(b1) =>
+  //       ({ case BoolValue(b2) => BoolValue((b1 == b2) == eq) }, BoolType)
+  //     case l1 : ListValue => 
+  //       ({ case l2 : ListValue if l1.underlying.comparable(l2.underlying) =>
+  //            BoolValue((l1.elems == l2.elems) == eq) }, 
+  //         ListType(l1.underlying))
+  //       // Note: we allow equality tests only between lists with comparable
+  //       // underlying types.  So we allow "tail([1]) == []", but not
+  //       // "tail([1]) == tail([false])"
+  //   },
+  //   List(IntType, BoolType, ListType(AnyType))
+  // )
 
-    if(op == "==" || op == "!="){ // overloaded function
-      val (f,ts) = equalOp(op == "==")
-      if(f.isDefinedAt(v1)){
-        val (f1,t2) = f(v1); if(f1.isDefinedAt(v2)) f1(v2) else mkError(v2, t2)
-      }
-      else mkErrorX(v1, ts)
-    }
-    else{
-      val (f,t1,t2) = op match{
-        case "+" => mkIntBinOp(_+_ ); case "-" => mkIntBinOp(_-_)
-        case "*" => mkIntBinOp(_*_); case "/" => div
-        // case "==" => mkIntRel(_==_); case "!=" => mkIntRel(_!=_)
-        case "<=" => mkIntRel(_<=_); case "<" => mkIntRel(_<_);
-        case ">" => mkIntRel(_>_); case ">=" => mkIntRel(_>=_)
-        case "||" => mkBoolBinOp(_||_); case "&&" => mkBoolBinOp(_&&_)
-      }
-      if(f.isDefinedAt(v1)){
-        val f1 = f(v1); if(f1.isDefinedAt(v2)) f1(v2) else mkError(v2, t2)
-      }
-      else mkError(v1,t1)
+  // /** Make information about an (Boolean,Boolean) => Boolean binary relation
+  //   * operator corresponding to f. */
+  // private def mkBoolBinOp(f: (Boolean,Boolean) => Boolean): BinOpInfoX = (
+  //   { case BoolValue(b1) => { case BoolValue(b2) => BoolValue(f(b1,b2)) } },
+  //   BoolType, BoolType
+  // )
+
+  // /** Apply the operation represented by `op` to values `v1` and `v2`. */
+  // private def doBinOpX(v1: Value, op: String, v2: Value): Value = {
+  //   // Create an ErrorValue, corresponding to `v` being found when an argument
+  //   // of type described by `typeString` was expected.
+  //   def mkError0(v: Value, typeString: String) = v match{
+  //     case ev: ErrorValue => liftError(ev);
+  //     case _ => sys.error(mkErr(typeString, v))
+  //   }
+  //   def mkError(v: Value, t: TypeT) = mkError0(v, t.asString)
+  //   def mkErrorX(v: Value, ts: List[TypeT]) =
+  //     mkError0(v, ts.map(_.asString).mkString(" or "))
+
+  //   if(op == "==" || op == "!="){ // overloaded function
+  //     val (f,ts) = equalOp(op == "==")
+  //     if(f.isDefinedAt(v1)){
+  //       val (f1,t2) = f(v1); if(f1.isDefinedAt(v2)) f1(v2) else mkError(v2, t2)
+  //     }
+  //     else mkErrorX(v1, ts)
+  //   }
+  //   else if(List("+", "-", "*", "/", "<=", "<", ">", ">=").contains(op)){ 
+  //     val f : PF[(PF[Value], TypeT)] = op match{
+  //       case "+" => mkBinNumOp((_+_), (_+_))
+  //       case "-" => mkBinNumOp((_-_), (_-_))
+  //       case "*" => mkBinNumOp((_*_), (_*_)) 
+  //       case "/" => 
+  //         def err = liftError(EvalError("Division by zero"))
+  //         mkBinOp(
+  //           {case (n1,n2) => if(n2 != 0) IntValue(n1/n2) else err},
+  //           {case (x1,x2) => if(x2 != 0.0) FloatValue(x1/x2) else err})
+  //       case "<=" => mkBinRelOp((_<=_), (_<=_))
+  //       case "<" => mkBinRelOp((_<_), (_<_))
+  //       case ">=" => mkBinRelOp((_>=_), (_>=_))
+  //       case ">" => mkBinRelOp((_>_), (_>_))
+  //     }
+  //     if(f.isDefinedAt(v1)){
+  //       val (f1,t2) = f(v1)
+  //       if(f1.isDefinedAt(v2)) f1(v2) else mkError(v2,t2) 
+  //     }
+  //     else mkErrorX(v1, List(IntType, FloatType)) 
+  //   }
+  //   else{
+  //     val (f,t1,t2) = op match{
+  //       case "||" => mkBoolBinOp(_||_); case "&&" => mkBoolBinOp(_&&_)
+  //     }
+  //     if(f.isDefinedAt(v1)){
+  //       val f1 = f(v1); if(f1.isDefinedAt(v2)) f1(v2) else mkError(v2, t2)
+  //     }
+  //     else mkError(v1,t1)
+  //   }
+  // }
+
+  private type BinOpRep = PF[PF[Value]]
+
+  /** (Bool,Bool) -> Bool functions. */
+  private def mkBoolOp1(f: (Boolean,Boolean) => Boolean): BinOpRep = {
+    case BoolValue(b1) => { case BoolValue(b2) => BoolValue(f(b1,b2)) }
+  }
+
+  /** (Num, Num) -> Value funcitons. */
+  private def mkBinOp1(fi: (Int,Int) => Value, ff: (Float,Float) => Value) 
+      : BinOpRep = {
+    case IntValue(n1) => { case IntValue(n2) => fi(n1,n2) }
+    case FloatValue(x1) => { case FloatValue(x2) => ff(x1,x2) }
+  }
+
+  /** (Num, Num) -> Value functions. */
+  private def mkBinNumOp1(fi: (Int,Int) => Int, ff: (Float,Float) => Float)
+      : BinOpRep =
+    mkBinOp1({case (n1,n2) => IntValue(fi(n1,n2))},
+             {case (x1,x2) => FloatValue(ff(x1,x2))} )
+
+  private def mkBinRelOp1(fi: (Int,Int) => Boolean, ff: (Float,Float) => Boolean)
+      : BinOpRep =
+    mkBinOp1({case (n1,n2) => BoolValue(fi(n1,n2))}, 
+             {case (x1,x2) => BoolValue(ff(x1,x2))} )
+
+  private def equalOp1(eq: Boolean): BinOpRep = {
+    def mkRes(b: Boolean) = BoolValue(b == eq)
+    _ match {
+      case IntValue(n1) => { case IntValue(n2) => mkRes(n1 == n2) }
+      case FloatValue(x1) => { case FloatValue(x2) => mkRes(x1 == x2) }
+      case BoolValue(b1) => { case BoolValue(b2) => mkRes(b1 == b2) }
+    // FIXME: complete
     }
   }
 
-  /** Apply the operation represented by `op` to values `v1` and `v2`. */
-  // private def doBinOpX(v1: Value, op: String, v2: Value): Value = (op match{
-  //   // (Int, Int) operators
-  //   case "+" | "-" | "*" | "/" | "==" | "!=" | "<" | "<=" | ">" | ">=" =>
-  //     lift(_ match{
-  //       case IntValue(n1) => 
-  //         lift(_ match{
-  //           case IntValue(n2) => op match{
-  //             case "+" => IntValue(n1+n2); case "-" => IntValue(n1-n2)
-  //             case "*" => IntValue(n1*n2)
-  //             case "/" =>
-  //               if(n2 == 0) liftError(EvalError("Division by zero"))
-  //               else IntValue(n1/n2)
-  //             case "==" => BoolValue(n1 == n2); case "!=" => BoolValue(n1 != n2)
-  //             case "<" => BoolValue(n1 < n2); case "<=" => BoolValue(n1 <= n2)
-  //             case ">" => BoolValue(n1 > n2); case ">=" => BoolValue(n1 >= n2)
-  //           } // end of op match
-  //         }, // end of anonymous match
-  //         v2, mkErr("Int", v2)) // end of inner lift
-  //     }, // end of outer anonymous match
-  //     v1, mkErr("Int", v1)) // end of outer lift
+  private def doBinOp(v1: Value, op: String, v2: Value): Value = {
+    val f : BinOpRep = op match{
+      case "+" => mkBinNumOp1((_+_), (_+_))
+      case "-" => mkBinNumOp1((_-_), (_-_))
+      case "*" => mkBinNumOp1((_*_), (_*_))
+      case "/" => 
+        def err = liftError(EvalError("Division by zero"))
+        mkBinOp1(
+          {case (n1,n2) => if(n2 != 0) IntValue(n1/n2) else err},
+          {case (x1,x2) => if(x2 != 0.0) FloatValue(x1/x2) else err})
+      case "<=" => mkBinRelOp1((_<=_), (_<=_))
+      case "<" => mkBinRelOp1((_<_), (_<_))
+      case ">=" => mkBinRelOp1((_>=_), (_>=_))
+      case ">" => mkBinRelOp1((_>_), (_>_))
+      case "&&" => mkBoolOp1((_&&_))
+      case "||" => mkBoolOp1((_||_))
+      case "==" => equalOp1(true)
+      case "!=" => equalOp1(false)
+    }
+    if(f.isDefinedAt(v1)){ val f1 = f(v1); lift(f1, v2) }
+    else v1 match{
+      case ev: ErrorValue => liftError(ev) 
+      case _ => sys.error(s"unexpected value: $v1")
+    }
+  }
 
-  //   // Boolean operators  
-  //   case "&&" | "||" => 
-  //     lift(_ match{
-  //       case BoolValue(b1) => 
-  //         lift(_ match{
-  //           case BoolValue(b2) => op match{
-  //             case "&&" => BoolValue(b1 && b2); case "||" => BoolValue(b1 || b2)
-  //           }
-  //         },                        // end of inner anonymous match
-  //         v2, mkErr("Boolean", v2)) // end of inner lift
-  //     },                            // end of outer anonymous match
-  //     v1, mkErr("Boolean", v1))     // end of outer lift
-  // }).withSource(v1.source until v2.source)
+
 
   // Note: the following is for testing only: it over-uses parentheses.
   override def toString = s"($left $op $right)"
@@ -290,15 +343,14 @@ case class ColumnExp(column: String) extends Exp{
   require(column.forall(_.isUpper))
   require(column.length <= 2) // surely? 
 
-  /** The Int that acts as the index for this column. */
-  private val asInt: Int = 
-    if(column.length == 1) column(0)-'A' 
-    else (column(0)-'A'+1)*26 + column(1)-'A'
-
   def eval0(env: Environment) = ColumnValue(asInt)
+
+  /** Int representation of this. */
+  private val asInt = ColumnValue.asInt(column)
 
   override def toString = s"#$column"
 }
+
 
 // ==================================================================
 
@@ -309,31 +361,27 @@ case class CellExp(column: Exp, row: Exp) extends Exp{
   // Note: above never called, since env.getCell sets the source
 
   override def eval(env: Environment) = {
+    /* Read from cell(c,r). */
+    def doRead(c: Int, r: Int) = {
+      assert(theType != null); val v = env.getCell(c, r)
+      env.checkType(v, theType) match{
+        case Ok(()) => v; 
+        case FailureR(msg) => 
+          val cName = ColumnValue.getName(c)
+          liftError(TypeError(msg+s" in cell (#$cName,#$r)" ))
+      }
+    }
     val cc = column.eval(env)
-    lift(_ match{
-      case ColumnValue(c) => 
-        val rr = row.eval(env)
-        lift(_ match{ case RowValue(r) => 
-          assert(theType != null); val v = env.getCell(c, r); 
-          // println(s"$v $typeId")
-          env.checkType(v, theType) match{
-            case Ok(()) => v
-            case FailureR(msg) => liftError(TypeError(msg))
-          }
-        },
-          rr, s"Expected row number, found ${rr.forError}")
-    }, 
-    cc, s"Expected column identifier, found ${cc.forError}")
+    lift({ case ColumnValue(c) => 
+      val rr = row.eval(env); lift({ case RowValue(r) => doRead(c,r) }, rr)
+    }, cc)
   }
 
   /** The type associated with this read of a cell.  It might be a TypeVar, in
     * which case the corresponding TypeEnv will have a constraint upon it. */
   private var theType: TypeT = null
 
-  def setType(t: TypeT) = { /*println(s"$this.setType($t)");*/ theType = t }
-
-  // def getTypeId = { require(typeId >= 0); typeId }
-
+  def setType(t: TypeT) = theType = t 
 
   override def toString = s"Cell($column, $row)"
 }
@@ -346,7 +394,7 @@ case class IfExp(test: Exp, thenClause: Exp, elseClause: Exp) extends Exp{
     case BoolValue(true) => thenClause.eval(env)
     case BoolValue(false) => elseClause.eval(env)
     case err: ErrorValue => liftError(err)
-    case other => mkTypeError("Boolean", other)
+    case other => sys.error(s"Unexpected type: $other")
   }
 
 }
@@ -364,11 +412,15 @@ case class ListLiteral(elems: List[Exp]) extends Exp{
         case err: ErrorValue => error = liftError(err)
         case v => 
           if(v.isOfType(theType)){ vs ::= v; theType = v.getType; es = es.tail }
-          else error = mkTypeError(theType.asString, v)
+          else sys.error(mkErr(theType.asString, v))
       }
     }
     if(error != null) error else ListValue(theType, vs.reverse)
   }
+
+  // private var underlyingType: TypeT = null
+
+  // def setUnderlyingType(t: TypeT) = underlyingType = t
 }
 
 // ==================================================================

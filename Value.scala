@@ -58,6 +58,15 @@ case class IntValue(value: Int) extends Cell{
 
 // ==================================================================
 
+/** A Float. */
+case class FloatValue(value: Float) extends Cell{
+  protected val theType = FloatType
+
+  override def forError = value.toString
+}
+
+// ==================================================================
+
 case class StringValue(value: String) extends Cell{
   protected val theType = StringType
 
@@ -68,7 +77,7 @@ case class StringValue(value: String) extends Cell{
 
 // ==================================================================
 
-case class BoolValue(value: Boolean) extends Value{
+case class BoolValue(value: Boolean) extends Cell{
   protected val theType = BoolType
 
   override def forError = value.toString
@@ -92,6 +101,21 @@ case class ColumnValue(column: Int) extends Value{
   protected val theType = ColumnType
 
   override def forError = "#"+CellSource.colName(column)
+}
+
+object ColumnValue{
+
+  /** Convert column to the corresponding Int representation. */
+  def asInt(column: String): Int = 
+    if(column.length == 1) column(0)-'A' 
+    else (column(0)-'A'+1)*26 + column(1)-'A'
+
+  /** The name for the collumn with index c. */
+  def getName(c: Int): String = {
+    def toChar(n: Int) = (n+'A').toChar
+    if(c < 26) toChar(c).toString else List(toChar(c/26),toChar(c%26)).mkString
+  }
+
 }
 
 // =======================================================

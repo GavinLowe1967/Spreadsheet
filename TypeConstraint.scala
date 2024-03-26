@@ -36,6 +36,8 @@ case class SingletonTypeConstraint(t: TypeT) extends StoredTypeConstraint{
   def asString = t.asString
 }
 
+// ==================================================================
+
 /** A constraint that a type variable represents a type within ts. */
 case class MemberOf(ts: List[TypeT]) extends StoredTypeConstraint{
   require(ts.length >= 2)
@@ -51,7 +53,7 @@ case class MemberOf(ts: List[TypeT]) extends StoredTypeConstraint{
 }
 
 object MemberOf{
-
+  /** Build a constraint corresponding to the options in ts. */
   def build(ts: List[TypeT]): TypeConstraint = 
     if(ts.isEmpty) EmptyTypeConstraint
     else if(ts.length == 1) SingletonTypeConstraint(ts.head)
@@ -66,17 +68,12 @@ case object EqTypeConstraint extends StoredTypeConstraint{
   def intersection(other: StoredTypeConstraint) = other match{
     case EqTypeConstraint => println("TypeConstraint.EqEq"); EqTypeConstraint
 
-    case MemberOf(ts) => println("TypeConstraint.EqM"); val ts1 = ts.filter(satisfiedBy); MemberOf.build(ts1)
+    case MemberOf(ts) => 
+      println("TypeConstraint.EqM"); 
+      val ts1 = ts.filter(satisfiedBy); MemberOf.build(ts1)
   }
 // Note: above is currently untested
 
   def asString = "equality type"
 }
 
-// case object NumTypeConstraint extends StoredTypeConstraint{
-//   def satisfiedBy(t: TypeT) = t == IntType
-
-//   def intersection(other: TypeConstraint) = other match{
-//     case NumTypeConstraint => NumTypeConstraint
-//   }
-// }

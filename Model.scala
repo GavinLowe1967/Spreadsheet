@@ -36,13 +36,10 @@ class Model(val height: Int, val width: Int){
     StatementParser.parseStatements(fContents) match{
       case Left(ss) => 
         TypeChecker(ss) match{
-          case Ok(te) => 
-            statements = ss; typeEnv = te; // println(typeEnv); 
-            update1()
+          case Ok(te) => statements = ss; typeEnv = te; update1()
 
           case FailureR(err) => view.addInfo(s"Type error: $err")
-        }
-// IMPROVE: store type env in first case. 
+        } 
 
       case Right(msg) => 
         view.addInfo(s"Parse error: $msg"); println(s"Error!$msg")
@@ -56,17 +53,15 @@ class Model(val height: Int, val width: Int){
     }
 
   /** Update cells based on statements.  Called by view. */
-  def update() = {
-    clearCells(); view.clearInfo(); update1()
-  }
+  def update() = { clearCells(); view.clearInfo(); update1() }
 
   /** Update cells based on statements.  Called internally. */
   private def update1() = {
+    // println("New environment")
     val env = new Environment(
-      cells, calculated, height, width, typeEnv, TypeChecker)
+      cells, calculated, height, width, typeEnv)
     // Iterate over statements, unless an error is found.
     def handleError(err: ErrorValue) = {view.addInfo(err.msg)}
-    //while(ok && iter.hasNext) ok = iter.next().perform(env, handleError)
     Statement.performAll(statements, env, handleError)
     view.redisplay()
   }

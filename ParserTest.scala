@@ -29,11 +29,11 @@ object ParserTest{
   
   // Parse and print the extent
   def pp(st: String) = {
-    val e = parseAll(expr, st); println(e)
+    val e = parseAll(expr, st); println(s"$e.")
     println("\""+e.getExtent.asString+"\""); checkExtent(e.getExtent, st)
   }
 
-  val env = new Environment(null, null, 0, 0, null, null)
+  val env = new Environment(null, null, 0, 0, null)
 
   // Parse and evaluate st, and check the extent
   def pe(st: String) = {
@@ -49,6 +49,8 @@ object ParserTest{
   /** Tests of expression parsers. */
   def expressions = {
     assert(p("123") == IntExp(123)); assert(p(" ( -123 ) ") == IntExp(-123))
+    assert(pe("123.45") == FloatValue(123.45F))
+    assert(pe("-456.12") == FloatValue(-456.12F))
     assert(p("foo") == NameExp("foo")); assert(p(" ( foo ) ") == NameExp("foo"))
     assert(pe("foo").isInstanceOf[ErrorValue])
 
@@ -155,13 +157,9 @@ object ParserTest{
 
     assert(parseAll(statements, s"$dir1\n$dir2\n$vDec") == 
       List(dir1R, dir2R, vDecR) )
-    // println(statements(s"$dir1\n$dir2\n$vDec"))
-    // println(parseAll(statements, s"$dir1\n$dir2\n$vDec"))
     assert(parseAll(statements, s"$vDec;$dir1;$dir2") ==
       List(vDecR, dir1R, dir2R))
 
-    // println(parseAll(params, "n : Int"))
-    // println(parseAll(statement, "def square(n: Int) = n*n"))
     assert(ps("def square(n: Int): Int = n*n") ==
       FunctionDeclaration("square", List(("n",IntType)), IntType,
         BinOp(NameExp("n"), "*", NameExp("n")) ))
@@ -169,12 +167,8 @@ object ParserTest{
     assert(ps("def add(x: Int, y: Int) : Int = x+y") == 
       FunctionDeclaration("add", List(("x", IntType), ("y", IntType)), IntType,
         BinOp(NameExp("x"), "+", NameExp("y")) ))
+    assert(ps("val c = #B \n") == ValueDeclaration("c", ColumnExp("B")))
 
-    // println(parseWith(statement, "def add(x: Int, y: Int) = x+y"))
-
-    // println(ps("def square(n) = n*n"))
-
-    // println(parseAll(statements, s"$vDec\n$dir2\n$dir1\n"))
     println("Statement tests done")
   }
 

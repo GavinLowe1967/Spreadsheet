@@ -1,8 +1,6 @@
 package spreadsheet
 
-// import scala.collection.immutable.{Map,HashMap}
-
-object TypeChecker extends TypeCheckerT{
+object TypeChecker{
   import TypeVar.TypeID // Type variables (Ints)
   import NameExp.Name // Names of identifiers (Strings)
 
@@ -12,12 +10,21 @@ object TypeChecker extends TypeCheckerT{
   /** Get a new type identifier. */
   private def nextTypeID() : TypeID = { next += 1; next-1 }
 
+  import EvaluationTypeChecker.mkFailure
+
+  /** Replace tId by t in typeEnv, if it is consistent with the constraints in
+    * typeEnv. Otherwise return fail. */
+  private def replaceInTypeEnv(
+    typeEnv: TypeEnv, tId: TypeID, t: TypeT, fail: => FailureR)
+      : Reply[(TypeEnv, TypeT)] =
+    if(typeEnv(tId).satisfiedBy(t)) Ok(typeEnv.replace(tId, t), t)
+    else fail
+
   /** Try to unify t1 and t2.  If successful, return updated typeEnv and unified
     * type.  t2 is expected to be the "expected" type, and t1 the type that is
     * being matched against it. */
   def unify(typeEnv: TypeEnv, t1: TypeT, t2: TypeT): Reply[(TypeEnv, TypeT)] = {
-    def fail = FailureR(
-      s"Expected "+typeEnv.showType(t2)+", found "+typeEnv.showType(t1))
+    def fail = mkFailure(typeEnv, t1, t2)
     if(t1 == t2) Ok(typeEnv, t1)
     else (t1,t2) match{
       case (TypeVar(tId1), TypeVar(tId2)) => // Both TypeVars: find intersection
@@ -33,12 +40,10 @@ object TypeChecker extends TypeCheckerT{
         }
 
       case (TypeVar(tId1), _) => // t2 a concrete type.  Try to replace t1 by t2
-        if(typeEnv(tId1).satisfiedBy(t2)) Ok(typeEnv.replace(tId1, t2), t2)
-        else fail
+        replaceInTypeEnv(typeEnv, tId1, t2, fail)
         
       case ( _, TypeVar(tId2)) =>           // Try to replace t2 by t1
-        if(typeEnv(tId2).satisfiedBy(t1)) Ok(typeEnv.replace(tId2, t1), t1)
-        else fail
+        replaceInTypeEnv(typeEnv, tId2, t1, fail)
 
       case (_,_) => fail
     }
@@ -47,22 +52,20 @@ object TypeChecker extends TypeCheckerT{
   /** Try to unify t1 and t2, at runtime.  Do not update any typing in cells
     * (within typeEnv.replace).  Pre: t1 is a concrete type (but t2 might be a
     * TypeVar). */
-  def unifyEvalTime(typeEnv: TypeEnv, t1: TypeT, t2: TypeT)
-      : Reply[(TypeEnv, TypeT)] = {
-    def fail = FailureR(
-      s"Expected "+typeEnv.showType(t2)+", found "+typeEnv.showType(t1))
-    require(!t1.isInstanceOf[TypeVar])
-    t2 match{
-      case TypeVar(tId2) => 
-        if(typeEnv(tId2).satisfiedBy(t1)) 
-          Ok(typeEnv.replace(tId2, t1, true), t1)
-        else fail
+  // def unifyEvalTime(typeEnv: TypeEnv, t1: TypeT, t2: TypeT)
+  //     : Reply[(TypeEnv, TypeT)] = {
+  //   def fail = FailureR(
+  //     s"Expected "+typeEnv.showType(t2)+", found "+typeEnv.showType(t1))
+  //   require(!t1.isInstanceOf[TypeVar])
+  //   t2 match{
+  //     case TypeVar(tId2) => replaceInTypeEnv(typeEnv, tId2, t1, fail)
+  //       // if(typeEnv(tId2).satisfiedBy(t1)) 
+  //       //   Ok(typeEnv.replaceEvalTime(tId2, t1), t1)
+  //       // else fail
 
-      case _ => if(t1 == t2) Ok(typeEnv, t2) else fail
-    }
-  }
-
-  // IMPROVE: avoid repeated code!
+  //     case _ => if(t1 == t2) Ok(typeEnv, t2) else fail
+  //   }
+  // }
 
   /** Make a FailureR: expected `eType` found `fType` in `exp`. */
   private def mkErr(eType: TypeT, fType: TypeT, exp: Exp) = {
@@ -71,11 +74,7 @@ object TypeChecker extends TypeCheckerT{
       s"\n\tin $source")
   }
 
-  /** Types that can appear in a cell. */
-  val CellTypes = List(IntType, FloatType, StringType, BoolType)
-
-  /** Numeric types. */
-  val NumTypes = List(IntType, FloatType) 
+  import TypeT.NumTypes // = List(IntType, FloatType) 
 
   /** Contents of the result of a successful call to typeCheck. */
   type TypeCheckRes = (TypeEnv,TypeT)
@@ -89,6 +88,7 @@ object TypeChecker extends TypeCheckerT{
     }
 
     case IntExp(v) => Ok((typeEnv,IntType))
+    case FloatExp(v) => Ok((typeEnv,FloatType))
     case BoolExp(v) => Ok((typeEnv,BoolType))
     case StringExp(st) => Ok((typeEnv,StringType))
     case RowExp(row) => Ok((typeEnv, RowType))
@@ -133,9 +133,7 @@ object TypeChecker extends TypeCheckerT{
             // Associate type identifier with this read.
             val typeId = nextTypeID(); val typeVar = TypeVar(typeId); 
             ce.setType(typeVar)
-            // println(s"$ce -> $typeId") 
             Ok((typeEnv.addCellConstraint(typeId, ce), typeVar))
-            // Ok((typeEnv + (typeId, MemberOf(CellTypes)), typeVar))
           }
         })
       }).lift(exp)
@@ -151,6 +149,7 @@ object TypeChecker extends TypeCheckerT{
     case ListLiteral(elems) => 
       require(elems.nonEmpty)                                 // IMPROVE
       typeCheckListSingleType(typeEnv, elems).mapOrLift(exp, { case (te1, t) =>
+        // ll.setUnderlyingType(t); 
         Ok((te1, ListType(t)))
       })
 
@@ -221,7 +220,7 @@ object TypeChecker extends TypeCheckerT{
       case Directive(cell, expr) => 
         typeCheck(typeEnv, expr).map{ case (te1, t) => 
           typeCheck(te1, cell).map{ case(te2, TypeVar(tId)) => 
-            assert(te2(tId) == MemberOf(CellTypes))
+            assert(te2(tId) == MemberOf(TypeT.CellTypes))
             // Unify t with above constraint: expr should give a cell value
             unify(te2, t, TypeVar(tId)).map{ case (te3, tt) => 
               Ok(te3) 

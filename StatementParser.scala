@@ -77,7 +77,7 @@ object ExpParser{
   /** A parser for expressions that use no infix operators outside of
     * parentheses: atomic terms and parenthesised expressions. */
   private def factor: Parser[Exp] = withExtent( 
-    int > IntExp
+    number // int > IntExp
     // Name or application of named function 
     | name1 ~~ params > {
       case (n, None) => n
@@ -86,11 +86,43 @@ object ExpParser{
     // FIXME: allow more general definitions of the function.  
 //    | name > NameExp 
     | cell1
-    | lit("#") ~> hashTerm  
+    | lit("#") ~~ hashTerm > { _._2 }  
     | inParens(expr) // Note: sets extent to include parentheses.
     | list
     | block
   )
+
+  /** A parser for an Int or Float. */
+  private def number: Parser[Exp] = {
+    /* Convert `ds` to an Int. */
+    def mkInt(ds: List[Char]): Int = {
+      var ds1 = ds; var x = 0
+      while(ds1.nonEmpty){ x = 10*x+(ds1.head-'0'); ds1 = ds1.tail }
+      x
+    }
+    /* Convert `ds` to the Float represented by `0.ds`. */
+    def mkFloat(ds: List[Char]): Float = {
+      var ds1 = ds.reverse; var x = 0.0F
+      while(ds1.nonEmpty){ x = (x+ds1.head-'0')/10.0F; ds1 = ds1.tail }
+      x
+    }
+    // Parser for repeated digits
+    val digits: Parser[List[Char]] = 
+      spot(_.isDigit) ~~ repeat1(spot(_.isDigit)) > toPair(_::_)
+    // Parser for positive numbers
+    val posNum: Parser[Exp] = 
+      digits ~~ opt(lit(".") ~~ digits) > { 
+        case (intPart, None) => IntExp(mkInt(intPart))
+        case (intPart, Some((_,fracPart))) => 
+          FloatExp(mkInt(intPart) + mkFloat(fracPart))
+      }
+    // Main parser: allow leading "-"
+    lit("-") ~~ posNum > { 
+      case (_,IntExp(n)) => IntExp(-n); case (_,FloatExp(x)) => FloatExp(-x) 
+    } |
+    posNum
+  }
+
 
   import StatementParser.{listOf,declaration,separator}
 
@@ -111,7 +143,7 @@ object ExpParser{
   /** Parse a subexpression folling a "#". */
   private def hashTerm: Parser[Exp] = (
     int > RowExp
-    | ((colName > ColumnExp) ~ opt(int)) > 
+    | ((colName > ColumnExp) ~~ opt(int)) > 
       { case (ce,None) => ce; case (ce,Some(r)) => CellExp(ce, RowExp(r)) }
   )
 
@@ -128,12 +160,15 @@ object ExpParser{
 
   /** Parse the name of a column: a non-empty sequence of uppercase letters.*/
   private def colName: Parser[String] = 
-    spot(_.isUpper) ~ repeat1(spot(_.isUpper)) > 
+    spot(_.isUpper) ~~ repeat1(spot(_.isUpper)) > 
       toPair(_::_) > (_.mkString)
 
   /** Parser for a value entered in a cell by the user. */
   private def userValue: Parser[Cell] = (
-    (int <~ atEnd) > IntValue 
+    // (int <~ atEnd) > IntValue 
+    (number <~ atEnd) > { 
+      case IntExp(n) => IntValue(n); case FloatExp(x) => FloatValue(x) 
+    }
     | all > StringValue
   )
 
@@ -157,6 +192,7 @@ object StatementParser{
   /** A parser for a type. */
   def typeP: Parser[TypeT] = upperName > {
     case "Int" => IntType
+    case "Float" => FloatType
     case "Boolean" => BoolType
     case "Row" => RowType
     case "Column" => ColumnType

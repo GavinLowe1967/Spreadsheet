@@ -53,7 +53,7 @@ case class FunctionApp(f: Exp, args: List[Exp]) extends Exp{
               case e: ErrorValue => error = liftError(e)
               case v => 
                 if(v.isOfType(t)) env2.update(p, v) 
-                else error = mkTypeError(t.asString, v) 
+                else sys.error(mkErr(t.asString, v)) 
             }
           }
           if(error != null) error 
@@ -78,7 +78,7 @@ case class FunctionApp(f: Exp, args: List[Exp]) extends Exp{
               case e: ErrorValue => error = liftError(e)
               case v =>
                 if(v.isOfType(t)) vs ::= v
-                else error = mkTypeError(t.asString, v)
+                else sys.error(mkErr(t.asString, v))
             }
           }
           if(error != null) error 

@@ -20,6 +20,11 @@ trait TypeT{
   def isEqType: Boolean
 }
 
+object TypeT{
+  val CellTypes = List(IntType, FloatType, StringType, BoolType)
+  val NumTypes = List(IntType, FloatType) 
+}
+
 // ==================================================================
 
 /** A type variable. */
@@ -52,37 +57,31 @@ trait EqType extends TypeT{
 case object IntType extends EqType {
   def asString = "Int"
   def typeVars = List()
-  //def isEqType = true
 }
 
 case object FloatType extends EqType{
   def asString = "Float"
   def typeVars = List()
-  //def isEqType = true
 }
 
 case object BoolType extends EqType{
   def asString = "Boolean"
   def typeVars = List()
-  // def isEqType = true
 }
 
 case object StringType extends EqType{
   def asString = "String"
   def typeVars = List()
-  // def isEqType = true
 }
 
 case object RowType extends EqType{
   def asString = "Row"
   def typeVars = List()
-  // def isEqType = true
 }
 
 case object ColumnType extends EqType{
   def asString = "Column"
   def typeVars = List()
-  // def isEqType = true
 }
 
 // ==================================================================
