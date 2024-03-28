@@ -4,35 +4,32 @@ Language
 --------
 
 - Clear boxes on reload
-
 - EqTypeConstraint.intersection -- test **
-- use typeEnv when reading cells -- done, test with Floats
-- TypeVar.isEqType
+- parser for bools in spreadsheet
 
 Current: 
 
-- Parser for Floats (script and cells), and eval. -- done
--- Change FloatValue to Cell -- done
-
--- Any type errors should not now arise in Exp.eval -- check this
--- Tidy up BinOp
-
-- Parser for strings in script
-- Allow Bool in cells -- done
+- type checking for lists, from left-to-right
+- At present, in eval, [] gets underlying type AnyType.  This should be taken
+  from the type checker.  Actually, can we get rid of underlying? 
 
 - polymorphism (def id[A](x: A): A = x)
 - type classes (def equal[A <: Eq](x: A, y: A): Boolean = x == y)
+- give polymorphic types to built-in functions, head, tail ( ParserTest, ~line 122)
+
 - Num type class
-- empty list
+
+Lists:
+-  null
+- [_ .. _]
+- list comprehensions
+
+- Parser for strings in script. 
+
+- 
 
 - Do we need Substitution?  Or just Reply from it?  We do use reMap
 
-
-Lists:
--  ::, null
-- [_ .. _]
-- isEqType
-- Do tests with types
 
 FunctionType.isSubclassOf
 
@@ -45,7 +42,6 @@ Function declarations and applications
 
 
 Improve parse error messages.
-* Comments.
 
 * In parse errors, print relevant line, highlighting position; trim excessive
   text - done
@@ -72,6 +68,22 @@ Code
 
 ===================================== DONE
 
+
+- empty list
+All commented out tests in ParserTest, chck fail typechecking
+
+- TypeVar.isEqType
+- :: -- add eval -- done
+* Comments.
+
+- Allow Bool in cells -- done
+-- Any type errors should not now arise in Exp.eval -- check this
+-- Tidy up BinOp -- done
+- evalExpectError
+
+- Parser for Floats (script and cells), and eval. -- done
+-- Change FloatValue to Cell -- done
+- use typeEnv when reading cells -- done, test with Floats
 error with "val column = #B" -- fixed
 -- Move def of CellTypes -- done
 -- Environment.checkType, update typeEnv -- done

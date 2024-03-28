@@ -17,7 +17,7 @@ trait TypeT{
   /** The type variables included in this type. */
   def typeVars: List[TypeID]
 
-  def isEqType: Boolean
+//  def isEqType: Boolean
 }
 
 object TypeT{
@@ -33,7 +33,7 @@ case class TypeVar(tv: TypeID) extends TypeT{
 
   def typeVars = List(tv)
 
-  def isEqType = ???                  // FIXME
+//  def isEqType = ???                  // FIXME
 }
 
 object TypeVar{
@@ -51,7 +51,7 @@ object TypeVar{
 
 /** A marker trait for atomic equality types. */
 trait EqType extends TypeT{
-  def isEqType = true
+//  def isEqType = true
 }
 
 case object IntType extends EqType {
@@ -98,7 +98,7 @@ case class ListType(underlying: TypeT) extends TypeT{
 
   def typeVars = underlying.typeVars
 
-  def isEqType = ???                   // FIXME
+//  def isEqType = underlying.isEqType
 }
 
 // ==================================================================
@@ -112,5 +112,5 @@ case class FunctionType(domain: List[TypeT], range: TypeT) extends TypeT{
 
   def typeVars = domain.flatMap(_.typeVars) ++ range.typeVars
 
-  def isEqType = false
+//  def isEqType = false
 }

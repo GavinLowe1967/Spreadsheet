@@ -16,11 +16,16 @@ object ExpParser{
     }
   }
 
-  /** Binary operators, in increasing order of precedence.  */
+  /** Representations of left- or right-associativity for operators. */
+  private val L = 0; private val R = 1
+
+  /** Binary operators, in increasing order of precedence.  Each is tagged with
+    * L or R to indicate associativity. */
   private val operators = Array(
-    List("||"), List("&&"), // 2-3 in Haskell
-    List("==", "!=", "<", "<=", ">", ">="), // 4
-    List("+", "-"), List("*", "/")  // 6-7
+    (List("||"), L), (List("&&"), L), // 2-3 in Haskell  *** OR R?
+    (List("==", "!=", "<", "<=", ">", ">="), L), // 4
+    (List("::"), R), // 5
+    (List("+", "-"), L), (List("*", "/"), L)  // 6-7
   )
 
   /** A parser for an "if" expression. */
@@ -42,23 +47,31 @@ object ExpParser{
       // Parser for an "op term" subexpression, where term uses operators of
       // higher precedence.  Note: consumes white space at the start.
       def p0(op: String) = consumeWhite ~> lit(op) ~ infix(fixity+1)
+      val (ops,dir) = operators(fixity)
       // Parser for all operators of this precedence. 
-      val p1 = | ( for(op <- operators(fixity)) yield p0(op) )
+      val p1 = | ( for(op <- ops) yield p0(op) )
       // And repeat
-      infix(fixity+1) ~~ repeat1(p1) > { toPair(mkBin) }
+      infix(fixity+1) ~~ repeat1(p1) > { 
+        toPair(if(dir == L) mkBinL else mkBinR) 
+      }
       // Note: above is designed not to consume trailing white space. 
     }
   )
 
   /** Convert f and ofs into an Exp, by associating to the left. */
-  private def mkBin(f: Exp, ofs: List[(String, Exp)]): Exp = 
+  private def mkBinL(f: Exp, ofs: List[(String, Exp)]): Exp = 
     if(ofs.isEmpty) f 
     else{ 
       val (op, f1) = ofs.head; val term1 = BinOp(f, op, f1)
       // Set the extent of the first term -- done by BinOp constructor.
       // term1.setExtent(f.getExtent.until(f1.getExtent))
-      mkBin(term1, ofs.tail)
+      mkBinL(term1, ofs.tail)
     }
+
+  /** Convert f and ofs into an Exp, by associating to the right. */
+  private def mkBinR(f: Exp, ofs: List[(String, Exp)]): Exp = 
+    if(ofs.isEmpty) f 
+    else{ val (op,f1) = ofs.head; BinOp(f, op, mkBinR(f1, ofs.tail)) }
 
   /** Parser for the arguments of a function, with no preceding newline.
     * Note: should be sequenced to its left-hand argument using `~~`. */

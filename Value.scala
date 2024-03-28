@@ -122,6 +122,8 @@ object ColumnValue{
 
 /** A List value. */
 case class ListValue(underlying: TypeT, elems: List[Value]) extends Value{
+  assert(elems.forall(v => ! v.isInstanceOf[ErrorValue]))
+
   protected val theType = ListType(underlying) // FIXME
 
   override def forError = 

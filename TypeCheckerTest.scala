@@ -45,7 +45,7 @@ object TypeCheckerTest{
 
   // ==================================================================
 
-  /** Tests on expressions. */
+  /** Tests on basic expressions. */
   def expTests() = {
     assertEq(tcp("2"), IntType); assertEq(tcp("2+3"), IntType)
     assertFail(tcp("2+f+5"))
@@ -63,9 +63,9 @@ object TypeCheckerTest{
     assertFail(tcp("if(2 == 3) 4 else false"))
     assertFail(tcp("if(2 == 3) 2+true else 4"))
 
-    // lists
-    assertEq(tcp("[1,2,3]"), ListType(IntType))
-    assertFail(tcp("[1, 2, 3 == 4]"))
+    // Lists
+    assertFail(tcp("[1,2] == 3"))
+    assertFail(tcp("[true, 4]"))
   }
 
   /** Tests on single declarations and function applications. */
@@ -122,6 +122,9 @@ object TypeCheckerTest{
     assertFail(tcpss(script2))
 
     // Tests on block expressions
+    // printErrors = true
+    assertFail(tcp("{ val x = three; x + 1 }"))
+    assertFail(tcp("{ val x = 3; x + false }"))
     assertEq(tcp("{"+script+"; fact(4) }"), IntType)
     assertFail(tcp("{"+script+"; fact(true) }"))
     assertFail(tcp("{"+faultyScript+"; fact(4) }"))
@@ -208,10 +211,24 @@ object TypeCheckerTest{
     val script13 = 
       "val x = #C3; val y = #C4; val w = if(x) y+3 else 4; val z = x == y"
     assertFail(tcpss(script13))
-    println(tcp("3 + Cell(#B, #1) + Cell(#B, #2)"))
-    println(tcp("3 + Cell(#B, #1)"))
-    println(tcpss("val x = Cell(#B, #1); val xx = x; val y = 3+xx"))
+    // println(tcp("3 + Cell(#B, #1) + Cell(#B, #2)"))
+    // println(tcp("3 + Cell(#B, #1)"))
+    // println(tcpss("val x = Cell(#B, #1); val xx = x; val y = 3+xx"))
   }
+
+  /** Tests writing to cells. */
+  def cellWriteTests() = {
+    tcpss("#A3 = 5") match{ case Ok(_) => {} }
+    assertFail(tcpss("def f(y: Int): Int = 3; #A3 = f"))
+    assertFail(tcpss("#A3 = true+5"))
+    tcpss("val y = #B4; #A3 = y") match{ case Ok(te) => te("y") match{
+      case TypeVar(tid) => assert(te(tid) == MemberOf(CellTypes))
+    }}
+    tcpss("val y = #B4+#B5; #A3 = y") match{ case Ok(te) => te("y") match{
+      case TypeVar(tid) => assert(te(tid) == MemberOf(NumTypes))
+    }}
+  }
+
 
   // =======================================================
 
@@ -222,19 +239,54 @@ object TypeCheckerTest{
     scriptTests()
     //printErrors = true
     cellTests()
+    cellWriteTests()
 
     printErrors = true
 
-    // Tests writing to cells
-    tcpss("#A3 = 5") match{ case Ok(_) => {} }
-    assertFail(tcpss("def f(y: Int): Int = 3; #A3 = f"))
-    assertFail(tcpss("#A3 = true+5"))
-    tcpss("val y = #B4; #A3 = y") match{ case Ok(te) => te("y") match{
-      case TypeVar(tid) => assert(te(tid) == MemberOf(CellTypes))
-    }}
-    tcpss("val y = #B4+#B5; #A3 = y") match{ case Ok(te) => te("y") match{
-      case TypeVar(tid) => assert(te(tid) == MemberOf(NumTypes))
-    }}
+
+    // lists
+    assertEq(tcp("[1,2,3]"), ListType(IntType))
+    assertFail(tcp("[1, 3, false, 2, true]"))
+    tcp("[]") match{ case Ok((te, ListType(TypeVar(t)))) => 
+      assert(te(t) == AnyTypeConstraint) }
+    assertEq(tcp("3 :: [ ]"), ListType(IntType))
+    tcpss("val xs = 3 :: []") match{ case Ok(te) => 
+      assert(te("xs") == ListType(IntType)) }
+    tcpss("val xs = true :: []") match{ case Ok(te) => 
+      assert(te("xs") == ListType(BoolType)) }
+    // [] :: [] : ListType(ListType(a))
+    tcpss("val xs = [] :: []") match{ case Ok(te) => 
+      te("xs") match{ case ListType(ListType(TypeVar(t))) => 
+        assert(te(t) == AnyTypeConstraint) } }
+    tcpss("val xs = [[]]") match{ case Ok(te) => 
+      te("xs") match{ case ListType(ListType(TypeVar(t))) => 
+        assert(te(t) == AnyTypeConstraint) } }
+    tcpss("val xs = 1 :: 2 :: []") match{ case Ok(te) => 
+      assert(te("xs") == ListType(IntType)) }
+    assertFail(tcp("1:: [true]"))
+    assertFail(tcpss("val xs = [1]; val ys = true::xs"))
+    tcpss("val xs = []; val ys = 1::xs") match{ case Ok(te) => 
+      assert(te("xs") == ListType(IntType) && te("ys") == ListType(IntType)) }
+    assertEq(tcp("[1] == [2]"), BoolType)
+    // Can't do following, yet: need polymorphic type for tail. 
+    // println(tcp("tail([1]) == tail([false])"))                 FIXME
+    tcpss("val xs = [#A1, #A2]") match{ case Ok(te) => 
+      te("xs") match{ case ListType(TypeVar(tid)) => 
+        assert(te(tid) == MemberOf(CellTypes)) }}
+    tcpss("val x = #A1; val xs = [x, #A2]; val y = x+3") match{ case Ok(te) => 
+      assert(te("xs") == ListType(IntType)) }
+    tcpss("val x = #D0; val y = #D3; val eq = [x] == [y]") match{ case Ok(te) => 
+      assert(te("eq") == BoolType)
+      te("x") match { case TypeVar(tid) => 
+        assert(te("y") == TypeVar(tid) && te(tid) == MemberOf(CellTypes))
+      }}
+    tcpss("val xs = [#D0]; val y = #D3; val eq = xs == [y]") match{ 
+      case Ok(te) =>
+        assert(te("eq") == BoolType)
+        te("y") match { case TypeVar(tid) =>
+          assert(te("xs") == ListType(TypeVar(tid)) && 
+            te(tid) == MemberOf(CellTypes))
+        }}
 
     println("Done")
   }

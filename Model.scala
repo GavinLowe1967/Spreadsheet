@@ -29,10 +29,24 @@ class Model(val height: Int, val width: Int){
     filename = fname; reloadFile()
   }
 
+  /** Remove comments from st. */
+  private def removeComments(st: String): String = {
+    var i = 0; val sb = new StringBuilder; val len = st.length
+    while(i+1 < len){
+      if(st(i) == '/' && st(i+1) == '/'){
+        // advance to end of line
+        i += 2; while(i < len && st(i) != '\n') i += 1
+      }
+      else{ sb += st(i); i += 1 }
+    }
+    // println(sb.toString)
+    sb.toString
+  }
+
   /** Reload statements from the saved filename. */
   def reloadFile() = {
     clearCells(); view.clearInfo()
-    val fContents = scala.io.Source.fromFile(filename).mkString
+    val fContents = removeComments(scala.io.Source.fromFile(filename).mkString)
     StatementParser.parseStatements(fContents) match{
       case Left(ss) => 
         TypeChecker(ss) match{

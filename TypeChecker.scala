@@ -17,18 +17,24 @@ object TypeChecker{
   private def replaceInTypeEnv(
     typeEnv: TypeEnv, tId: TypeID, t: TypeT, fail: => FailureR)
       : Reply[(TypeEnv, TypeT)] =
-    if(typeEnv(tId).satisfiedBy(t)) Ok(typeEnv.replace(tId, t), t)
+    if(typeEnv(tId).satisfiedBy(typeEnv, t)) Ok(typeEnv.replace(tId, t), t)
     else fail
+
+  private val idT = (t: TypeT) => t
 
   /** Try to unify t1 and t2.  If successful, return updated typeEnv and unified
     * type.  t2 is expected to be the "expected" type, and t1 the type that is
-    * being matched against it. */
-  def unify(typeEnv: TypeEnv, t1: TypeT, t2: TypeT): Reply[(TypeEnv, TypeT)] = {
-    def fail = mkFailure(typeEnv, t1, t2)
+    * being matched against it. 
+    * @param f a function that transforms the way types are reported in errors. 
+    */
+  private
+  def unify(typeEnv: TypeEnv, t1: TypeT, t2: TypeT, f: TypeT => TypeT = idT)
+      : Reply[(TypeEnv, TypeT)] = {
+    def fail = mkFailure(typeEnv, f(t1), f(t2))
     if(t1 == t2) Ok(typeEnv, t1)
     else (t1,t2) match{
       case (TypeVar(tId1), TypeVar(tId2)) => // Both TypeVars: find intersection
-        typeEnv(tId1).intersection(typeEnv(tId2)) match{
+        typeEnv(tId1).intersection(typeEnv, typeEnv(tId2)) match{
           case EmptyTypeConstraint =>  fail
           case SingletonTypeConstraint(t) =>
             val newTypeEnv = typeEnv.replace(tId1, t).replace(tId2, t)
@@ -44,6 +50,15 @@ object TypeChecker{
         
       case ( _, TypeVar(tId2)) =>           // Try to replace t2 by t1
         replaceInTypeEnv(typeEnv, tId2, t1, fail)
+
+      case (ListType(tt1), ListType(tt2)) => 
+        unify(typeEnv, tt1, tt2, ListType(_)).map{ 
+          case (t2, tt) => Ok((t2, ListType(tt))) 
+        }
+        // Note: if the recursive call fails, the error message talks about
+        // ListType(t1) and ListType(t2).
+
+                                 // FIXME: similar case for functions
 
       case (_,_) => fail
     }
@@ -95,31 +110,38 @@ object TypeChecker{
     case ColumnExp(column) => Ok((typeEnv, ColumnType))
 
     case BinOp(left, op, right) =>
+      def idT(t: TypeT) = t
       // Create a triple: (1) an updated type environment; (2) the expected
-      // type of the arguments; (3) a function to create the type of the
-      // result from the type of the arguments.  This represents that op has
-      // type (t,t) => mkRes(t), where te captures type constraints on t. 
-      val (te, t, mkRes) = op match{
+      // type of the first argument; (3) a function to create the expected
+      // type of the second argument from the type of the first argument; (4)
+      // a function to create the type of the result from the type of the
+      // second argument.  This represents that op has type (t,t) => mkRes(t),
+      // where te captures type constraints on t.
+      val (te, t, mk2nd, mkRes) = op match{
         case "+" | "-" | "*" | "/" =>   // Num a => (a,a) -> a
           val typeId = nextTypeID()
           val te = typeEnv + (typeId, MemberOf(NumTypes))
-          (te, TypeVar(typeId), (t1: TypeT) => t1)
+          (te, TypeVar(typeId), idT _, (t1: TypeT) => t1)
         case "==" | "!=" =>                    // Eq a => (a,a) -> Boolean
           val typeId = nextTypeID()
           val te = typeEnv + (typeId, EqTypeConstraint)
-          (te, TypeVar(typeId), (_: TypeT) => BoolType)
+          (te, TypeVar(typeId), idT _, (_: TypeT) => BoolType)
         case "&&" | "||" =>             // (BoolType, BoolType) -> BoolType
-          (typeEnv, BoolType, (_:TypeT) => BoolType)
+          (typeEnv, BoolType, idT _, (_:TypeT) => BoolType)
         case "<=" | "<" | ">=" | ">" => // Num a => (a,a) -> a
           val typeId = nextTypeID()
           val te = typeEnv + (typeId, MemberOf(NumTypes)) 
-          (te, TypeVar(typeId), (_: TypeT) => BoolType)
+          (te, TypeVar(typeId), idT _, (_: TypeT) => BoolType)
+        case "::" =>  //  (a, ListType(a)) => ListType(a)
+          val typeId = nextTypeID()
+          val te = typeEnv + (typeId, AnyTypeConstraint)
+          (te, TypeVar(typeId), ListType(_), idT _)
       }
       // Below t is the expected type of args; tl is the unification of t with
       // the type of left; tr is the unification of tl with the type of r; and
       // mkRes(tr) is the type of the result.
       typeCheckUnify(te, left, t).map{ case (te2, tl) =>
-        typeCheckUnify(te2, right, tl).map{ case (te3, tr) => 
+        typeCheckUnify(te2, right, mk2nd(tl)).map{ case (te3, tr) => 
           Ok((te3, mkRes(tr)))
         }
       }.lift(exp)
@@ -147,11 +169,18 @@ object TypeChecker{
       }.lift(exp)
 
     case ListLiteral(elems) => 
-      require(elems.nonEmpty)                                 // IMPROVE
-      typeCheckListSingleType(typeEnv, elems).mapOrLift(exp, { case (te1, t) =>
-        // ll.setUnderlyingType(t); 
-        Ok((te1, ListType(t)))
-      })
+      if(elems.isEmpty){
+        // Associate type identifier with this list.
+        val typeId = nextTypeID()
+        Ok((typeEnv + (typeId, AnyTypeConstraint), ListType(TypeVar(typeId))))
+      }
+      else typeCheck(typeEnv, elems.head).map{ case (te1, t1) =>
+        typeCheckListExpectType(te1, elems.tail, t1).mapOrLift(exp, {
+          case (te1, t) => Ok((te1, ListType(t)))
+        })
+      }
+        // typeCheckListSingleType(typeEnv, elems).mapOrLift(exp, { case (te1, t) =>
+          // ll.setUnderlyingType(t);
 
     case FunctionApp(f, args) => 
       typeCheck(typeEnv, f).map{ case (te1, ff) => 
@@ -184,10 +213,16 @@ object TypeChecker{
       unify(te1, t, eType).lift(exp, true) // add line number here
     }
 
-  /** Typecheck exps, expecting each element to have the same type. */
-  private def typeCheckListSingleType(typeEnv: TypeEnv, exps: List[Exp])
-      : Reply[(TypeEnv, TypeT)] = {
-    assert(exps.nonEmpty)                         // IMPROVE
+  /** Typecheck exps, expecting each element to have the same type. 
+    * Pre: exps is non-empty. */
+  // private def typeCheckListSingleType(typeEnv: TypeEnv, exps: List[Exp])
+  //     : Reply[(TypeEnv, TypeT)] = {
+  //   require(exps.nonEmpty)         
+  //   typeCheck(typeEnv, exps.head).map{ case (te1, t1) =>
+  //     typeCheckListExpectType(te1, exps.tail, t1)
+  //   }
+  // }
+/*             
     val head = exps.head; val tail = exps.tail
     typeCheck(typeEnv, head).map{ case(te1, t1) =>
       if(tail.isEmpty) Ok((te1, t1))
@@ -196,7 +231,16 @@ object TypeChecker{
           unify(te2, t1, t2).lift(head, true)
         }
     }
-  }
+ */
+
+  /** Typecheck exps, unifying all their types with t. */
+  private 
+  def typeCheckListExpectType(typeEnv: TypeEnv, exps: List[Exp], t: TypeT)
+      : Reply[(TypeEnv, TypeT)] = 
+    if(exps.isEmpty) Ok((typeEnv, t))
+    else typeCheckUnify(typeEnv, exps.head, t).map{ case (te1,t1) =>
+      typeCheckListExpectType(te1, exps.tail, t1)
+    }
 
   /** Type check each element of es, unifying its type with the corresponding
     * element of ts. 

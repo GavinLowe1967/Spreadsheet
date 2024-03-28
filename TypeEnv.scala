@@ -60,6 +60,7 @@ object TypeEnv{
 
   /** An initial TypeEnv. */
   def apply() =
+// FIXME: add built in functions
     new TypeEnv(
       new NameMap, new Constraints, new CellReadMap, new Frame, List[Frame]())
 } 
@@ -82,7 +83,7 @@ class TypeEnv(
   private val cellReadMap: CellReadMap,
   private val frame: Frame,
   private val stack: List[Frame]
-){
+) extends TypeEnv0{
   /** The type associated with name. */
   def apply(name: Name) : TypeT = nameMap(name)
 

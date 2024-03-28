@@ -44,6 +44,7 @@ case class FailureR(err: String) extends Reply[Nothing]{
 import TypeVar.TypeID
 import Substitution.TypeMap
 
+/*
 /** Abstractly, a mapping from type variables to type expressions (TypeT), as
   * captured by map. 
   * @param map The mapping from identifiers of type variables to the 
@@ -112,6 +113,7 @@ class Substitution(private var map: TypeMap){
   }
 
 }
+ */
 
 object Substitution{
 
@@ -126,7 +128,7 @@ object Substitution{
 
 
   type TypeMap = HashMap[TypeID, TypeT]
-
+/*
   /** Testing. */
   def main(args: Array[String]) = {
     val sub = new Substitution(new TypeMap)
@@ -148,5 +150,5 @@ object Substitution{
 
     println("Done")
   }
-
+ */
 }
