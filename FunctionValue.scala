@@ -49,13 +49,13 @@ case class FunctionApp(f: Exp, args: List[Exp]) extends Exp{
           val ((p,t),arg) = iter.next()
           arg.eval(env) match{
             case e: ErrorValue => error = liftError(e)
-            case v => assert(v.isOfType(t)); env2.update(p, v)
+            case v => /*assert(v.isOfType(t));*/ env2.update(p, v)
           }
         }
         if(error != null) error
         else body.eval(env2) match{
           case err: ErrorValue => liftError(err)
-          case result => assert(result.isOfType(rt)); result
+          case result => /*assert(result.isOfType(rt));*/ result
         }
 
       case f: BuiltInFunction =>
@@ -69,13 +69,13 @@ case class FunctionApp(f: Exp, args: List[Exp]) extends Exp{
           val (t,arg) = iter.next()
           arg.eval(env) match{
             case e: ErrorValue => error = liftError(e)
-            case v => assert(v.isOfType(t)); vs ::= v
+            case v => /*assert(v.isOfType(t));*/ vs ::= v
           }
         }
         if(error != null) error
         else f(vs.reverse) match{
           case err: ErrorValue => liftError(err)
-          case result => assert(result.isOfType(f.rt)); result
+          case result => /*assert(result.isOfType(f.rt));*/ result
         }
    
       case err: ErrorValue => liftError(err)

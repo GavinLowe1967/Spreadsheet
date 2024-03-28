@@ -19,7 +19,7 @@ class Environment(
   private val nameMap: HashMap[String, Value] = Environment.initNameMap
 ){
   /** Get the value in cell (c,r). */
-  def getCell(c: Int, r: Int): Value = cells(c)(r).withSource(CellSource(c,r))
+  def getCell(c: Int, r: Int): Cell = cells(c)(r).withCellSource(CellSource(c,r))
 
   /** Set the value of cell(c,r) to v, and record that it was calculated. */
   def setCell(c: Int, r: Int, v: Cell) = {
@@ -34,7 +34,7 @@ class Environment(
 
   /** Check that v has type t. 
     * Called from CellExp.eval. */
-  def checkType(v: Value, t: TypeT): Reply[Unit] = {
+  def checkType(v: Cell, t: TypeT): Reply[Unit] = {
     EvaluationTypeChecker.unify(typeEnv, v.getType, t).map{ case(te,tt) =>
       // Note: the new type environment is stored, for use in subsequent steps
       // of the current evaluation.

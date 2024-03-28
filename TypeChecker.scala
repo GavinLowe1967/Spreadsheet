@@ -3,14 +3,14 @@ package spreadsheet
 object TypeChecker{
   import TypeVar.TypeID // Type variables (Ints)
   import NameExp.Name // Names of identifiers (Strings)
+  import TypeT.NumTypes // = List(IntType, FloatType) 
+  import EvaluationTypeChecker.mkFailure
 
   /** The next type identifier to use. */
   private var next = 0
 
   /** Get a new type identifier. */
   private def nextTypeID() : TypeID = { next += 1; next-1 }
-
-  import EvaluationTypeChecker.mkFailure
 
   /** Replace tId by t in typeEnv, if it is consistent with the constraints in
     * typeEnv. Otherwise return fail. */
@@ -64,32 +64,12 @@ object TypeChecker{
     }
   }
 
-  /** Try to unify t1 and t2, at runtime.  Do not update any typing in cells
-    * (within typeEnv.replace).  Pre: t1 is a concrete type (but t2 might be a
-    * TypeVar). */
-  // def unifyEvalTime(typeEnv: TypeEnv, t1: TypeT, t2: TypeT)
-  //     : Reply[(TypeEnv, TypeT)] = {
-  //   def fail = FailureR(
-  //     s"Expected "+typeEnv.showType(t2)+", found "+typeEnv.showType(t1))
-  //   require(!t1.isInstanceOf[TypeVar])
-  //   t2 match{
-  //     case TypeVar(tId2) => replaceInTypeEnv(typeEnv, tId2, t1, fail)
-  //       // if(typeEnv(tId2).satisfiedBy(t1)) 
-  //       //   Ok(typeEnv.replaceEvalTime(tId2, t1), t1)
-  //       // else fail
-
-  //     case _ => if(t1 == t2) Ok(typeEnv, t2) else fail
-  //   }
-  // }
-
   /** Make a FailureR: expected `eType` found `fType` in `exp`. */
   private def mkErr(eType: TypeT, fType: TypeT, exp: Exp) = {
     val source = exp.getExtent.asString
     FailureR(s"Expected ${eType.asString}, found "+fType.asString+
       s"\n\tin $source")
   }
-
-  import TypeT.NumTypes // = List(IntType, FloatType) 
 
   /** Contents of the result of a successful call to typeCheck. */
   type TypeCheckRes = (TypeEnv,TypeT)
@@ -175,12 +155,11 @@ object TypeChecker{
         Ok((typeEnv + (typeId, AnyTypeConstraint), ListType(TypeVar(typeId))))
       }
       else typeCheck(typeEnv, elems.head).map{ case (te1, t1) =>
-        typeCheckListExpectType(te1, elems.tail, t1).mapOrLift(exp, {
+        // Try to unify types of remainder with t1
+        typeCheckListSingleType(te1, elems.tail, t1).mapOrLift(exp, {
           case (te1, t) => Ok((te1, ListType(t)))
         })
       }
-        // typeCheckListSingleType(typeEnv, elems).mapOrLift(exp, { case (te1, t) =>
-          // ll.setUnderlyingType(t);
 
     case FunctionApp(f, args) => 
       typeCheck(typeEnv, f).map{ case (te1, ff) => 
@@ -213,33 +192,14 @@ object TypeChecker{
       unify(te1, t, eType).lift(exp, true) // add line number here
     }
 
-  /** Typecheck exps, expecting each element to have the same type. 
-    * Pre: exps is non-empty. */
-  // private def typeCheckListSingleType(typeEnv: TypeEnv, exps: List[Exp])
-  //     : Reply[(TypeEnv, TypeT)] = {
-  //   require(exps.nonEmpty)         
-  //   typeCheck(typeEnv, exps.head).map{ case (te1, t1) =>
-  //     typeCheckListExpectType(te1, exps.tail, t1)
-  //   }
-  // }
-/*             
-    val head = exps.head; val tail = exps.tail
-    typeCheck(typeEnv, head).map{ case(te1, t1) =>
-      if(tail.isEmpty) Ok((te1, t1))
-      else // typecheck tail, and unify with t1
-        typeCheckListSingleType(te1, tail).map{ case (te2, t2) =>
-          unify(te2, t1, t2).lift(head, true)
-        }
-    }
- */
-
   /** Typecheck exps, unifying all their types with t. */
   private 
-  def typeCheckListExpectType(typeEnv: TypeEnv, exps: List[Exp], t: TypeT)
+  def typeCheckListSingleType(typeEnv: TypeEnv, exps: List[Exp], t: TypeT)
       : Reply[(TypeEnv, TypeT)] = 
     if(exps.isEmpty) Ok((typeEnv, t))
     else typeCheckUnify(typeEnv, exps.head, t).map{ case (te1,t1) =>
-      typeCheckListExpectType(te1, exps.tail, t1)
+      // Try to unify types of remainder with t1
+      typeCheckListSingleType(te1, exps.tail, t1)
     }
 
   /** Type check each element of es, unifying its type with the corresponding
@@ -255,6 +215,9 @@ object TypeChecker{
       assert(t11 == ts.head) // ts.head should be concrete
       typeCheckListUnify(te2, es.tail, ts.tail)
     }
+
+  // ==================================================================
+  // Statements
 
   /** Typecheck the statement `stmt`. 
     * If successful, return the resulting type environment. */
@@ -286,7 +249,6 @@ object TypeChecker{
         typeCheckUnify(te1, body, rt).mapOrLift(stmt, { case (te3, tt) =>
           Ok(te3.endScope) // back to the old scope
         })
-
     } // end of "stmt match"
 
   /** Typecheck stmts in environment typeEnv. */
@@ -303,9 +265,6 @@ object TypeChecker{
                                           // TODO: check names disjoint
   }
 
-  def apply(stmts: List[Statement]): Reply[TypeEnv] =
-    typeCheckStmtList(TypeEnv(), stmts)
-
   /** Typecheck stmts in environment typeEnv.  All names of functions should
     * already be bound to the claimed types. */ 
   private def typeCheckStmtList1(typeEnv: TypeEnv, stmts: List[Statement])
@@ -314,6 +273,12 @@ object TypeChecker{
     else typeCheckStmt(typeEnv, stmts.head).map{ te1 => 
       typeCheckStmtList1(te1, stmts.tail)
     }
+
+  /** Typecheck stmts. */
+  def apply(stmts: List[Statement]): Reply[TypeEnv] =
+    typeCheckStmtList(TypeEnv(), stmts)
+
+  // ========= Testing
 
   val outer = this
 

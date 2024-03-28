@@ -9,13 +9,13 @@ Language
 
 Current: 
 
-- type checking for lists, from left-to-right
+- remove Value.getType, isOfType? -- needed in Cells only
 - At present, in eval, [] gets underlying type AnyType.  This should be taken
-  from the type checker.  Actually, can we get rid of underlying? 
+  from the type checker.  Actually, can we get rid of underlying?  -- removeed underlying 
 
 - polymorphism (def id[A](x: A): A = x)
 - type classes (def equal[A <: Eq](x: A, y: A): Boolean = x == y)
-- give polymorphic types to built-in functions, head, tail ( ParserTest, ~line 122)
+- give polymorphic types to built-in functions, head, tail 
 
 - Num type class
 
@@ -69,6 +69,7 @@ Code
 ===================================== DONE
 
 
+- type checking for lists, from left-to-right
 - empty list
 All commented out tests in ParserTest, chck fail typechecking
 

@@ -35,18 +35,6 @@ trait Exp extends HasExtent{
   /** Evaluate this in environment `env`, adding the extent from this. */
   def eval(env: Environment): Value = eval0(env).withSource(extent)
 
-  // /** Evaluate this in environment `env`, but if it doesn't produce a result of
-  //   * type `t`, return a type error. */
-  // def evalExpectType(env: Environment, t: TypeT): Value = {
-  //   eval(env) match{
-  //     case err: ErrorValue => err
-  //     case v => 
-  //       if(v.isOfType(t)) v
-  //       else liftError(
-  //         TypeError(s"Expected ${t.asString}, found value ${v.forError}"))
-  //   }
-  // }
-
   /** Make an error message, saying that `found` was found when `expected` was
     * expected`. */
   protected def mkErr(expected: String, found: Value): String = {
@@ -192,7 +180,7 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
       case StringValue(st1) => { case StringValue(st2) => mkRes(st1 == st2) }
       case RowValue(r1) => { case RowValue(r2) => mkRes(r1 == r2) }
       case ColumnValue(c1) => { case ColumnValue(c2) => mkRes(c1 == c2) }
-      case ListValue(_, elems1) => { case ListValue(_, elems2) => 
+      case ListValue(elems1) => { case ListValue(elems2) => 
         mkRes(elems1 == elems2) } // Note: lists can contain no error values
     }
   }
@@ -200,7 +188,7 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
   /** Representation of the cons (::) operator. */
   private def consOp: BinOpRep = {
     case (v: Value) => 
-      { case ListValue(t, vs) => assert(v.isOfType(t)); ListValue(t, v::vs) }
+      { case ListValue(vs) => /*assert(v.isOfType(t));*/ ListValue(v::vs) }
   }
 
   /** Apply the operation represented by `op` to values `v1` and `v2`. */
@@ -310,16 +298,16 @@ case class ListLiteral(elems: List[Exp]) extends Exp{
     // Traverse elems, evaluating each, and building in vs in reverse;
     // maintain type of elements in theType; and catch any error.
     var es = elems; var vs = List[Value](); var error: ErrorValue = null
-    var theType: TypeT = AnyType                       // FIXME
+    // var theType: TypeT = AnyType                       // FIXME
     while(es.nonEmpty && error == null){
       es.head.eval(env) match{
         case err: ErrorValue => error = liftError(err)
-        case v => 
-          if(v.isOfType(theType)){ vs ::= v; theType = v.getType; es = es.tail }
-          else sys.error(mkErr(theType.asString, v))
+        case v => vs ::= v; /*theType = v.getType;*/ es = es.tail
+          // if(v.isOfType(theType)){ vs ::= v; theType = v.getType; es = es.tail }
+          // else sys.error(mkErr(theType.asString, v))
       }
     }
-    if(error != null) error else ListValue(theType, vs.reverse)
+    if(error != null) error else ListValue(vs.reverse)
   }
 
   // private var underlyingType: TypeT = null

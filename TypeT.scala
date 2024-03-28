@@ -88,6 +88,7 @@ case object ColumnType extends EqType{
 
 /** The type of lists with underlying type `underlying`. */
 case class ListType(underlying: TypeT) extends TypeT{
+
   def asString = s"List[${underlying.asString}]"
 
   override def isSubclassOf(t: TypeT) = t match{

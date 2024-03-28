@@ -95,30 +95,24 @@ object ParserTest{
     assert(pe("if(2/0 == 4) 3 else 4").isInstanceOf[EvalError])
 
     // ===== List expressions
-    assert(pe("[]") == ListValue(AnyType, List()))
+    assert(pe("[]") == ListValue(/*AnyType,*/ List()))
     assert(pe("[4/4, 2+0, 6-3]") == 
-      ListValue(IntType, List(IntValue(1), IntValue(2), IntValue(3))))
+      ListValue(IntValue(1), IntValue(2), IntValue(3)))
     assert(pe("[4/2, 3/0]").isInstanceOf[EvalError])
 
     assert(pe("head([1,2,3])") == IntValue(1))
     assert(pe("head([])").isInstanceOf[EvalError])
-    // assert(pe("head(3)").isInstanceOf[TypeError])
 
     assert(pe("tail([1,2,3])") == 
-      ListValue(IntType, List(IntValue(2), IntValue(3))))
+      ListValue(IntValue(2), IntValue(3)))
     assert(pe("tail([])").isInstanceOf[EvalError])
 
     assert(pe("[1,2] == [3,4]") == BoolValue(false))
-    // assert(pe("tail(3)").isInstanceOf[TypeError])
-
-/*                                                       FIXME
-    assert(pe("1 :: 2 :: []") == 
-      ListValue(IntType, List(IntValue(1), IntValue(2))))
+    assert(pe("1 :: 2 :: []") == ListValue(IntValue(1), IntValue(2)))
     assert(pe("[1,2] != tail([3,1,2])") == BoolValue(false))
     assert(pe("[1,2] == tail([3,1,2])") == BoolValue(true))
     assert(pe("tail([1]) == []") == BoolValue(true))
     assert(pe("[] == tail([1])") == BoolValue(true))
- */
     // assert(pe("tail([1]) == tail([false])").isInstanceOf[TypeError])
 
     println("Expression tests done")

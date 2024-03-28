@@ -13,16 +13,14 @@ trait Value{
   def forError: String = toString
 
   /** The type of this value.  Set in subclasses. */
-  protected val theType: TypeT // = null // FIXME - require subclasses to define
+  // protected val theType: TypeT // = null // FIXME - require subclasses to define
 
   /** Is the type of this a subclass of `t`? */
-  def isOfType(t: TypeT) = {
-    require(theType != null, s"$this $t"); 
-    theType.isSubclassOf(t) //  == AnyType || t == theType
-  }
+  // def isOfType(t: TypeT) = {
+  //   require(theType != null, s"$this $t"); 
+  //   theType.isSubclassOf(t) //  == AnyType || t == theType
+  // }
   // IMPROVE: consider subclassing
-
-  def getType = theType
 
 }
 
@@ -32,6 +30,15 @@ trait Value{
 trait Cell extends Value{
   /** How this is presented in a cell. */
   def asCell: String = forError
+
+  /** Add cs to this as the source, and return this. */
+  def withCellSource(cs: CellSource) = { source = cs; this }
+
+  /** The type of this value.  Set in subclasses. */
+  protected val theType: TypeT 
+
+  def getType = theType
+
 }
 
 // ==================================================================
@@ -85,12 +92,8 @@ case class BoolValue(value: Boolean) extends Cell{
 
 // ==================================================================
 
-// TO DO: add doubles, strings, lists, ...
-
-// ==================================================================
-
 case class RowValue(row: Int) extends Value{
-  protected val theType = RowType
+  //protected val theType = RowType
 
   override def forError = s"#$row"
 }
@@ -98,7 +101,7 @@ case class RowValue(row: Int) extends Value{
 // =======================================================
 
 case class ColumnValue(column: Int) extends Value{
-  protected val theType = ColumnType
+  //protected val theType = ColumnType
 
   override def forError = "#"+CellSource.colName(column)
 }
@@ -121,21 +124,26 @@ object ColumnValue{
 // =======================================================
 
 /** A List value. */
-case class ListValue(underlying: TypeT, elems: List[Value]) extends Value{
+case class ListValue(/*underlying: TypeT,*/ elems: List[Value]) extends Value{
   assert(elems.forall(v => ! v.isInstanceOf[ErrorValue]))
 
-  protected val theType = ListType(underlying) // FIXME
+  // protected val theType = ListType(underlying) // FIXME
 
   override def forError = 
-    s"List[${underlying.asString}]"+
+    s"List"+ // [${underlying.asString}]"+
       elems.map(_.forError).mkString("(", ", ", ")")
 
   /* Functions corresponding to built-in functions. */
   def head = if(elems.nonEmpty) elems.head else EvalError("head of empty list")
 
   def tail: Value = 
-    if(elems.nonEmpty) ListValue(underlying, elems.tail) 
+    if(elems.nonEmpty) ListValue(/*underlying,*/ elems.tail) 
     else EvalError("tail of empty list")
+}
+
+object ListValue{
+  /** Convenience factory method. */
+  def apply(vs: Value*) = new ListValue(vs.toList)
 }
 
 // ==================================================================
@@ -146,7 +154,7 @@ case class BuiltInFunction(paramTypes: List[TypeT], rt: TypeT)
   (f: PartialFunction[List[Value], Value]) 
     extends Value{
 
-  protected val theType = FunctionType(paramTypes, rt)
+  //protected val theType = FunctionType(paramTypes, rt)
 
   /** Apply this to `args`. */
   def apply(args: List[Value]): Value = 
