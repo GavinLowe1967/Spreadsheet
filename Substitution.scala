@@ -128,6 +128,16 @@ object Substitution{
 
 
   type TypeMap = HashMap[TypeID, TypeT]
+
+  /** Remap t according to typeMap. */
+  def remapBy(typeMap: TypeMap, t: TypeT): TypeT = t match{
+    case TypeVar(tv) => 
+      typeMap.get(tv) match{ case Some(t1) => t1; case None => t }
+    case ListType(underlying) => ListType(remapBy(typeMap, underlying))
+    case FunctionType(domain, range) => 
+      FunctionType(domain.map(remapBy(typeMap, _)), remapBy(typeMap, range))
+    case _ => t
+  }
 /*
   /** Testing. */
   def main(args: Array[String]) = {

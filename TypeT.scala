@@ -43,8 +43,10 @@ object TypeVar{
   /** The next identifier to use for a type variable. */
   private var next = 0
 
+  def getNext(): TypeID = { next += 1; next-1 }
+
   /** Get a fresh TypeVar. */
-  def get: TypeVar = { next += 1; TypeVar(next-1) }
+  // def get: TypeVar = { next += 1; TypeVar(next-1) }
 }
 
 // ==================================================================
@@ -114,4 +116,41 @@ case class FunctionType(domain: List[TypeT], range: TypeT) extends TypeT{
   def typeVars = domain.flatMap(_.typeVars) ++ range.typeVars
 
 //  def isEqType = false
+}
+
+/** Representation of a polymorphic function. 
+  * @param mkInstance a function that produces a suitable FunctionType object,
+  * using fresh TypeVars, and a list of constraints upon those TypeVars.  */ 
+case class PolymorphicFunction(
+  mkInstance: () => (FunctionType, List[(TypeID, StoredTypeConstraint)])
+)
+    extends TypeT{
+  override def toString = "<PolymorphicFunction>"
+
+  def asString = ???
+
+  def typeVars = ???
+}
+
+object PolymorphicFunction{
+
+  def head = {
+    def mkInstance() = {
+      val tId = TypeVar.getNext(); val tVar = TypeVar(tId)
+      (FunctionType(List(ListType(tVar)), tVar),
+        List((tId, AnyTypeConstraint)) )
+    }
+    PolymorphicFunction(mkInstance)
+  }
+
+  def tail = {
+    def mkInstance() = {
+      val tId = TypeVar.getNext(); val tVar = TypeVar(tId)
+      (FunctionType(List(ListType(tVar)), ListType(tVar)),
+        List((tId, AnyTypeConstraint)) )
+    }
+    PolymorphicFunction(mkInstance)
+  }
+    
+
 }

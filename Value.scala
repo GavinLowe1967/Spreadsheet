@@ -1,6 +1,5 @@
 package spreadsheet
 
-
 /** Values represented by expressions. */
 trait Value{
   /** The source this represents. */
@@ -11,17 +10,6 @@ trait Value{
 
   /** How this is presented in an error message. */
   def forError: String = toString
-
-  /** The type of this value.  Set in subclasses. */
-  // protected val theType: TypeT // = null // FIXME - require subclasses to define
-
-  /** Is the type of this a subclass of `t`? */
-  // def isOfType(t: TypeT) = {
-  //   require(theType != null, s"$this $t"); 
-  //   theType.isSubclassOf(t) //  == AnyType || t == theType
-  // }
-  // IMPROVE: consider subclassing
-
 }
 
 // ==================================================================
@@ -35,9 +23,10 @@ trait Cell extends Value{
   def withCellSource(cs: CellSource) = { source = cs; this }
 
   /** The type of this value.  Set in subclasses. */
-  protected val theType: TypeT 
+  //protected val theType: TypeT 
 
-  def getType = theType
+  /** The type of this value.  Set in subclasses. */
+  def getType: TypeT
 
 }
 
@@ -45,7 +34,7 @@ trait Cell extends Value{
 
 /** An empty cell. */
 case class Empty() extends Cell{
-  protected val theType = EmptyType
+  def getType = EmptyType
 
   override def asCell = ""
 
@@ -58,7 +47,7 @@ case class Empty() extends Cell{
 
 /** An Int. */
 case class IntValue(value: Int) extends Cell{
-  protected val theType = IntType
+  def getType = IntType
 
   override def forError = value.toString
 }
@@ -67,7 +56,7 @@ case class IntValue(value: Int) extends Cell{
 
 /** A Float. */
 case class FloatValue(value: Float) extends Cell{
-  protected val theType = FloatType
+  def getType = FloatType
 
   override def forError = value.toString
 }
@@ -75,7 +64,7 @@ case class FloatValue(value: Float) extends Cell{
 // ==================================================================
 
 case class StringValue(value: String) extends Cell{
-  protected val theType = StringType
+  def getType = StringType
 
   override def forError = s"\"$value\""
 
@@ -85,7 +74,7 @@ case class StringValue(value: String) extends Cell{
 // ==================================================================
 
 case class BoolValue(value: Boolean) extends Cell{
-  protected val theType = BoolType
+  def getType = BoolType
 
   override def forError = value.toString
 }
@@ -93,16 +82,12 @@ case class BoolValue(value: Boolean) extends Cell{
 // ==================================================================
 
 case class RowValue(row: Int) extends Value{
-  //protected val theType = RowType
-
   override def forError = s"#$row"
 }
 
 // =======================================================
 
 case class ColumnValue(column: Int) extends Value{
-  //protected val theType = ColumnType
-
   override def forError = "#"+CellSource.colName(column)
 }
 
@@ -124,20 +109,17 @@ object ColumnValue{
 // =======================================================
 
 /** A List value. */
-case class ListValue(/*underlying: TypeT,*/ elems: List[Value]) extends Value{
-  assert(elems.forall(v => ! v.isInstanceOf[ErrorValue]))
-
-  // protected val theType = ListType(underlying) // FIXME
+case class ListValue(elems: List[Value]) extends Value{
+  assert(elems.forall(v => !v.isInstanceOf[ErrorValue]))
 
   override def forError = 
-    s"List"+ // [${underlying.asString}]"+
-      elems.map(_.forError).mkString("(", ", ", ")")
+    s"List"+elems.map(_.forError).mkString("(", ", ", ")")
 
   /* Functions corresponding to built-in functions. */
   def head = if(elems.nonEmpty) elems.head else EvalError("head of empty list")
 
   def tail: Value = 
-    if(elems.nonEmpty) ListValue(/*underlying,*/ elems.tail) 
+    if(elems.nonEmpty) ListValue(elems.tail) 
     else EvalError("tail of empty list")
 }
 
@@ -154,8 +136,6 @@ case class BuiltInFunction(paramTypes: List[TypeT], rt: TypeT)
   (f: PartialFunction[List[Value], Value]) 
     extends Value{
 
-  //protected val theType = FunctionType(paramTypes, rt)
-
   /** Apply this to `args`. */
   def apply(args: List[Value]): Value = 
     if(f.isDefinedAt(args)) f(args)
@@ -163,7 +143,6 @@ case class BuiltInFunction(paramTypes: List[TypeT], rt: TypeT)
 }
 
 object BuiltInFunction{
-
   // IMPROVE: think about types
 
   private val headFn = 
@@ -183,7 +162,7 @@ object BuiltInFunction{
 // ========= Errors
 
 trait ErrorValue extends Cell{
-  protected val theType = null // IMPROVE? 
+  def getType = null // IMPROVE? 
 
   def msg: String
 }

@@ -10,7 +10,12 @@ object TypeChecker{
   private var next = 0
 
   /** Get a new type identifier. */
-  private def nextTypeID() : TypeID = { next += 1; next-1 }
+  private def nextTypeID() : TypeID = TypeVar.getNext() // { next += 1; next-1 }
+
+  private var nextNameIx = 0
+
+  /** Get a new Name. */
+  private def newName() : Name = { nextNameIx += 1; "%"+nextNameIx } 
 
   /** Replace tId by t in typeEnv, if it is consistent with the constraints in
     * typeEnv. Otherwise return fail. */
@@ -30,6 +35,7 @@ object TypeChecker{
   private
   def unify(typeEnv: TypeEnv, t1: TypeT, t2: TypeT, f: TypeT => TypeT = idT)
       : Reply[(TypeEnv, TypeT)] = {
+    // println(s"unify($typeEnv,\n$t1, $t2)")
     def fail = mkFailure(typeEnv, f(t1), f(t2))
     if(t1 == t2) Ok(typeEnv, t1)
     else (t1,t2) match{
@@ -53,16 +59,31 @@ object TypeChecker{
 
       case (ListType(tt1), ListType(tt2)) => 
         unify(typeEnv, tt1, tt2, ListType(_)).map{ 
-          case (t2, tt) => Ok((t2, ListType(tt))) 
+          case (te2, tt) => Ok((te2, ListType(tt))) 
         }
         // Note: if the recursive call fails, the error message talks about
         // ListType(t1) and ListType(t2).
 
-                                 // FIXME: similar case for functions
+      case (FunctionType(d1,r1), FunctionType(d2,r2)) =>       // TODO: test
+        unifyList(typeEnv, d1, d2).map{ case (te1, dd) =>
+          unify(te1, r1, r2).map{ case (te2, rr) =>
+            Ok((te2, FunctionType(dd,rr)))
+          }
+        }
 
       case (_,_) => fail
     }
   }
+
+  /** Unify corresponding elements of the lists ts1 and ts2. */
+  private def unifyList(typeEnv: TypeEnv, ts1: List[TypeT], ts2: List[TypeT])
+      : Reply[(TypeEnv, List[TypeT])] =
+    if(ts1.isEmpty){ assert(ts2.isEmpty); Ok((typeEnv, List())) }
+    else unify(typeEnv, ts1.head, ts2.head).map{ case (te1, t1) => 
+      unifyList(te1, ts1.tail, ts2.tail).map{ case (te2, ts) => 
+        Ok((te2, t1::ts))
+      }
+    }
 
   /** Make a FailureR: expected `eType` found `fType` in `exp`. */
   private def mkErr(eType: TypeT, fType: TypeT, exp: Exp) = {
@@ -162,16 +183,32 @@ object TypeChecker{
       }
 
     case FunctionApp(f, args) => 
+      /* Check the application of a function of type domain => range to args. */
+      def checkApp(te: TypeEnv, domain: List[TypeT], range: TypeT) =
+        // Check actual param types (args) match formal param types (domain)
+        if(domain.length != args.length)
+          FailureR(s"Expected ${domain.length} arguments, found "+
+            args.length).lift(exp, true)
+        else{
+          // We generate a new name, and bind it to range in the environment.
+          // Then unify the types of args with domain, so the new name gets
+          // updated to the appropriate return type.
+          val name = newName(); val te1 = te + (name, range)
+          typeCheckListUnify(te1, args, domain).mapOrLift(exp, { te2 =>
+            // println(te2(name))
+            // Apply te2 to range
+            Ok((te2-name, te2(name)))
+          })
+        }
+
       typeCheck(typeEnv, f).map{ case (te1, ff) => 
         ff match{
-          case FunctionType(domain, range) => 
-            // Check actual param types (args) match formal param types (domain)
-            if(domain.length != args.length)
-              FailureR(s"Expected ${domain.length} arguments, found "+
-                args.length).lift(exp, true)
-            else typeCheckListUnify(te1, args, domain).mapOrLift(exp, { te2 => 
-              Ok((te2, range)) 
-            })
+          case FunctionType(domain, range) => checkApp(te1, domain, range)
+
+          case PolymorphicFunction(mkInstance) =>
+            val (FunctionType(domain, range), constraints) = mkInstance()
+            val te2 = te1.addConstraints(constraints)
+            checkApp(te2, domain, range)
 
           case _ => FailureR("Non-function applied as function").lift(exp, true)
         }
@@ -207,12 +244,15 @@ object TypeChecker{
     * Pre: es.length == ts.length, and each element of ts is a concrete type.
     * Used to check parameters of a function application against the expected 
     * types.  */
+// FIXME: pre??
   private 
   def typeCheckListUnify(typeEnv: TypeEnv, es: List[Exp], ts: List[TypeT])
       : Reply[TypeEnv] = 
     if(es.isEmpty){ assert(ts.isEmpty); Ok(typeEnv) }
     else typeCheckUnify(typeEnv, es.head, ts.head).map{ case (te2, t11) =>
-      assert(t11 == ts.head) // ts.head should be concrete
+// FIXME: whatever unification gets applies above also needs to be applied to es.tail and the result of the function
+      // println(s"${es.head}, ${ts.head}, $t11")
+      //assert(t11 == ts.head) // ts.head should be concrete
       typeCheckListUnify(te2, es.tail, ts.tail)
     }
 

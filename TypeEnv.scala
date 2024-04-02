@@ -59,10 +59,15 @@ object TypeEnv{
   }                   // End of Frame
 
   /** An initial TypeEnv. */
-  def apply() =
+  def apply() = {
+    val nameMap = 
+      new NameMap + ("head" -> PolymorphicFunction.head) + 
+        ("tail" -> PolymorphicFunction.tail)
 // FIXME: add built in functions
     new TypeEnv(
-      new NameMap, new Constraints, new CellReadMap, new Frame, List[Frame]())
+      nameMap, new Constraints, new CellReadMap, new Frame, List[Frame]())
+
+  }
 } 
 
 // ==================================================================
@@ -128,6 +133,17 @@ class TypeEnv(
   def + (typeID: TypeID, tc: StoredTypeConstraint) : TypeEnv = 
     new TypeEnv(nameMap, constraints + (typeID -> tc), cellReadMap, frame, stack)
 
+  /** Remove name from the type environment. */
+  def - (name: Name): TypeEnv = 
+    new TypeEnv(nameMap - name, constraints, cellReadMap, frame, stack)
+
+  /** The TypeEnv formed by adding the constraint typeID -> tc for each (typeID,
+    * tc) in pairs. */
+  def addConstraints(pairs: List[(TypeID, StoredTypeConstraint)]) : TypeEnv = {
+    new TypeEnv(nameMap, constraints ++ pairs, cellReadMap, frame, stack)
+  }
+
+  /** Add a constraint that typeId is a Cell type corresponding to `cell`. */
   def addCellConstraint(typeId: TypeID, cell: CellExp): TypeEnv = {
     assert(!cellReadMap.contains(typeId))
     val newConstraints = constraints + (typeId -> MemberOf(TypeT.CellTypes))

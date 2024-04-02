@@ -229,22 +229,8 @@ object TypeCheckerTest{
     }}
   }
 
-
-  // =======================================================
-
-  def main(args: Array[String]) = {
-    // printErrors = true
-    expTests()
-    singleDecTests()
-    scriptTests()
-    //printErrors = true
-    cellTests()
-    cellWriteTests()
-
-    printErrors = true
-
-
-    // lists
+  /** Tests on lists. */
+  def listTests() = {
     assertEq(tcp("[1,2,3]"), ListType(IntType))
     assertFail(tcp("[1, 3, false, 2, true]"))
     tcp("[]") match{ case Ok((te, ListType(TypeVar(t)))) => 
@@ -287,7 +273,40 @@ object TypeCheckerTest{
           assert(te("xs") == ListType(TypeVar(tid)) && 
             te(tid) == MemberOf(CellTypes))
         }}
+  }
 
+
+  // =======================================================
+
+  def main(args: Array[String]) = {
+    //printErrors = true
+    expTests()
+    singleDecTests()
+    scriptTests()
+    cellTests()
+    cellWriteTests()
+    listTests()
+ 
+    printErrors = true
+
+
+    tcpss("val xs = [1,2,3]; val x = head(xs)") match{
+      case Ok(te) => assert(te("xs") == ListType(IntType) && te("x") == IntType)
+    }
+    tcpss("val xs = [true, false]; val x = head(xs)") match{
+      case Ok(te) => 
+        assert(te("xs") == ListType(BoolType) && te("x") == BoolType)
+    }
+    tcpss("val xs = [[1,2],[3]]; val x = head(xs)") match{
+      case Ok(te) => 
+        assert(te("xs") == ListType(ListType(IntType)) && 
+          te("x") == ListType(IntType))
+    }
+    tcpss("val xs = [[1,2],[3]]; val x = tail(xs)") match{
+      case Ok(te) => 
+        assert(te("xs") == ListType(ListType(IntType)) && 
+          te("x") == ListType(ListType(IntType)))
+    }
     println("Done")
   }
 

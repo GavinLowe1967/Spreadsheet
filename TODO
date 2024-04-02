@@ -9,6 +9,21 @@ Language
 
 Current: 
 
+When trying to typecheck an application of an instance of a polymorphic
+function, e.g. head([1,2]), need to unify the polymorphic type with the type
+of the actual parameters, and apply the resulting substitution to the
+polymorphic return value.  E.g. head : ListType(TypeVar(t)) => TypeVar(t);
+unify ListType(TypeVar(t)) with ListType(IntType), and apply this to the
+result type TypeVar(t) to get IntType.  Unify
+FunctionType(ListType(TypeVar(t)), TypeVar(t)) with
+FunctionType(ListType(IntType), TypeVar(t')) where t' is a new type variable.
+
+Change rep of polymorphic functions to (list of type params, type).  When instantiating, generate new type vriables, and substitute them for the type variables. 
+
+
+
+
+
 - remove Value.getType, isOfType? -- needed in Cells only
 - At present, in eval, [] gets underlying type AnyType.  This should be taken
   from the type checker.  Actually, can we get rid of underlying?  -- removeed underlying 
