@@ -3,30 +3,42 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Language
 --------
 
+Outstanding:
+
 - Clear boxes on reload
 - EqTypeConstraint.intersection -- test **
 - parser for bools in spreadsheet
+- Parser for strings in script. 
+- Check names of parameters of functions are disjoint.  
+- check declared names are disjoint in each block.
 
 Current: 
 
-When trying to typecheck an application of an instance of a polymorphic
-function, e.g. head([1,2]), need to unify the polymorphic type with the type
-of the actual parameters, and apply the resulting substitution to the
-polymorphic return value.  E.g. head : ListType(TypeVar(t)) => TypeVar(t);
-unify ListType(TypeVar(t)) with ListType(IntType), and apply this to the
-result type TypeVar(t) to get IntType.  Unify
-FunctionType(ListType(TypeVar(t)), TypeVar(t)) with
-FunctionType(ListType(IntType), TypeVar(t')) where t' is a new type variable.
+- For functions with type parameters, replace each with type variable with
+  "lower bound" constraint.  (?)  No, separately record restrictions on type
+  params.
 
-Change rep of polymorphic functions to (list of type params, type).  When instantiating, generate new type vriables, and substitute them for the type variables. 
+- When calling functions/binops, check that lower bound of each actual
+  parameter is a subset of the type of the formal parameter.
+  ?? Generate new TypeVar to replace the type param?   TypeChecker l 204
 
+- Substitution.scala. l20, FIXME
 
+- Check that all types in function declaration signatures are declared.
 
+When can type t1 instantiate t2?
 
+t1              t2
+Concrete type   Concrete type  Same type only
+TypeVar(tid)    Concrete type  Constraint on tid includes t2
+Concrete type   Type param     t1 satisfies constraint on t2
+TypeVar(tid)    Type param     Constraint on tid \inter constraint on t2 nonempty
+Type param      Type param     t1 = t2
+ListType(tt1)   ListType(tt2)  tt1 can instantiate tt2
+ListType(tt1)   Type param     ListType(tt1) satisfies constraint on t2
+  
 
-- remove Value.getType, isOfType? -- needed in Cells only
-- At present, in eval, [] gets underlying type AnyType.  This should be taken
-  from the type checker.  Actually, can we get rid of underlying?  -- removeed underlying 
+-- Done introduction of type parameters.  Allow their use in types of params or return value. 
 
 - polymorphism (def id[A](x: A): A = x)
 - type classes (def equal[A <: Eq](x: A, y: A): Boolean = x == y)
@@ -35,18 +47,14 @@ Change rep of polymorphic functions to (list of type params, type).  When instan
 - Num type class
 
 Lists:
--  null
+-  null -- done
 - [_ .. _]
 - list comprehensions
 
-- Parser for strings in script. 
-
-- 
-
-- Do we need Substitution?  Or just Reply from it?  We do use reMap
+Improve error messages concerning polymorphic types: "val xs = head(3)" ->
+Expected List[TypeVar(133)], found Int at line 1
 
 
-FunctionType.isSubclassOf
 
 * Think more about subclassing
 

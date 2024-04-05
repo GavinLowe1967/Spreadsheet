@@ -153,18 +153,41 @@ object ParserTest{
       List(vDecR, dir1R, dir2R))
 
     assert(ps("def square(n: Int): Int = n*n") ==
-      FunctionDeclaration("square", List(("n",IntType)), IntType,
+      FunctionDeclaration("square", List(), List(("n",IntType)), IntType,
         BinOp(NameExp("n"), "*", NameExp("n")) ))
     assert(ps("def add(x: Int, y: Int) : Int = x+y") == 
-      FunctionDeclaration("add", List(("x", IntType), ("y", IntType)), IntType,
+      FunctionDeclaration("add", List(), 
+        List(("x", IntType), ("y", IntType)), IntType,
         BinOp(NameExp("x"), "+", NameExp("y")) ))
     assert(ps("val c = #B \n") == ValueDeclaration("c", ColumnExp("B")))
+
+    assert(parseAll(StatementParser.typeP, "List[Boolean]") ==
+      ListType(BoolType))
+    assert(ps("def add[A](x: Int, y: Int) : Int = x+y") == 
+      FunctionDeclaration("add", List((TypeParam("A"),AnyTypeConstraint)),
+        List(("x",IntType), ("y",IntType)), IntType, 
+        BinOp(NameExp("x"), "+", NameExp("y")) ))
+    assert(ps("def id[A](x: A) : A = x") == 
+      FunctionDeclaration("id", List((TypeParam("A"),AnyTypeConstraint)),
+        List(("x",TypeParam("A"))), TypeParam("A"), NameExp("x")) )
 
     println("Statement tests done")
   }
 
   def main(args: Array[String]) = {
-    expressions; testStatements;  println("Done")
+    expressions; testStatements;  
+
+    assert(ps("def apply[A, B](f: A => B, x: A) : B = f(x)") == 
+      FunctionDeclaration("apply", 
+        List((TypeParam("A"),AnyTypeConstraint),
+          (TypeParam("B"),AnyTypeConstraint) ),
+        List(("f", FunctionType(List(), List(TypeParam("A")), TypeParam("B"))), 
+          ("x", TypeParam("A"))),
+        TypeParam("B"), 
+        FunctionApp(NameExp("f"), List(NameExp("x")) ) ))
+
+
+    println("Done")
   }
 
 

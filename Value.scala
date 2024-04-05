@@ -23,11 +23,7 @@ trait Cell extends Value{
   def withCellSource(cs: CellSource) = { source = cs; this }
 
   /** The type of this value.  Set in subclasses. */
-  //protected val theType: TypeT 
-
-  /** The type of this value.  Set in subclasses. */
   def getType: TypeT
-
 }
 
 // ==================================================================
@@ -121,6 +117,8 @@ case class ListValue(elems: List[Value]) extends Value{
   def tail: Value = 
     if(elems.nonEmpty) ListValue(elems.tail) 
     else EvalError("tail of empty list")
+
+  def isEmpty: Value = BoolValue(elems.isEmpty)
 }
 
 object ListValue{
@@ -130,33 +128,27 @@ object ListValue{
 
 // ==================================================================
 
-/** The value of a built-in function of type `paramTypes => rt`, defined by
-  * `f`. */
-case class BuiltInFunction(paramTypes: List[TypeT], rt: TypeT)
-  (f: PartialFunction[List[Value], Value]) 
+/** The value of a built-in function defined by `f`. */
+case class BuiltInFunction(f: PartialFunction[List[Value], Value]) 
     extends Value{
 
   /** Apply this to `args`. */
-  def apply(args: List[Value]): Value = 
-    if(f.isDefinedAt(args)) f(args)
-    else ??? // FIXME catch errors
+  def apply(args: List[Value]): Value = {
+    assert(f.isDefinedAt(args)); f(args)
+  }
 }
 
-object BuiltInFunction{
-  // IMPROVE: think about types
+// object BuiltInFunction{
+//   // IMPROVE: think about types
 
-  private val headFn = 
-    BuiltInFunction(List(ListType(AnyType)), AnyType){
-      case List(l:ListValue) => l.head
-    }
-  private val tailFn = 
-    BuiltInFunction(List(ListType(AnyType)), ListType(AnyType)){
-      case List(l:ListValue) => l.tail
-    }
+//   private val headFn = 
+//     BuiltInFunction{ case List(l:ListValue) => l.head }
+//   private val tailFn = 
+//     BuiltInFunction{ case List(l:ListValue) => l.tail }
 
-  /** The built-in functions. */
-  val builtIns = List("head" -> headFn, "tail" -> tailFn) 
-}
+//   /** The built-in functions. */
+//   val builtIns = List("head" -> headFn, "tail" -> tailFn) 
+// }
 
 
 // ========= Errors

@@ -5,6 +5,7 @@ object TypeChecker{
   import NameExp.Name // Names of identifiers (Strings)
   import TypeT.NumTypes // = List(IntType, FloatType) 
   import EvaluationTypeChecker.mkFailure
+  import TypeParam.TypeParamName // Names of type parameters (Strings)
 
   /** The next type identifier to use. */
   private var next = 0
@@ -64,10 +65,15 @@ object TypeChecker{
         // Note: if the recursive call fails, the error message talks about
         // ListType(t1) and ListType(t2).
 
-      case (FunctionType(d1,r1), FunctionType(d2,r2)) =>       // TODO: test
+      case (_, TypeParam(tp)) => println(s"$t1 $t2"); ???
+        // Check that t1 satisfies the type constraints on tp
+
+      case (FunctionType(List(),d1,r1), FunctionType(List(),d2,r2)) =>  
+                                // TODO: test.  The "List()"s look odd
+        // println(s"Unifying $t1, $t2")
         unifyList(typeEnv, d1, d2).map{ case (te1, dd) =>
           unify(te1, r1, r2).map{ case (te2, rr) =>
-            Ok((te2, FunctionType(dd,rr)))
+            Ok((te2, FunctionType(List(), dd,rr)))
           }
         }
 
@@ -183,36 +189,36 @@ object TypeChecker{
       }
 
     case FunctionApp(f, args) => 
-      /* Check the application of a function of type domain => range to args. */
-      def checkApp(te: TypeEnv, domain: List[TypeT], range: TypeT) =
-        // Check actual param types (args) match formal param types (domain)
-        if(domain.length != args.length)
-          FailureR(s"Expected ${domain.length} arguments, found "+
-            args.length).lift(exp, true)
-        else{
-          // We generate a new name, and bind it to range in the environment.
-          // Then unify the types of args with domain, so the new name gets
-          // updated to the appropriate return type.
-          val name = newName(); val te1 = te + (name, range)
-          typeCheckListUnify(te1, args, domain).mapOrLift(exp, { te2 =>
-            // println(te2(name))
-            // Apply te2 to range
-            Ok((te2-name, te2(name)))
-          })
-        }
-
-      typeCheck(typeEnv, f).map{ case (te1, ff) => 
-        ff match{
-          case FunctionType(domain, range) => checkApp(te1, domain, range)
-
-          case PolymorphicFunction(mkInstance) =>
-            val (FunctionType(domain, range), constraints) = mkInstance()
+      typeCheck(typeEnv, f).map{ case (te1, ff) => ff match{
+        case FunctionType(tParams, domain, range) =>
+          if(domain.length != args.length)
+            FailureR(s"Expected ${domain.length} arguments, found "+
+              args.length).lift(exp, true)
+          else{
+            // Create fresh type variables to replace tParams in domain and range
+            var updates = List[(TypeParamName, TypeVar)]();
+            var constraints = List[(TypeID, StoredTypeConstraint)]()
+            for((TypeParam(p),c) <- tParams){
+              val tId = nextTypeID(); updates ::= (p, TypeVar(tId))
+              constraints ::= (tId,c)
+            }     
+            // The instantiated domain and range
+            val (domain1,range1) = Substitution.remapBy(updates, domain, range)
             val te2 = te1.addConstraints(constraints)
-            checkApp(te2, domain, range)
+            // We generate a new name, and bind it to range1 in the environment.
+            // Then unify the types of args with domain1, so the new name gets
+            // updated to the appropriate return type.
+            val name = newName(); val te3 = te2 + (name, range1)
+            // println(s"$exp: domain1 = $domain1")
+            typeCheckListUnify(te3, args, domain1).mapOrLift(exp, { te4 =>
+              Ok((te4-name, te4(name)))  // extract type of name
+            })
+          }
+// Also generate new names for parameters, with types in domain1; and unify
+// each of args against the corresponding parameter name ???
 
-          case _ => FailureR("Non-function applied as function").lift(exp, true)
-        }
-      }
+        case _ => FailureR("Non-function applied as function").lift(exp, true)
+      }}
 
     case BlockExp(stmts, e) => 
       // We create a new scope for this block, but return to the outer scope
@@ -241,20 +247,21 @@ object TypeChecker{
 
   /** Type check each element of es, unifying its type with the corresponding
     * element of ts. 
-    * Pre: es.length == ts.length, and each element of ts is a concrete type.
+    * Pre: es.length == ts.length.
     * Used to check parameters of a function application against the expected 
     * types.  */
-// FIXME: pre??
   private 
   def typeCheckListUnify(typeEnv: TypeEnv, es: List[Exp], ts: List[TypeT])
       : Reply[TypeEnv] = 
     if(es.isEmpty){ assert(ts.isEmpty); Ok(typeEnv) }
     else typeCheckUnify(typeEnv, es.head, ts.head).map{ case (te2, t11) =>
-// FIXME: whatever unification gets applies above also needs to be applied to es.tail and the result of the function
-      // println(s"${es.head}, ${ts.head}, $t11")
-      //assert(t11 == ts.head) // ts.head should be concrete
+      // println(s"typeCheckListUnify: ${es.head}, ${ts.head} -> $t11\n"+
+      //   te2.showBindings)
       typeCheckListUnify(te2, es.tail, ts.tail)
     }
+// Above goes wrong.  Suppose TypeVar(t) occurs twice in ts.  If on first
+// iteration, t gets unified to IntType, on the second iteration, it could get
+// unified to BoolType.
 
   // ==================================================================
   // Statements
@@ -280,9 +287,10 @@ object TypeChecker{
           Ok(te1 + (name, t))
         })
 
-      case FunctionDeclaration(name, params, rt, body) =>
+      case FunctionDeclaration(name, tparams, params, rt, body) =>
         // name should already be bound to an appropriate FunctionType
-        require(typeEnv(name) == FunctionType(params.map(_._2), rt))
+        require(typeEnv(name) == FunctionType(tparams, params.map(_._2), rt))
+// FIXME: type parameters
         // Create a new scope, and extend with params
         val te1 = typeEnv.newScope ++ params
         // Typecheck body, and make sure return type matches rt
@@ -297,8 +305,8 @@ object TypeChecker{
     // Extend typeEnv on assumption all FunctionDeclarations are correctly
     // typed.
     val updates = (
-      for(fd @ FunctionDeclaration(name, params, rt, body) <- stmts) yield 
-        name -> FunctionType(params.map(_._2), rt)
+      for(FunctionDeclaration(name, tparams, params, rt, body) <- stmts) yield 
+        name -> FunctionType(tparams, params.map(_._2), rt) // FIXME: type params
     )
     val typeEnv1 = typeEnv ++ updates 
     typeCheckStmtList1(typeEnv1, stmts) 

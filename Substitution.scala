@@ -2,47 +2,82 @@ package spreadsheet
 
 import scala.collection.mutable.HashMap
 
-/** A class representing results from typechecking. */
-abstract class Reply[+A]{
-  /** If successful, apply `f` to the contents of this. */
-  def map[B](f: A => Reply[B]): Reply[B]
-
-  /** If successful, apply `f` to the contents of this.  If a failure, add the
-    * source of `exp` to the message. */
-  def mapOrLift[B](exp: HasExtent, f: A => Reply[B]): Reply[B]
-
-  /** If a failure, add the source of `exp` to the message. */
-  def lift(exp: HasExtent, lineNum: Boolean = false): Reply[A]
-}
-
-/** The result of a successful typechecking, corresponding to x. */
-case class Ok[+A](x: A) extends Reply[A]{
-  def map[B](f: A => Reply[B]) = f(x)
-
-  def mapOrLift[B](exp: HasExtent, f: A => Reply[B]) = f(x)
-
-  def lift(exp: HasExtent, lineNum: Boolean = false) = this
-}
-
-/** The result of an unsuccessful typechecking, as explained by err. */
-case class FailureR(err: String) extends Reply[Nothing]{
-  def map[B](f: Nothing => Reply[B]) = this // FailureR(err)
-
-  def mapOrLift[B](exp: HasExtent, f: Nothing => Reply[B]) = lift(exp)
-  //  FailureR(err+"\n\tin "+exp.getExtent.asString)
-
-  /** Add the source of `exp` to the message. */
-  def lift(exp: HasExtent, lineNum: Boolean = false) = {
-    val extent = exp.getExtent
-    val lnString = if(lineNum) " at line "+extent.lineNumber else ""
-    FailureR(err+lnString+"\n\tin "+extent.asString)
-  }
-}
 
 // ==================================================================
 
 import TypeVar.TypeID
-import Substitution.TypeMap
+// import Substitution.TypeMap
+
+object Substitution{
+
+  /** Apply the substitution tv -> t to t1. */ 
+  def reMap(tv: TypeID, t: TypeT, t1: TypeT): TypeT = t1 match{
+    case TypeVar(tv1) => if(tv1 == tv) t else t1
+    case ListType(underlying) => ListType(reMap(tv, t, underlying))
+    case FunctionType(params, domain, range) =>
+/*  // FIXME
+      assert(params.forall{ case (TypeVar(tt),_) => tv != tt; case _ => true }, 
+        s"$params $domain $range")
+ */ 
+      FunctionType(params, domain.map(reMap(tv, t, _)), reMap(tv, t, range))
+    case _ => t1
+  }
+
+  import TypeParam.TypeParamName
+
+  type TypeMap = HashMap[TypeParamName, TypeVar]
+
+  /** Remap t according to typeMap, replacing TypeParams by TypeVars. */
+  private def remapBy(typeMap: TypeMap, t: TypeT): TypeT = t match{
+    case TypeParam(tp) => 
+      typeMap.get(tp) match{ case Some(t1) => t1; case None => t }
+    // case TypeVar(tv) =>
+    //   typeMap.get(tv) match{ case Some(t1) => t1; case None => t }
+    case ListType(underlying) => ListType(remapBy(typeMap, underlying))
+    case FunctionType(params, domain, range) =>
+      assert(params.forall{ case (TypeParam(tp),_) => !typeMap.contains(tp) })
+// FIXME: other types
+      FunctionType(params, domain.map(remapBy(typeMap, _)), remapBy(typeMap, range))
+    case _ => t
+  }
+
+  /** Remap t according to pairs. */
+  // private def remapBy(pairs: List[(TypeParamName, TypeVar)], t: TypeT): TypeT = 
+  //   remapBy(new TypeMap ++ pairs, t)
+
+  /** Remap (ts,t) according to pairs. */
+  def remapBy(pairs: List[(TypeParamName, TypeVar)], ts: List[TypeT], t: TypeT)
+      : (List[TypeT], TypeT) = {
+    val typeMap = new TypeMap ++ pairs
+    (ts.map(remapBy(typeMap, _)), remapBy(typeMap, t))
+  }
+
+/*
+  type TypeMap = HashMap[TypeID, TypeT]
+
+  /** Remap t according to pairs. */
+  private def remapBy(pairs: List[(TypeID, TypeT)], t: TypeT): TypeT = 
+    remapBy(new TypeMap ++ pairs, t)
+
+  /** Remap t according to typeMap. */
+  private def remapBy(typeMap: TypeMap, t: TypeT): TypeT = t match{
+    case TypeVar(tv) =>
+      typeMap.get(tv) match{ case Some(t1) => t1; case None => t }
+    case ListType(underlying) => ListType(remapBy(typeMap, underlying))
+    case FunctionType(params, domain, range) =>
+      // assert(params.forall{ case (TypeVar(tt),_) => !typeMap.contains(tt) })
+// FIXME: other types
+      FunctionType(params, domain.map(remapBy(typeMap, _)), remapBy(typeMap, range))
+    case _ => t
+  }
+
+  /** Remap (ts,t) according to pairs. */
+  def remapBy(pairs: List[(TypeID, TypeT)], ts: List[TypeT], t: TypeT)
+      : (List[TypeT], TypeT) = {
+    val typeMap = new TypeMap ++ pairs
+    (ts.map(remapBy(typeMap, _)), remapBy(typeMap, t))
+  }
+ */
 
 /*
 /** Abstractly, a mapping from type variables to type expressions (TypeT), as
@@ -115,29 +150,6 @@ class Substitution(private var map: TypeMap){
 }
  */
 
-object Substitution{
-
-  /** Apply the substitution tv -> t to t1. */ 
-  def reMap(tv: TypeID, t: TypeT, t1: TypeT): TypeT = t1 match{
-    case TypeVar(tv1) => if(tv1 == tv) t else t1
-    case ListType(underlying) => ListType(reMap(tv, t, underlying))
-    case FunctionType(domain, range) =>
-      FunctionType(domain.map(reMap(tv, t, _)), reMap(tv, t, range))
-    case _ => t1
-  }
-
-
-  type TypeMap = HashMap[TypeID, TypeT]
-
-  /** Remap t according to typeMap. */
-  def remapBy(typeMap: TypeMap, t: TypeT): TypeT = t match{
-    case TypeVar(tv) => 
-      typeMap.get(tv) match{ case Some(t1) => t1; case None => t }
-    case ListType(underlying) => ListType(remapBy(typeMap, underlying))
-    case FunctionType(domain, range) => 
-      FunctionType(domain.map(remapBy(typeMap, _)), remapBy(typeMap, range))
-    case _ => t
-  }
 /*
   /** Testing. */
   def main(args: Array[String]) = {

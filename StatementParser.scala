@@ -202,28 +202,53 @@ object StatementParser{
   private def valDec: Parser[ValueDeclaration] =
     lit("val") ~> name ~ (lit("=") ~> expr) > toPair(ValueDeclaration)
 
+  /** Parser for an expression in square brackets. */
+  private def inSquare[A](p: Parser[A]): Parser[A] = 
+    (lit("[") ~> p) <~ lit("]")
+
   /** A parser for a type. */
-  def typeP: Parser[TypeT] = upperName > {
-    case "Int" => IntType
-    case "Float" => FloatType
-    case "Boolean" => BoolType
-    case "Row" => RowType
-    case "Column" => ColumnType
-      // FIXME: and more
-      // FIXME: catch other values
-  }
+  private def typeP1: Parser[TypeT] = (
+    lit("Int") > { _ => IntType }
+    | lit("Float") > { _ => FloatType }
+    | lit("Boolean") > { _ => BoolType }
+    | lit("Row") > { _ => RowType }
+    | lit("Column") > { _ => ColumnType }
+    //     // FIXME: and more
+    | lit("List") ~> inSquare(typeP) > { t => ListType(t) }
+    | upperName > { n => TypeParam(n) }
+  )
+
+  def typeP: Parser[TypeT] = 
+    typeP1 ~ opt(lit("=>") ~> typeP) > { _ match {
+      case (t,None) => t
+      case (t1, Some(t2)) => FunctionType(List(), List(t1), t2)
+        // IMPROVE: the "List()" looks odd.
+        // FIXME: allow tuple of types in place of t1
+    }}
 
   /** A parser for a list of parameters, "name1: type1, ..., namek: typek". */
-  def params: Parser[List[(String,TypeT)]] = {
+  private def params: Parser[List[(String,TypeT)]] = {
     def param: Parser[(String,TypeT)] = (name <~ lit(":"))~typeP
     repSep(param, ",")
   }
 
+  import FunctionType.TypeParameter
+
+  /** Parser for a single type parameter. */
+  private def typeParam: Parser[TypeParameter] = 
+    upperName > { t => (TypeParam(t), AnyTypeConstraint) } // FIXME
+
+  /** Parser for type parameters. */
+  private def typeParams: Parser[List[TypeParameter]] = 
+    opt(inSquare(repSep(typeParam, ","))) > 
+      { case Some(ts) => ts; case None => List() }
+                                         // TODO: add type constraints
+
   /** A parser for a function declaration "def <name>(<params>) = <expr>". */
   def funDec: Parser[FunctionDeclaration] = 
-    (lit("def") ~> name ~ inParens(params)) ~ 
+    (lit("def") ~> name ~ typeParams ~ inParens(params)) ~ 
       ((lit(":") ~> typeP) ~ (lit("=") ~> expr)) >
-    { case ((n,ps), (rt,e)) => FunctionDeclaration(n, ps, rt, e) }
+    { case (((n,tps),ps), (rt,e)) => FunctionDeclaration(n, tps, ps, rt, e) }
  
   /** A parser for a declaration: either a value or function declaration. */
   def declaration = valDec | funDec

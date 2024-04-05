@@ -10,7 +10,10 @@ $(DIR)/Value.class: $(DIR)/Input.class $(DIR)/TypeT.class
 
 $(DIR)/EvaluationTypeChecker.class: $(DIR)/TypeEnv.class
 
-$(DIR)/Environment.class: $(DIR)/Value.class $(DIR)/EvaluationTypeChecker.class
+$(DIR)/BuiltInFunctions.class: $(DIR)/Value.class $(DIR)/TypeConstraint.class
+
+$(DIR)/Environment.class: $(DIR)/Value.class \
+  $(DIR)/EvaluationTypeChecker.class  $(DIR)/BuiltInFunctions.class
 
 $(DIR)/Exp.class: $(DIR)/Value.class $(DIR)/Environment.class $(DIR)/TypeEnv.class
 
@@ -25,7 +28,7 @@ $(DIR)/BlockExp.class: $(DIR)/Statement.class
 $(DIR)/Parser.class: $(DIR)/Input.class
 
 $(DIR)/StatementParser.class: $(DIR)/Parser.class $(DIR)/FunctionValue.class	\
-  $(DIR)/BlockExp.class
+  $(DIR)/BlockExp.class $(DIR)/TypeConstraint.class
 
 $(DIR)/ParserTest.class: $(DIR)/StatementParser.class
 
@@ -33,9 +36,11 @@ $(DIR)/ParserTest.class: $(DIR)/StatementParser.class
 
 $(DIR)/TypeConstraint.class: $(DIR)/TypeT.class
 
-$(DIR)/Substitution.class: $(DIR)/TypeT.class
+$(DIR)/Reply.class: $(DIR)/Exp.class
 
-$(DIR)/TypeEnv.class: $(DIR)/TypeConstraint.class
+$(DIR)/Substitution.class: $(DIR)/TypeT.class $(DIR)/Reply.class
+
+$(DIR)/TypeEnv.class: $(DIR)/TypeConstraint.class $(DIR)/BuiltInFunctions.class
 
 $(DIR)/TypeChecker.class: $(DIR)/EvaluationTypeChecker.class			\
   $(DIR)/Substitution.class $(DIR)/TypeEnv.class $(DIR)/Exp.class	\

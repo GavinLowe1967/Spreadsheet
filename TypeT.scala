@@ -29,12 +29,12 @@ object TypeT{
 
 /** A type variable. */
 case class TypeVar(tv: TypeID) extends TypeT{
-  def asString = toString
+  def asString = toString                                // IMPROVE
 
   def typeVars = List(tv)
-
-//  def isEqType = ???                  // FIXME
 }
+
+// =========
 
 object TypeVar{
   /** The type of identifiers for type variables. */
@@ -51,10 +51,21 @@ object TypeVar{
 
 // ==================================================================
 
-/** A marker trait for atomic equality types. */
-trait EqType extends TypeT{
-//  def isEqType = true
+/** A type parameter, named in the script. */
+case class TypeParam(name: String) extends TypeT{
+  def asString = toString
+
+  def typeVars = List()
 }
+
+object TypeParam{
+  type TypeParamName = String
+}
+
+// ==================================================================
+
+/** A marker trait for atomic equality types. */
+trait EqType extends TypeT
 
 case object IntType extends EqType {
   def asString = "Int"
@@ -91,7 +102,7 @@ case object ColumnType extends EqType{
 /** The type of lists with underlying type `underlying`. */
 case class ListType(underlying: TypeT) extends TypeT{
 
-  def asString = s"List[${underlying.asString}]"
+  def asString = { val u = underlying.asString; s"List[$u]" }
 
   override def isSubclassOf(t: TypeT) = t match{
     case AnyType => true
@@ -100,57 +111,52 @@ case class ListType(underlying: TypeT) extends TypeT{
   }
 
   def typeVars = underlying.typeVars
-
-//  def isEqType = underlying.isEqType
 }
 
 // ==================================================================
 
-/** The type of functions from `domain` to `range`. */
-case class FunctionType(domain: List[TypeT], range: TypeT) extends TypeT{
+/** The type of functions from `domain` to `range`. 
+  * @param params A list of free type identities, paired with a constraint upon
+  * them. */
+case class FunctionType(
+  params: List[FunctionType.TypeParameter], domain: List[TypeT], range: TypeT
+) extends TypeT{
   def asString = 
     domain.map(_.asString).mkString("(", ",", ")")+" => "+range.asString
 
-  // FIXME: override isSubclassOf?
-
   def typeVars = domain.flatMap(_.typeVars) ++ range.typeVars
-
-//  def isEqType = false
 }
 
-/** Representation of a polymorphic function. 
-  * @param mkInstance a function that produces a suitable FunctionType object,
-  * using fresh TypeVars, and a list of constraints upon those TypeVars.  */ 
-case class PolymorphicFunction(
-  mkInstance: () => (FunctionType, List[(TypeID, StoredTypeConstraint)])
-)
-    extends TypeT{
-  override def toString = "<PolymorphicFunction>"
-
-  def asString = ???
-
-  def typeVars = ???
+object FunctionType{
+  type TypeParameter = (TypeParam, StoredTypeConstraint)
 }
 
-object PolymorphicFunction{
+// ==================================================================
 
-  def head = {
-    def mkInstance() = {
-      val tId = TypeVar.getNext(); val tVar = TypeVar(tId)
-      (FunctionType(List(ListType(tVar)), tVar),
-        List((tId, AnyTypeConstraint)) )
-    }
-    PolymorphicFunction(mkInstance)
-  }
+/** A polymorphic function.
+  * @param params A list of free type identities, paired with a constraint upon
+  * them.
+  * @param template A template from which to construct the function, by
+  * substituting the free type identities with fresh ones.  */
+// case class PolymorphicFunction(
+//   params: List[(TypeID, StoredTypeConstraint)], template: FunctionType)
+//     extends TypeT{
 
-  def tail = {
-    def mkInstance() = {
-      val tId = TypeVar.getNext(); val tVar = TypeVar(tId)
-      (FunctionType(List(ListType(tVar)), ListType(tVar)),
-        List((tId, AnyTypeConstraint)) )
-    }
-    PolymorphicFunction(mkInstance)
-  }
+//   def asString = ???
+
+//   def typeVars = ???
+// }
+
+// object PolymorphicFunction{
+//   val head = {
+//     val tid = TypeVar.getNext(); val t = TypeVar(tid)
+//     FunctionType(List((tid, AnyTypeConstraint)), List(ListType(t)), t)
+//   }
+//   val tail = {
+//     val tid = TypeVar.getNext(); val t = TypeVar(tid)
+//     FunctionType(List((tid, AnyTypeConstraint)), List(ListType(t)), ListType(t))
+//   }
+
     
 
-}
+// }

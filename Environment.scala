@@ -54,6 +54,6 @@ object Environment{
 
   /** Get the initial nameMap to use in an Environment. */ 
   private def initNameMap = 
-    new HashMap[String, Value] ++ BuiltInFunction.builtIns
+    new HashMap[String, Value] ++ BuiltInFunctions.builtIns
 
 }

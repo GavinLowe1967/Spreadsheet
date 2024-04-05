@@ -11,14 +11,15 @@ case class FunctionValue(
   params: List[(String,TypeT)], rt: TypeT, body: Exp, env: Environment)
     extends Value{
 
-  protected val theType = FunctionType(params.map(_._2), rt)
+  protected val theType = FunctionType(List(), params.map(_._2), rt)
 }
 
 // =======================================================
 
-/** The declaration of a function "def name(args): rt = exp". */
+/** The declaration of a function "def name[tparams](args): rt = exp". */
 case class FunctionDeclaration(
-  name: String, params: List[(String, TypeT)], rt: TypeT, body: Exp) 
+  name: String, tParams: List[FunctionType.TypeParameter], 
+  params: List[(String, TypeT)], rt: TypeT, body: Exp)
     extends Declaration{
 
   /** Perform this in `env`, handling errors with `handleError`. */
@@ -32,11 +33,6 @@ case class FunctionDeclaration(
 
 /** The application of a function represented by `f` to `args`. */
 case class FunctionApp(f: Exp, args: List[Exp]) extends Exp{
-  // /** Produce error: expected m arguments, found n. */
-  // private def mkLengthError(m: Int, n: Int) = 
-  //   liftError(EvalError(
-  //     s"Expected $m argument"+(if(m != 1) "s" else "")+s", found $n"
-  //   ))
 
   def eval0(env: Environment) = {
     f.eval(env) match{
@@ -46,36 +42,30 @@ case class FunctionApp(f: Exp, args: List[Exp]) extends Exp{
         val env2 = env1.clone; var error: ErrorValue = null
         var iter = params.zip(args).iterator
         while(error == null && iter.hasNext){
-          val ((p,t),arg) = iter.next()
+          val ((p,_),arg) = iter.next()
           arg.eval(env) match{
-            case e: ErrorValue => error = liftError(e)
-            case v => /*assert(v.isOfType(t));*/ env2.update(p, v)
+            case e: ErrorValue => error = liftError(e, true)
+            case v =>  env2.update(p, v)
           }
         }
         if(error != null) error
         else body.eval(env2) match{
-          case err: ErrorValue => liftError(err)
-          case result => /*assert(result.isOfType(rt));*/ result
+          case err: ErrorValue => liftError(err); case result => result
         }
 
       case f: BuiltInFunction =>
-        val paramTs = f.paramTypes
-        assert(paramTs.length == args.length)
-        // Evaluate args, checking against parameter types of f
-        val iter = f.paramTypes.zip(args).iterator
-        var error: ErrorValue = null
+        var error: ErrorValue = null; val iter = args.iterator
         var vs = List[Value]() // built in reverse
         while(error == null && iter.hasNext){
-          val (t,arg) = iter.next()
+          val arg = iter.next()
           arg.eval(env) match{
-            case e: ErrorValue => error = liftError(e)
-            case v => /*assert(v.isOfType(t));*/ vs ::= v
+            case e: ErrorValue => error = liftError(e, true)
+            case v =>  vs ::= v
           }
         }
         if(error != null) error
         else f(vs.reverse) match{
-          case err: ErrorValue => liftError(err)
-          case result => /*assert(result.isOfType(f.rt));*/ result
+          case err: ErrorValue => liftError(err); case result => result
         }
    
       case err: ErrorValue => liftError(err)

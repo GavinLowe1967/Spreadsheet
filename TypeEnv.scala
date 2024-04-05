@@ -60,10 +60,7 @@ object TypeEnv{
 
   /** An initial TypeEnv. */
   def apply() = {
-    val nameMap = 
-      new NameMap + ("head" -> PolymorphicFunction.head) + 
-        ("tail" -> PolymorphicFunction.tail)
-// FIXME: add built in functions
+    val nameMap = new NameMap ++ BuiltInFunctions.builtInTypes
     new TypeEnv(
       nameMap, new Constraints, new CellReadMap, new Frame, List[Frame]())
 
@@ -176,7 +173,8 @@ class TypeEnv(
         case None => cellReadMap
       }                //  end of definition of newCellReadMap
     val newNameMap = subInNameMap(nameMap, tId, t)
-    new TypeEnv(newNameMap, constraints, newCellReadMap, frame, stack)
+    val newConstraints = constraints + (tId -> SingletonTypeConstraint(t))
+    new TypeEnv(newNameMap, newConstraints, newCellReadMap, frame, stack)
     //new TypeEnv(newNameMap, constraints - tId, newCellReadMap, frame, stack)
   }
 
@@ -209,4 +207,7 @@ class TypeEnv(
   }
 
   override def toString = s"TypeEnv($nameMap, $constraints)"
+
+  def showBindings: String = 
+    (for((n,t) <- nameMap.iterator) yield s"$n -> $t\n").fold("")(_+_) 
 }
