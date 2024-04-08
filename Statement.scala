@@ -52,7 +52,7 @@ case class Directive(cell: CellExp, expr: Exp) extends Statement{
                 handleError(ev1) 
               // Note: ErrorValue <: Cell, so the ordering is important.
               case v1: Cell => env.setCell(c, r, v1) // println(s"($c,$r) = $v1")
-              case v => println(v); ??? // FIXME?
+              case v => println(v); ??? // IMPROVE?
             }
             else println("Indexing error for row: found $r")
             // end of case RowValue(r)

@@ -298,21 +298,15 @@ case class ListLiteral(elems: List[Exp]) extends Exp{
     // Traverse elems, evaluating each, and building in vs in reverse;
     // maintain type of elements in theType; and catch any error.
     var es = elems; var vs = List[Value](); var error: ErrorValue = null
-    // var theType: TypeT = AnyType                       // FIXME
     while(es.nonEmpty && error == null){
       es.head.eval(env) match{
         case err: ErrorValue => error = liftError(err)
-        case v => vs ::= v; /*theType = v.getType;*/ es = es.tail
-          // if(v.isOfType(theType)){ vs ::= v; theType = v.getType; es = es.tail }
-          // else sys.error(mkErr(theType.asString, v))
+        case v => vs ::= v;  es = es.tail
       }
     }
     if(error != null) error else ListValue(vs.reverse)
   }
 
-  // private var underlyingType: TypeT = null
-
-  // def setUnderlyingType(t: TypeT) = underlyingType = t
 }
 
 // ==================================================================

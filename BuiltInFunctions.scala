@@ -7,17 +7,17 @@ object BuiltInFunctions{
   private val headT = {
     // val tid = TypeVar.getNext(); val t = TypeVar(tid)
     val t = TypeParam("A")
-    FunctionType(List((t, AnyTypeConstraint)), List(ListType(t)), t)
+    FunctionType(List(("A", AnyTypeConstraint)), List(ListType(t)), t)
   }
   private val tailT = {
     //val tid = TypeVar.getNext(); val t = TypeVar(tid)
     val t = TypeParam("A")
-    FunctionType(List((t, AnyTypeConstraint)), List(ListType(t)), ListType(t))
+    FunctionType(List(("A", AnyTypeConstraint)), List(ListType(t)), ListType(t))
   }
   private val isEmptyT = { 
     //val tid = TypeVar.getNext(); val t = TypeVar(tid)
     val t = TypeParam("A")
-    FunctionType(List((t, AnyTypeConstraint)), List(ListType(t)), BoolType)
+    FunctionType(List(("A", AnyTypeConstraint)), List(ListType(t)), BoolType)
   }
 
   /** The types of built-in functions. */

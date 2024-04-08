@@ -6,7 +6,7 @@ all: $(DIR)/ParserTest.class $(DIR)/SpreadsheetApp.class $(DIR)/TypeCheckerTest.
 
 # ===== Language
 
-$(DIR)/Value.class: $(DIR)/Input.class $(DIR)/TypeT.class
+$(DIR)/Value.class: $(DIR)/Input.class $(DIR)/FunctionType.class
 
 $(DIR)/EvaluationTypeChecker.class: $(DIR)/TypeEnv.class
 
@@ -36,15 +36,19 @@ $(DIR)/ParserTest.class: $(DIR)/StatementParser.class
 
 $(DIR)/TypeConstraint.class: $(DIR)/TypeT.class
 
+$(DIR)/FunctionType.class: $(DIR)/TypeConstraint.class
+
 $(DIR)/Reply.class: $(DIR)/Exp.class
 
-$(DIR)/Substitution.class: $(DIR)/TypeT.class $(DIR)/Reply.class
+$(DIR)/Substitution.class: $(DIR)/FunctionType.class $(DIR)/Reply.class
 
 $(DIR)/TypeEnv.class: $(DIR)/TypeConstraint.class $(DIR)/BuiltInFunctions.class
 
-$(DIR)/TypeChecker.class: $(DIR)/EvaluationTypeChecker.class			\
-  $(DIR)/Substitution.class $(DIR)/TypeEnv.class $(DIR)/Exp.class	\
-  $(DIR)/FunctionValue.class $(DIR)/BlockExp.class
+$(DIR)/Unification.scala: $(DIR)/TypeEnv.class	\
+  $(DIR)/EvaluationTypeChecker.class
+
+$(DIR)/TypeChecker.class: $(DIR)/Unification.class $(DIR)/Substitution.class	\
+  $(DIR)/Exp.class $(DIR)/FunctionValue.class $(DIR)/BlockExp.class
 
 $(DIR)/TypeCheckerTest.class: $(DIR)/TypeChecker.class
 

@@ -164,11 +164,11 @@ object ParserTest{
     assert(parseAll(StatementParser.typeP, "List[Boolean]") ==
       ListType(BoolType))
     assert(ps("def add[A](x: Int, y: Int) : Int = x+y") == 
-      FunctionDeclaration("add", List((TypeParam("A"),AnyTypeConstraint)),
+      FunctionDeclaration("add", List(("A",AnyTypeConstraint)),
         List(("x",IntType), ("y",IntType)), IntType, 
         BinOp(NameExp("x"), "+", NameExp("y")) ))
     assert(ps("def id[A](x: A) : A = x") == 
-      FunctionDeclaration("id", List((TypeParam("A"),AnyTypeConstraint)),
+      FunctionDeclaration("id", List(("A",AnyTypeConstraint)),
         List(("x",TypeParam("A"))), TypeParam("A"), NameExp("x")) )
 
     println("Statement tests done")
@@ -179,13 +179,17 @@ object ParserTest{
 
     assert(ps("def apply[A, B](f: A => B, x: A) : B = f(x)") == 
       FunctionDeclaration("apply", 
-        List((TypeParam("A"),AnyTypeConstraint),
-          (TypeParam("B"),AnyTypeConstraint) ),
+        List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint) ),
         List(("f", FunctionType(List(), List(TypeParam("A")), TypeParam("B"))), 
           ("x", TypeParam("A"))),
         TypeParam("B"), 
         FunctionApp(NameExp("f"), List(NameExp("x")) ) ))
 
+    assert(ps("def f[A <: Eq](x: A): Boolean = x == x") ==
+      FunctionDeclaration(
+        "f", List(("A",EqTypeConstraint)),
+        List(("x",TypeParam("A"))), BoolType, 
+        BinOp(NameExp("x"), "==", NameExp("x")) ))
 
     println("Done")
   }

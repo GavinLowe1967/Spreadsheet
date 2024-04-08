@@ -96,8 +96,7 @@ object ExpParser{
       case (n, None) => n
       case (n, Some(ps)) => FunctionApp(n, ps)
     }
-    // FIXME: allow more general definitions of the function.  
-//    | name > NameExp 
+    // TODO: allow more general definitions of the function.  
     | cell1
     | lit("#") ~~ hashTerm > { _._2 }  
     | inParens(expr) // Note: sets extent to include parentheses.
@@ -213,7 +212,7 @@ object StatementParser{
     | lit("Boolean") > { _ => BoolType }
     | lit("Row") > { _ => RowType }
     | lit("Column") > { _ => ColumnType }
-    //     // FIXME: and more
+    //     // TODO: and more
     | lit("List") ~> inSquare(typeP) > { t => ListType(t) }
     | upperName > { n => TypeParam(n) }
   )
@@ -234,15 +233,22 @@ object StatementParser{
 
   import FunctionType.TypeParameter
 
+  private def typeConstraint: Parser[StoredTypeConstraint] = (
+    lit("<:") ~> (
+      lit ("Eq") > (_ => EqTypeConstraint) 
+      | lit("Num") > (_ => MemberOf(TypeT.NumTypes))
+    ) 
+    | success(AnyTypeConstraint)
+  )
+
   /** Parser for a single type parameter. */
-  private def typeParam: Parser[TypeParameter] = 
-    upperName > { t => (TypeParam(t), AnyTypeConstraint) } // FIXME
+  private  def typeParam: Parser[TypeParameter] =
+    upperName ~ typeConstraint // > { t => (t, AnyTypeConstraint) } 
 
   /** Parser for type parameters. */
   private def typeParams: Parser[List[TypeParameter]] = 
     opt(inSquare(repSep(typeParam, ","))) > 
       { case Some(ts) => ts; case None => List() }
-                                         // TODO: add type constraints
 
   /** A parser for a function declaration "def <name>(<params>) = <expr>". */
   def funDec: Parser[FunctionDeclaration] = 

@@ -6,7 +6,6 @@ import scala.collection.mutable.HashMap
 // ==================================================================
 
 import TypeVar.TypeID
-// import Substitution.TypeMap
 
 object Substitution{
 
@@ -15,10 +14,6 @@ object Substitution{
     case TypeVar(tv1) => if(tv1 == tv) t else t1
     case ListType(underlying) => ListType(reMap(tv, t, underlying))
     case FunctionType(params, domain, range) =>
-/*  // FIXME
-      assert(params.forall{ case (TypeVar(tt),_) => tv != tt; case _ => true }, 
-        s"$params $domain $range")
- */ 
       FunctionType(params, domain.map(reMap(tv, t, _)), reMap(tv, t, range))
     case _ => t1
   }
@@ -35,15 +30,12 @@ object Substitution{
     //   typeMap.get(tv) match{ case Some(t1) => t1; case None => t }
     case ListType(underlying) => ListType(remapBy(typeMap, underlying))
     case FunctionType(params, domain, range) =>
-      assert(params.forall{ case (TypeParam(tp),_) => !typeMap.contains(tp) })
+      assert(params.forall{ case (tp,_) => !typeMap.contains(tp) })
 // FIXME: other types
       FunctionType(params, domain.map(remapBy(typeMap, _)), remapBy(typeMap, range))
     case _ => t
   }
 
-  /** Remap t according to pairs. */
-  // private def remapBy(pairs: List[(TypeParamName, TypeVar)], t: TypeT): TypeT = 
-  //   remapBy(new TypeMap ++ pairs, t)
 
   /** Remap (ts,t) according to pairs. */
   def remapBy(pairs: List[(TypeParamName, TypeVar)], ts: List[TypeT], t: TypeT)
@@ -51,33 +43,11 @@ object Substitution{
     val typeMap = new TypeMap ++ pairs
     (ts.map(remapBy(typeMap, _)), remapBy(typeMap, t))
   }
+}
 
-/*
-  type TypeMap = HashMap[TypeID, TypeT]
 
-  /** Remap t according to pairs. */
-  private def remapBy(pairs: List[(TypeID, TypeT)], t: TypeT): TypeT = 
-    remapBy(new TypeMap ++ pairs, t)
 
-  /** Remap t according to typeMap. */
-  private def remapBy(typeMap: TypeMap, t: TypeT): TypeT = t match{
-    case TypeVar(tv) =>
-      typeMap.get(tv) match{ case Some(t1) => t1; case None => t }
-    case ListType(underlying) => ListType(remapBy(typeMap, underlying))
-    case FunctionType(params, domain, range) =>
-      // assert(params.forall{ case (TypeVar(tt),_) => !typeMap.contains(tt) })
-// FIXME: other types
-      FunctionType(params, domain.map(remapBy(typeMap, _)), remapBy(typeMap, range))
-    case _ => t
-  }
-
-  /** Remap (ts,t) according to pairs. */
-  def remapBy(pairs: List[(TypeID, TypeT)], ts: List[TypeT], t: TypeT)
-      : (List[TypeT], TypeT) = {
-    val typeMap = new TypeMap ++ pairs
-    (ts.map(remapBy(typeMap, _)), remapBy(typeMap, t))
-  }
- */
+// ========= Dead code below. =========
 
 /*
 /** Abstractly, a mapping from type variables to type expressions (TypeT), as
@@ -128,7 +98,6 @@ class Substitution(private var map: TypeMap){
     case (_, TypeVar(_)) => unify(t2,t1) 
     
     case (IntType, IntType) | (BoolType, BoolType) | (StringType, StringType) =>
-      // FIXME: other cases
       Ok(())
 
     case (ListType(u1), ListType(u2)) => unify(u1, u2)
@@ -173,4 +142,4 @@ class Substitution(private var map: TypeMap){
     println("Done")
   }
  */
-}
+

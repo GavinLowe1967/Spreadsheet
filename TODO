@@ -11,20 +11,25 @@ Outstanding:
 - Parser for strings in script. 
 - Check names of parameters of functions are disjoint.  
 - check declared names are disjoint in each block.
+- Improve Directive.perform re error handling.
 
 Current: 
 
-- For functions with type parameters, replace each with type variable with
-  "lower bound" constraint.  (?)  No, separately record restrictions on type
-  params.
-
 - When calling functions/binops, check that lower bound of each actual
-  parameter is a subset of the type of the formal parameter.
-  ?? Generate new TypeVar to replace the type param?   TypeChecker l 204
+  parameter is a subset of the type of the formal parameter. -- done for
+  functions, I think.  But not binops
 
-- Substitution.scala. l20, FIXME
+- Check that all types in function declaration signatures are declared. -- done
+1. In type environment, store (TypeParam => TypeConstraint) map.  -- done
+2. Update when processing function declaration --done
+3. Check names at same point --done
+3. Remove new names when leaving scope: store previous map in Frame -- done
 
-- Check that all types in function declaration signatures are declared.
+* Parsing of type constraints: Eq and Num
+* Type checking with constraints 
+  def add[A <: Num](x: A, y: A): A = x+y
+  def equal[A <: Eq](x: A, y: A) : Boolean = x == y
+  def sum[A <: Num](xs: List[A]) : A = ... base case ??
 
 When can type t1 instantiate t2?
 
@@ -38,9 +43,8 @@ ListType(tt1)   ListType(tt2)  tt1 can instantiate tt2
 ListType(tt1)   Type param     ListType(tt1) satisfies constraint on t2
   
 
--- Done introduction of type parameters.  Allow their use in types of params or return value. 
 
-- polymorphism (def id[A](x: A): A = x)
+- polymorphism (def id[A](x: A): A = x) -- done
 - type classes (def equal[A <: Eq](x: A, y: A): Boolean = x == y)
 - give polymorphic types to built-in functions, head, tail 
 
@@ -91,7 +95,12 @@ Code
 
 ===================================== DONE
 
+-- Done introduction of type parameters.  Allow their use in types of params or return value. 
+- Substitution.scala. l20, FIXME
 
+- For functions with type parameters, replace each with type variable with
+  "lower bound" constraint.  (?)  No, separately record restrictions on type
+  params.
 - type checking for lists, from left-to-right
 - empty list
 All commented out tests in ParserTest, chck fail typechecking

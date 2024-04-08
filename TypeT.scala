@@ -1,6 +1,7 @@
 package spreadsheet
 
 import TypeVar.TypeID
+import TypeParam.TypeParamName
 
 /** The trait representing all type expressions. */
 trait TypeT{
@@ -17,6 +18,9 @@ trait TypeT{
   /** The type variables included in this type. */
   def typeVars: List[TypeID]
 
+  /** The type parameters included in this type. */
+  def typeParams: List[TypeParamName]
+
 //  def isEqType: Boolean
 }
 
@@ -32,6 +36,8 @@ case class TypeVar(tv: TypeID) extends TypeT{
   def asString = toString                                // IMPROVE
 
   def typeVars = List(tv)
+
+  def typeParams = List()
 }
 
 // =========
@@ -53,9 +59,11 @@ object TypeVar{
 
 /** A type parameter, named in the script. */
 case class TypeParam(name: String) extends TypeT{
-  def asString = toString
+  def asString = name // toString
 
   def typeVars = List()
+
+  def typeParams = List(name)
 }
 
 object TypeParam{
@@ -70,31 +78,37 @@ trait EqType extends TypeT
 case object IntType extends EqType {
   def asString = "Int"
   def typeVars = List()
+  def typeParams = List()
 }
 
 case object FloatType extends EqType{
   def asString = "Float"
   def typeVars = List()
+  def typeParams = List()
 }
 
 case object BoolType extends EqType{
   def asString = "Boolean"
   def typeVars = List()
+  def typeParams = List()
 }
 
 case object StringType extends EqType{
   def asString = "String"
   def typeVars = List()
+  def typeParams = List()
 }
 
 case object RowType extends EqType{
   def asString = "Row"
   def typeVars = List()
+  def typeParams = List()
 }
 
 case object ColumnType extends EqType{
   def asString = "Column"
   def typeVars = List()
+  def typeParams = List()
 }
 
 // ==================================================================
@@ -111,25 +125,35 @@ case class ListType(underlying: TypeT) extends TypeT{
   }
 
   def typeVars = underlying.typeVars
+  def typeParams = underlying.typeParams
 }
 
 // ==================================================================
 
-/** The type of functions from `domain` to `range`. 
-  * @param params A list of free type identities, paired with a constraint upon
-  * them. */
-case class FunctionType(
-  params: List[FunctionType.TypeParameter], domain: List[TypeT], range: TypeT
-) extends TypeT{
-  def asString = 
-    domain.map(_.asString).mkString("(", ",", ")")+" => "+range.asString
 
-  def typeVars = domain.flatMap(_.typeVars) ++ range.typeVars
-}
 
-object FunctionType{
-  type TypeParameter = (TypeParam, StoredTypeConstraint)
-}
+// ====== Note: FunctionType is in its own file, as it depends on TypeConstraint
+
+// /** The type of functions from `domain` to `range`. 
+//   * @param params A list of free type identities, paired with a constraint upon
+//   * them. */
+// case class FunctionType(
+//   params: List[FunctionType.TypeParameter], domain: List[TypeT], range: TypeT
+// ) extends TypeT{
+//   def asString = 
+//     domain.map(_.asString).mkString("(", ",", ")")+" => "+range.asString
+
+//   def typeVars = domain.flatMap(_.typeVars) ++ range.typeVars
+
+//   def typeParams = {
+//     assert(params.isEmpty)    // ???
+//     domain.flatMap(_.typeParams) ++ range.typeParams
+//   }
+// }
+
+// object FunctionType{
+//   type TypeParameter = (TypeParam.TypeParamName, StoredTypeConstraint)
+// }
 
 // ==================================================================
 
