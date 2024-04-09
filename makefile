@@ -6,6 +6,9 @@ all: $(DIR)/ParserTest.class $(DIR)/SpreadsheetApp.class $(DIR)/TypeCheckerTest.
 
 # ===== Language
 
+
+
+
 $(DIR)/Value.class: $(DIR)/Input.class $(DIR)/FunctionType.class
 
 $(DIR)/EvaluationTypeChecker.class: $(DIR)/TypeEnv.class
@@ -15,9 +18,11 @@ $(DIR)/BuiltInFunctions.class: $(DIR)/Value.class $(DIR)/TypeConstraint.class
 $(DIR)/Environment.class: $(DIR)/Value.class \
   $(DIR)/EvaluationTypeChecker.class  $(DIR)/BuiltInFunctions.class
 
-$(DIR)/Exp.class: $(DIR)/Value.class $(DIR)/Environment.class $(DIR)/TypeEnv.class
+$(DIR)/Exp.class: $(DIR)/Value.class $(DIR)/Reply.class
+# $(DIR)/Environment.class
+#  $(DIR)/TypeEnv.class
 
-$(DIR)/FunctionValue.class: $(DIR)/Exp.class
+$(DIR)/FunctionValue.class: $(DIR)/Exp.class $(DIR)/Statement.class $(DIR)/Environment.class
 
 $(DIR)/Statement.class: $(DIR)/Exp.class $(DIR)/ViewT.class
 
@@ -38,11 +43,11 @@ $(DIR)/TypeConstraint.class: $(DIR)/TypeT.class
 
 $(DIR)/FunctionType.class: $(DIR)/TypeConstraint.class
 
-$(DIR)/Reply.class: $(DIR)/Exp.class
+# $(DIR)/Reply.class: $(DIR)/Exp.class
 
 $(DIR)/Substitution.class: $(DIR)/FunctionType.class $(DIR)/Reply.class
 
-$(DIR)/TypeEnv.class: $(DIR)/TypeConstraint.class $(DIR)/BuiltInFunctions.class
+$(DIR)/TypeEnv.class: $(DIR)/TypeConstraint.class $(DIR)/Exp.class $(DIR)/BuiltInFunctions.class $(DIR)/Substitution.class
 
 $(DIR)/Unification.scala: $(DIR)/TypeEnv.class	\
   $(DIR)/EvaluationTypeChecker.class

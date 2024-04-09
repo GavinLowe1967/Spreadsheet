@@ -21,8 +21,22 @@ trait HasExtent{
     error match{
       case TypeError(msg) => TypeError(extend(msg))
       case EvalError(msg) => EvalError(extend(msg))
-    }
+    } 
   }
+}
+
+// =======================================================
+
+/** The interface of an Environment as seen by Exp.  Defined here to avoid
+  * cyclic compilation dependencies. */
+trait EnvironmentT{
+  def get(name: String) : Option[Value]
+
+  def checkType(v: Cell, t: TypeT): Reply[Unit]
+
+  def getCell(c: Int, r: Int): Cell
+
+  def cloneE: EnvironmentT
 }
 
 // =======================================================
@@ -30,10 +44,10 @@ trait HasExtent{
 /** Representation of an expression. */
 trait Exp extends HasExtent{
   /** Evaluate this in environment `env`. */
-  def eval0(env: Environment): Value
+  def eval0(env: EnvironmentT): Value
 
   /** Evaluate this in environment `env`, adding the extent from this. */
-  def eval(env: Environment): Value = eval0(env).withSource(extent)
+  def eval(env: EnvironmentT): Value = eval0(env).withSource(extent)
 
   /** Make an error message, saying that `found` was found when `expected` was
     * expected`. */
@@ -65,7 +79,7 @@ trait Exp extends HasExtent{
 
 /** A name. */
 case class NameExp(name: NameExp.Name) extends Exp{
-  def eval0(env: Environment) = {
+  def eval0(env: EnvironmentT) = {
     assert(extent != null, s"Null extent in $this")
     env.get(name) match{
       case Some(value) => value 
@@ -85,7 +99,7 @@ object NameExp{
 
 /** An integer constant expression. */
 case class IntExp(value: Int) extends Exp{
-  def eval0(env: Environment) = IntValue(value) 
+  def eval0(env: EnvironmentT) = IntValue(value) 
 
   override def toString = value.toString
 }
@@ -93,7 +107,7 @@ case class IntExp(value: Int) extends Exp{
 // ==================================================================
 
 case class FloatExp(value: Float) extends Exp{
-  def eval0(env: Environment) = FloatValue(value)
+  def eval0(env: EnvironmentT) = FloatValue(value)
 
   override def toString = value.toString
 }
@@ -102,7 +116,7 @@ case class FloatExp(value: Float) extends Exp{
 
 /** A boolean constant. */
 case class BoolExp(value: Boolean) extends Exp{
-  def eval0(env: Environment) = BoolValue(value)
+  def eval0(env: EnvironmentT) = BoolValue(value)
 
   override def toString = value.toString
 }
@@ -111,7 +125,7 @@ case class BoolExp(value: Boolean) extends Exp{
 
 /** A string literal. */
 case class StringExp(value: String) extends Exp{
-  def eval0(env: Environment) = StringValue(value)
+  def eval0(env: EnvironmentT) = StringValue(value)
 
   override def toString = value
 }
@@ -127,7 +141,7 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
   // Note: extent might be overwritten if the corresponding syntax is in
   // parentheses.  This is normally what we want. 
 
-  def eval0(env: Environment) = {
+  def eval0(env: EnvironmentT) = {
     assert(left.getExtent != null, left.toString)
     assert(right.getExtent != null, "right"+right.toString)
     assert(extent != null)
@@ -224,7 +238,7 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
 
 /** A row literal. */
 case class RowExp(row: Int) extends Exp{
-  def eval0(env: Environment) = RowValue(row) 
+  def eval0(env: EnvironmentT) = RowValue(row) 
 
   override def toString = s"#$row"
 }
@@ -236,7 +250,7 @@ case class ColumnExp(column: String) extends Exp{
   require(column.forall(_.isUpper))
   require(column.length <= 2) // surely? 
 
-  def eval0(env: Environment) = ColumnValue(asInt)
+  def eval0(env: EnvironmentT) = ColumnValue(asInt)
 
   /** Int representation of this. */
   private val asInt = ColumnValue.asInt(column)
@@ -250,10 +264,10 @@ case class ColumnExp(column: String) extends Exp{
 /** A reference to a Cell.  Note: the coordinates are in the order
   * (column,row), matching standard spreadsheet usage. */
 case class CellExp(column: Exp, row: Exp) extends Exp{
-  def eval0(env: Environment) = ??? 
+  def eval0(env: EnvironmentT) = ??? 
   // Note: above never called, since env.getCell sets the source
 
-  override def eval(env: Environment) = {
+  override def eval(env: EnvironmentT) = {
     /* Read from cell(c,r). */
     def doRead(c: Int, r: Int) = {
       assert(theType != null); val v = env.getCell(c, r)
@@ -283,7 +297,7 @@ case class CellExp(column: Exp, row: Exp) extends Exp{
 
 /** An if expression `if(test) thenClause else elseClause`. */
 case class IfExp(test: Exp, thenClause: Exp, elseClause: Exp) extends Exp{
-  def eval0(env: Environment) = test.eval(env) match{
+  def eval0(env: EnvironmentT) = test.eval(env) match{
     case BoolValue(true) => thenClause.eval(env)
     case BoolValue(false) => elseClause.eval(env)
     case err: ErrorValue => liftError(err)
@@ -294,7 +308,7 @@ case class IfExp(test: Exp, thenClause: Exp, elseClause: Exp) extends Exp{
 // =================================================================
 
 case class ListLiteral(elems: List[Exp]) extends Exp{
-  def eval0(env: Environment) = {
+  def eval0(env: EnvironmentT) = {
     // Traverse elems, evaluating each, and building in vs in reverse;
     // maintain type of elements in theType; and catch any error.
     var es = elems; var vs = List[Value](); var error: ErrorValue = null

@@ -3,7 +3,7 @@ package spreadsheet
 import scala.collection.immutable.{Map,HashMap}
 
 import TypeVar.TypeID // Type variables (Ints)
-import NameExp.Name // Names of identifiers (Strings)
+// import NameExp.Name // Names of identifiers (Strings)
 import TypeEnv._
 import TypeParam.TypeParamName // Names of type parameters (Strings)
 
@@ -23,19 +23,6 @@ class TypeEnv(
   private val frame: Frame,
   private val stack: List[Frame]
 ) extends TypeEnv0{
-  /** The type associated with name. */
-  def apply(name: Name) : TypeT = nameMap(name)
-
-  /** Optionally, the type associated with name. */
-  def get(name: Name): Option[TypeT] = nameMap.get(name)
-
-  /** The constraint associated with tid. */
-  def apply(tid: TypeID) : StoredTypeConstraint = constraints(tid) match{
-    case SingletonTypeConstraint(TypeVar(tid1)) =>       // IMPROVE, unreachable?
-      assert(false) 
-      println(s"TypeEnv.apply: $tid -> $tid1"); apply(tid1)
-    case c => c 
-  }
 
   /** Make a new TypeEnv, using the parameters of this where not specified. */
   private def make(
@@ -44,6 +31,15 @@ class TypeEnv(
     typeParamMap: TypeParamMap = typeParamMap,
     frame: Frame = frame, stack: List[Frame] = stack
   ) = new TypeEnv(nameMap, constraints, cellReadMap, typeParamMap, frame, stack)
+
+
+  // ========= NameMap functions
+
+  /** The type associated with name. */
+  def apply(name: Name) : TypeT = nameMap(name)
+
+  /** Optionally, the type associated with name. */
+  def get(name: Name): Option[TypeT] = nameMap.get(name)
 
   /** The TypeEnv formed by adding the mapping name -> t. */
   def + (name: Name, t: TypeT) : TypeEnv = {
@@ -55,7 +51,6 @@ class TypeEnv(
     }
     frame.storeNewName(name)
     make(newNameMap)
-    //new TypeEnv(newNameMap, constraints, cellReadMap, frame, stack)
   }
 
   /** The TypeEnv formed by adding each name -> t for (name,t) in pairs. */
@@ -70,35 +65,58 @@ class TypeEnv(
       frame.storeNewName(name)
     }
     make(nameMap ++ updates)
-    //new TypeEnv(nameMap ++ updates, constraints, cellReadMap, frame, stack)
   }
-
-  /** Add type parameters and associated constraints. */
-  def addTypeParams(pairs: List[FunctionType.TypeParameter]) // (TypeParamName, StoredTypeConstraint)])
-      : TypeEnv = 
-    make(typeParamMap = typeParamMap ++ pairs)
-
-  /** Is n a defined type parameter? */
-  def hasTypeParam(n: TypeParamName) = typeParamMap.contains(n)
-
-  def constraintForTypeParam(n: TypeParamName): StoredTypeConstraint =
-    typeParamMap(n)
-
-  /** The TypeEnv formed by adding  the constraint typeID -> tc. */
-  def + (typeID: TypeID, tc: StoredTypeConstraint) : TypeEnv = 
-    make(constraints = constraints + (typeID -> tc))
-    // new TypeEnv(nameMap, constraints + (typeID -> tc), cellReadMap, frame, stack)
 
   /** Remove name from the type environment. */
   def - (name: Name): TypeEnv = make(nameMap - name)
-  // new TypeEnv(nameMap - name, constraints, cellReadMap, frame, stack)
+
+  /** Replace tId by t in nameMap. */
+  private def subInNameMap(nameMap: NameMap, tId: TypeID, t: TypeT) : NameMap =
+    nameMap.map{ case (n,t1) => (n, Substitution.reMap(tId, t, t1)) }
+
+  // ========= Constraints functions
+
+  /** The constraint associated with tid. */
+  def apply(tid: TypeID) : StoredTypeConstraint = constraints(tid) match{
+    case SingletonTypeConstraint(TypeVar(tid1)) =>       // IMPROVE, unreachable?
+      assert(false) 
+      println(s"TypeEnv.apply: $tid -> $tid1"); apply(tid1)
+    case c => c 
+  }
+
+  /** The TypeEnv formed by adding  the constraint typeID -> tc. */
+  def addTypeVarConstraint(typeID: TypeID, tc: StoredTypeConstraint) : TypeEnv = 
+    make(constraints = constraints + (typeID -> tc))
+
+  /** The TypeEnv formed by adding  the constraint typeID -> tc. */
+  def + (typeID: TypeID, tc: StoredTypeConstraint) : TypeEnv = 
+    addTypeVarConstraint(typeID, tc)
 
   /** The TypeEnv formed by adding the constraint typeID -> tc for each (typeID,
     * tc) in pairs. */
   def addConstraints(pairs: List[(TypeID, StoredTypeConstraint)]) : TypeEnv = 
     make(constraints = constraints ++ pairs)
-  // new TypeEnv(nameMap, constraints ++ pairs, cellReadMap, frame, stack)
-  
+
+  // ========= TypeParamMap functions
+
+  def addTypeParamConstraint(n: TypeParam.TypeParamName, c: TypeParamConstraint)
+      : TypeEnv =
+    make(typeParamMap = typeParamMap + (n -> c))
+
+  def + (n: TypeParam.TypeParamName, c: TypeParamConstraint): TypeEnv = 
+    addTypeParamConstraint(n, c)
+
+  /** Add type parameters and associated constraints. */
+  def addTypeParams(pairs: List[FunctionType.TypeParameter]) : TypeEnv = 
+    make(typeParamMap = typeParamMap ++ pairs)
+
+  /** Is n a defined type parameter? */
+  def hasTypeParam(n: TypeParamName) = typeParamMap.contains(n)
+
+  def constraintForTypeParam(n: TypeParamName): TypeParamConstraint =
+    typeParamMap(n)
+
+  // ========= cell constraints
 
   /** Add a constraint that typeId is a Cell type corresponding to `cell`. */
   def addCellConstraint(typeId: TypeID, cell: CellExp): TypeEnv = {
@@ -109,9 +127,7 @@ class TypeEnv(
     //new TypeEnv(nameMap, newConstraints, newCellReadMap, frame, stack)
   }
 
-  /** Replace tId by t in nameMap. */
-  private def subInNameMap(nameMap: NameMap, tId: TypeID, t: TypeT) : NameMap =
-    nameMap.map{ case (n,t1) => (n, Substitution.reMap(tId, t, t1)) }
+  // ========= update functions
 
   /** The TypeEnv formed from this by replacing TypeVar(tId) with t, as used
     * during type checking.  Updates are propogated to cell expressions.  */
@@ -134,6 +150,8 @@ class TypeEnv(
         case None => cellReadMap
       }                //  end of definition of newCellReadMap
     val newNameMap = subInNameMap(nameMap, tId, t)
+    // Note: we update the mapping for tId to deal with cases like 
+    // "def f[A](x: A, y: A): A = x; val y = f(3, true)"
     val newConstraints = constraints + (tId -> SingletonTypeConstraint(t))
     make(nameMap = newNameMap, constraints = newConstraints, 
       cellReadMap = newCellReadMap)
@@ -151,6 +169,8 @@ class TypeEnv(
     make(nameMap = newNameMap, constraints = newConstraints)
     // new TypeEnv(newNameMap, newConstraints, cellReadMap, frame, stack)
   }
+
+  // ========= Scoping functions
 
   /** Record that a new scope is being entered. */
   def newScope : TypeEnv = {
@@ -170,6 +190,8 @@ class TypeEnv(
     // new TypeEnv(newNameMap, constraints, cellReadMap, stack.head, stack.tail)
   }
 
+  // ========= Generic helper functions
+
   def showType(t: TypeT): String = t match{
     case TypeVar(tId) => apply(tId).asStringE
     case TypeParam(tp) => typeParamMap(tp) match{
@@ -188,6 +210,9 @@ class TypeEnv(
 
 /** Companion object for TypeEnv. */
 object TypeEnv{
+
+  type Name = String // Names of identifiers.  IMPROVE: export to NameExp
+
   /** A mapping from names in the script to their types. */
   private type NameMap = HashMap[Name, TypeT]
 
@@ -199,7 +224,7 @@ object TypeEnv{
 
   /** Mapping giving the type constraints on type parameters currently in
     * scope. */
-  private type TypeParamMap = HashMap[TypeParamName, StoredTypeConstraint]
+  private type TypeParamMap = HashMap[TypeParamName, TypeParamConstraint]
 
   /** A frame, corresponding to a particular nesting of scopes. */
   private class Frame{

@@ -34,12 +34,12 @@ case class FunctionDeclaration(
 /** The application of a function represented by `f` to `args`. */
 case class FunctionApp(f: Exp, args: List[Exp]) extends Exp{
 
-  def eval0(env: Environment) = {
+  def eval0(env: EnvironmentT) = {
     f.eval(env) match{
       case FunctionValue(params, rt, body, env1) =>
         assert(params.length == args.length) 
         // Try to bind params to values of args in env1; but catch errors
-        val env2 = env1.clone; var error: ErrorValue = null
+        val env2 = env1.cloneE; var error: ErrorValue = null
         var iter = params.zip(args).iterator
         while(error == null && iter.hasNext){
           val ((p,_),arg) = iter.next()

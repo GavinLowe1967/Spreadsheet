@@ -13,11 +13,12 @@ case class FunctionType(
   def typeVars = domain.flatMap(_.typeVars) ++ range.typeVars
 
   def typeParams = {
-    assert(params.isEmpty)    // ???
+    assert(params.isEmpty)    // IMPROVE ???
     domain.flatMap(_.typeParams) ++ range.typeParams
   }
 }
 
 object FunctionType{
-  type TypeParameter = (TypeParam.TypeParamName, StoredTypeConstraint)
+  /** The type parameters for functions. */
+  type TypeParameter = (TypeParam.TypeParamName, TypeParamConstraint)
 }

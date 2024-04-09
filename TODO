@@ -12,8 +12,20 @@ Outstanding:
 - Check names of parameters of functions are disjoint.  
 - check declared names are disjoint in each block.
 - Improve Directive.perform re error handling.
+- TypeT.isSubclassOf
+- Value.getType
 
 Current: 
+
+- Check return type param in scope
+
+*** In TypeChecker on FunctionDeclarations: 
+// FIXME: if any of tparams gets bound to a TypeVar, update in typeEnv(name)
+
+val y = #A3
+def f(x: Int): Int = x+y -- seems fine
+def g[A <: Num](x: A): A = x+y -- do we want this? 
+
 
 - When calling functions/binops, check that lower bound of each actual
   parameter is a subset of the type of the formal parameter. -- done for

@@ -401,12 +401,11 @@ object TypeCheckerTest{
     assertFail(tcpss(script9))
     assertFail(tcpss("def f[A](x: A): A = x+x"))
 
-    printErrors = true
-    println("XXXXXXXXXX") 
+    // printErrors = true
 
     tcpss("def f[A <: Num](x: A): A = x+x") match{ case Ok(te) =>
       assert(te("f") == FunctionType(
-        List(("A", MemberOf(List(IntType, FloatType)))),
+        List(("A", NumTypeConstraint)), // MemberOf(List(IntType, FloatType)))),
         List(TypeParam("A")), TypeParam("A")) )
     }
 
@@ -415,7 +414,7 @@ object TypeCheckerTest{
     tcpss("def f[A <: Num](x: A): Boolean = x == x; val y = f(3)") match{
       case Ok(te) =>
         assert(te("f") == FunctionType(
-          List(("A", MemberOf(List(IntType, FloatType)))),
+          List(("A", NumTypeConstraint)), // MemberOf(List(IntType, FloatType)))),
           List(TypeParam("A")), BoolType) )
         assert(te("y") == BoolType)
     }
@@ -425,7 +424,45 @@ object TypeCheckerTest{
       "def f[A <: Eq](x: A): Boolean = g(x) == x; def g[B <: Num](x: B): B = x"
     assertFail(tcpss(script10))
 
-    println(tcpss("def f[A <: Num](x: A): Boolean = g(x) == x; def g[B](x: B): B = x"))
+    val script11 =
+      "def f[A <: Num](x: A): Boolean = g(x) == x; def g[B](x: B): B = x"
+    tcpss(script11) match{ case Ok(te) => 
+      assert(te("f") == FunctionType(
+        List(("A", NumTypeConstraint)), // MemberOf(List(IntType, FloatType)))),
+        List(TypeParam("A")), BoolType) )
+    }
+
+    // println(tcpss("val x = (#A3 + 4); val y = (#B2 + 5.8); val z = x+y"))
+    // println(tcpss("def f[A](x: A, y: A): A = x; val y = f(3, #A3)"))
+
+    assertFail(tcpss("def f[A <: Num](x: A): A = 3+x"))
+    assertFail(tcpss("def f[A <: Num](x: A): A = x+3"))
+    assertFail(tcpss("def f[A, B](x: A): B = x"))
+
+    printErrors = true
+    println("XXXXXXXXXX") 
+    // println(tcpss("val y = #B3; def f[A <: Num](): A = y; val z = f()"))
+
+    tcpss("val y = #B3; def f(): Int = y") match{ case Ok(te) => 
+      assert(te("f") == FunctionType(List(), List(), IntType))
+      assert(te("y") == IntType)
+    }
+
+    assertFail(tcpss("val y = #B3; def f[A <: Num](): A = y"))
+    assertFail(tcpss("def f[A](x: A): A = if(true) x else #B3"))
+    assertFail(tcpss("def f[A](x: A): A = #B3"))
+
+/*
+    tcpss("val y = #B3; def f[A <: Num](x: A): A = x+ y") match{ case Ok(te) =>
+      assert(te("f") == FunctionType(
+        List(("A", NumTypeConstraint)),
+        List(TypeParam("A")), TypeParam("A")))
+      println(te("y"))
+
+    }
+    println(tcpss("def f[A](x: A): A = if(true) x else #B3"))
+    println(tcpss("def f[A](x: A): A = #B3"))
+ */
 
     println("Done")
   }

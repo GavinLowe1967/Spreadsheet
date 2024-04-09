@@ -10,12 +10,14 @@ object Unification{
     * typeEnv. Otherwise return fail. */
   private def replaceInTypeEnv(
     typeEnv: TypeEnv, tId: TypeID, t: TypeT, fail: => FailureR)
-      : Reply[(TypeEnv, TypeT)] =
+      : Reply[(TypeEnv, TypeT)] = {
+    assert(!t.isInstanceOf[TypeVar])
     if(typeEnv(tId).satisfiedBy(typeEnv, t)) Ok(typeEnv.replace(tId, t), t)
     else fail
+  }
 
   /** Identity on types. */
-  private val idT = (t: TypeT) => t
+  private val idT = (t: TypeT) => t 
 
   /** Try to unify t1 and t2.  If successful, return updated typeEnv and unified
     * type.  t2 is expected to be the "expected" type, and t1 the type that is
@@ -40,24 +42,17 @@ object Unification{
                                                       // TODO: test with ts1!=ts2
         }
 
-      case (TypeVar(tId1), TypeParam(tp)) => ??? // FIXME
+      case (TypeVar(tId1), TypeParam(tp)) => fail
+        // Note: the TypeParam(tp) represents a *universal* quantification
+        // over at least two types.  The TypeVar(tId1) cannot simultaneously
+        // have all of those types.  In particular, tId1 is associated with an
+        // *existential* quantification over one or more types.
 
       case (TypeVar(tId1), _) => // t2 a concrete type.  Try to replace t1 by t2
         replaceInTypeEnv(typeEnv, tId1, t2, fail)
-
-      case (TypeParam(tp), TypeVar(tId2)) => 
-        // println(s"******** $tp $tId2") 
-        replaceInTypeEnv(typeEnv, tId2, t1, fail) 
-                                           // IMPROVE: merge with following
-/*
-        // Compare type constraints
-        val c1 = typeEnv.constraintForTypeParam(tp); val c2 = typeEnv(tId2)
-        // println(s"$tp -> $c1; $tId2 -> $c2")
-        if(c1.implies(c2)) replaceInTypeEnv(typeEnv, tId2, t1, fail)
-        else fail
- */
         
       case ( _, TypeVar(tId2)) =>           // Try to replace t2 by t1
+        assert(!t1.isInstanceOf[TypeVar])
         replaceInTypeEnv(typeEnv, tId2, t1, fail)
 
       case (ListType(tt1), ListType(tt2)) => 

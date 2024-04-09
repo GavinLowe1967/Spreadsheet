@@ -233,10 +233,10 @@ object StatementParser{
 
   import FunctionType.TypeParameter
 
-  private def typeConstraint: Parser[StoredTypeConstraint] = (
+  private def typeConstraint: Parser[TypeParamConstraint] = (
     lit("<:") ~> (
       lit ("Eq") > (_ => EqTypeConstraint) 
-      | lit("Num") > (_ => MemberOf(TypeT.NumTypes))
+      | lit("Num") > (_ => NumTypeConstraint) // MemberOf(TypeT.NumTypes))
     ) 
     | success(AnyTypeConstraint)
   )

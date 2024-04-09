@@ -12,10 +12,12 @@ object EvaluationTypeChecker{
     * typeEnv. Otherwise return fail. */
   private def replaceInTypeEnv(
     typeEnv: TypeEnv, tId: TypeID, t: TypeT, fail: => FailureR)
-      : Reply[(TypeEnv, TypeT)] =
+      : Reply[(TypeEnv, TypeT)] = {
+    assert(!t.isInstanceOf[TypeVar])
     if(typeEnv(tId).satisfiedBy(typeEnv, t)) 
       Ok(typeEnv.replaceEvalTime(tId, t), t)
     else fail
+  }
 
   /** Try to unify t1 and t2, at runtime.  Do not update any typing in cells
     * (within typeEnv.replace).  Pre: t1 is a concrete type (but t2 might be a

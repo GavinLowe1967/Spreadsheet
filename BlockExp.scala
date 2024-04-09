@@ -4,8 +4,8 @@ package spreadsheet
 
 /** A block expression of the form { stmt_1; ...; stmt_n; exp }. */ 
 case class BlockExp(stmts: List[Declaration], exp: Exp) extends Exp{
-  def eval0(env: Environment) = {
-    val env1 = env.clone; // var ok = true; val iter = stmts.iterator
+  def eval0(env: EnvironmentT) = {
+    val env1 = env.cloneE; // var ok = true; val iter = stmts.iterator
     // If an error arises in performing stmts, it will be put in err.
     var err: ErrorValue = null
     def handleError(ev: ErrorValue) = { err = ev }

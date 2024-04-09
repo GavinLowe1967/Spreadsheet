@@ -57,7 +57,7 @@ object TypeChecker{
       val (te, t, mk2nd, mkRes) = op match{
         case "+" | "-" | "*" | "/" =>   // Num a => (a,a) -> a
           val typeId = nextTypeID()
-          val te = typeEnv + (typeId, MemberOf(NumTypes))
+          val te = typeEnv + (typeId, NumTypeConstraint) // MemberOf(NumTypes))
           (te, TypeVar(typeId), idT _, (t1: TypeT) => t1)
         case "==" | "!=" =>                    // Eq a => (a,a) -> Boolean
           val typeId = nextTypeID()
@@ -67,7 +67,7 @@ object TypeChecker{
           (typeEnv, BoolType, idT _, (_:TypeT) => BoolType)
         case "<=" | "<" | ">=" | ">" => // Num a => (a,a) -> a
           val typeId = nextTypeID()
-          val te = typeEnv + (typeId, MemberOf(NumTypes)) 
+          val te = typeEnv + (typeId, NumTypeConstraint) // MemberOf(NumTypes)) 
           (te, TypeVar(typeId), idT _, (_: TypeT) => BoolType)
         case "::" =>  //  (a, ListType(a)) => ListType(a)
           val typeId = nextTypeID()
@@ -233,6 +233,7 @@ object TypeChecker{
                 typeCheckUnify(te1, body, rt).map{ case (te3, tt) =>
                   Ok(te3.endScope) // back to the old scope
                 }
+// FIXME: if any of tparams gets bound to a TypeVar, update in typeEnv(name)
           }
         }).lift(stmt)
 

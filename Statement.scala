@@ -24,11 +24,11 @@ object Statement{
     * `handleError`.  Stop if an error occurs.
     * @return true if all succeeded.  */
   def performAll(
-    statements: List[Statement], env: Environment, 
+    statements: List[Statement], env: EnvironmentT, 
     handleError: ErrorValue => Unit) 
       : Boolean = {
     var ok = true; val iter = statements.iterator
-    while(ok && iter.hasNext) ok = iter.next().perform(env, handleError)
+    while(ok && iter.hasNext) ok = iter.next().perform(env.asInstanceOf[Environment], handleError)
     ok
   }
 }

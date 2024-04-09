@@ -30,7 +30,7 @@ trait Cell extends Value{
 
 /** An empty cell. */
 case class Empty() extends Cell{
-  def getType = EmptyType
+  def getType = ??? // EmptyType
 
   override def asCell = ""
 

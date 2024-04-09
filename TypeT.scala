@@ -8,11 +8,11 @@ trait TypeT{
   def asString: String
 
   /** Is this a subclass of t? 
-    * Note: this is overwritten in some subclasses. */
-  def isSubclassOf(t: TypeT) = t == AnyType || t == this
+  //   * Note: this is overwritten in some subclasses. */
+  // def isSubclassOf(t: TypeT) = /*t == AnyType ||*/ t == this
 
-  def comparable(t: TypeT) = 
-    t.isSubclassOf(this) || this.isSubclassOf(t)
+  // def comparable(t: TypeT) = 
+  //   t.isSubclassOf(this) || this.isSubclassOf(t)
 // TODO: do we need the above two? 
 
   /** The type variables included in this type. */
@@ -118,11 +118,11 @@ case class ListType(underlying: TypeT) extends TypeT{
 
   def asString = { val u = underlying.asString; s"List[$u]" }
 
-  override def isSubclassOf(t: TypeT) = t match{
-    case AnyType => true
-    case ListType(u) => underlying.isSubclassOf(u)
-    case other => false
-  }
+  // override def isSubclassOf(t: TypeT) = t match{
+  //   // case AnyType => true
+  //   case ListType(u) => underlying.isSubclassOf(u)
+  //   case other => false
+  // }
 
   def typeVars = underlying.typeVars
   def typeParams = underlying.typeParams
