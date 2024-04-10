@@ -12,15 +12,11 @@ Outstanding:
 - Check names of parameters of functions are disjoint.  
 - check declared names are disjoint in each block.
 - Improve Directive.perform re error handling.
-- TypeT.isSubclassOf -- done
-- Value.getType -- 
-
-- Remove eval from Exp classes. and perform from Statement -- done
-- Move FunctionDeclaration and FunctionApp and BlockExp -- done
-
 Current: 
 
 - Check return type param in scope
+
+- What is needed in TypeEnv at evaluation time?  constraints, apply(tid). typeParamMap, constraintForTypeParam, replaceEvalTime, showType
 
 *** In TypeChecker on FunctionDeclarations: 
 // FIXME: if any of tparams gets bound to a TypeVar, update in typeEnv(name)
@@ -109,6 +105,14 @@ Code
 
 
 ===================================== DONE
+
+- TypeT.isSubclassOf -- done
+- Value.getType -- done
+
+- Remove eval from Exp classes. and perform from Statement -- done
+- Move FunctionDeclaration and FunctionApp and BlockExp -- done
+
+- Chenage FunctionValue to encapsulate function List[Value] => Value? -- done
 
 -- Done introduction of type parameters.  Allow their use in types of params or return value. 
 - Substitution.scala. l20, FIXME

@@ -73,7 +73,7 @@ class Model(val height: Int, val width: Int){
   private def update1() = {
     // println("New environment")
     val env = new Environment(
-      cells, calculated, height, width, typeEnv)
+      cells, calculated, height, width, typeEnv.getEvaluationTypeEnv)
     // Iterate over statements, unless an error is found.
     def handleError(err: ErrorValue) = {view.addInfo(err.msg)}
     // Statement.performAll(statements, env, handleError)

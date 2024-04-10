@@ -27,7 +27,7 @@ object Unification{
   def unify(typeEnv: TypeEnv, t1: TypeT, t2: TypeT, f: TypeT => TypeT = idT)
       : Reply[(TypeEnv, TypeT)] = {
     // println(s"unify($typeEnv,\n$t1, $t2)")
-    def fail = mkFailure(typeEnv, f(t1), f(t2))
+    def fail = mkFailure(typeEnv, f(t1), f(t2)) 
     if(t1 == t2) Ok(typeEnv, t1)
     else (t1,t2) match{
       case (TypeVar(tId1), TypeVar(tId2)) => // Both TypeVars: find intersection

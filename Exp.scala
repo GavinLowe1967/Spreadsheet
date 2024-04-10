@@ -5,7 +5,7 @@ package spreadsheet
 trait Exp extends HasExtent{
   /** Make an error message, saying that `found` was found when `expected` was
     * expected`. */
-  protected def mkErr(expected: String, found: Value): String = {
+  private def mkErr(expected: String, found: Value): String = {
     val source = found.source; assert(source != null, s"No source for $found")
     s"Expected $expected, found ${found.forError} in "+
     (source match{

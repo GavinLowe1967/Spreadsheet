@@ -3,9 +3,10 @@ package spreadsheet
 import scala.collection.immutable.{Map,HashMap}
 
 import TypeVar.TypeID // Type variables (Ints)
-// import NameExp.Name // Names of identifiers (Strings)
-import TypeEnv._
 import TypeParam.TypeParamName // Names of type parameters (Strings)
+import NameExp.Name // Names of identifiers (Strings)
+import EvaluationTypeEnv._
+import TypeEnv._
 
 /** A type environment.
   * @param nameMap A mapping from names in the script to their types.
@@ -22,16 +23,16 @@ class TypeEnv(
   private val typeParamMap: TypeParamMap,
   private val frame: Frame,
   private val stack: List[Frame]
-) extends TypeEnv0{
+) extends EvaluationTypeEnv(constraints, typeParamMap){
 
   /** Make a new TypeEnv, using the parameters of this where not specified. */
   private def make(
-    nameMap: NameMap = nameMap, constraints: Constraints = constraints, 
+    nameMap: NameMap = nameMap, 
+    constraints: Constraints = constraints,
     cellReadMap: CellReadMap = cellReadMap, 
     typeParamMap: TypeParamMap = typeParamMap,
     frame: Frame = frame, stack: List[Frame] = stack
   ) = new TypeEnv(nameMap, constraints, cellReadMap, typeParamMap, frame, stack)
-
 
   // ========= NameMap functions
 
@@ -76,13 +77,13 @@ class TypeEnv(
 
   // ========= Constraints functions
 
-  /** The constraint associated with tid. */
-  def apply(tid: TypeID) : StoredTypeConstraint = constraints(tid) match{
-    case SingletonTypeConstraint(TypeVar(tid1)) =>       // IMPROVE, unreachable?
-      assert(false) 
-      println(s"TypeEnv.apply: $tid -> $tid1"); apply(tid1)
-    case c => c 
-  }
+  // /** The constraint associated with tid. */
+  // def apply(tid: TypeID) : StoredTypeConstraint = constraints(tid) match{
+  //   case SingletonTypeConstraint(TypeVar(tid1)) =>       // IMPROVE, unreachable?
+  //     assert(false) 
+  //     println(s"TypeEnv.apply: $tid -> $tid1"); apply(tid1)
+  //   case c => c 
+  // }
 
   /** The TypeEnv formed by adding  the constraint typeID -> tc. */
   def addTypeVarConstraint(typeID: TypeID, tc: StoredTypeConstraint) : TypeEnv = 
@@ -113,8 +114,8 @@ class TypeEnv(
   /** Is n a defined type parameter? */
   def hasTypeParam(n: TypeParamName) = typeParamMap.contains(n)
 
-  def constraintForTypeParam(n: TypeParamName): TypeParamConstraint =
-    typeParamMap(n)
+  // def constraintForTypeParam(n: TypeParamName): TypeParamConstraint =
+  //   typeParamMap(n)
 
   // ========= cell constraints
 
@@ -124,7 +125,6 @@ class TypeEnv(
     val newConstraints = constraints + (typeId -> MemberOf(TypeT.CellTypes))
     val newCellReadMap = cellReadMap + (typeId -> List(cell))
     make(constraints = newConstraints, cellReadMap = newCellReadMap)
-    //new TypeEnv(nameMap, newConstraints, newCellReadMap, frame, stack)
   }
 
   // ========= update functions
@@ -155,20 +155,18 @@ class TypeEnv(
     val newConstraints = constraints + (tId -> SingletonTypeConstraint(t))
     make(nameMap = newNameMap, constraints = newConstraints, 
       cellReadMap = newCellReadMap)
-    // new TypeEnv(newNameMap, newConstraints, newCellReadMap, frame, stack)
   }
 
-  /** The TypeEnv formed from this by replacing TypeVar(tId) with t, as used at
-    * evaluation time: updates are not propagated to cell expressions. */
-  def replaceEvalTime(tId: TypeID, t: TypeT): TypeEnv = {
-    // Note: we don't propagate updates to cell expressions during evaluation,
-    // since if there are subsequent changes to the spreadsheet, the updates
-    // to cell expressions would be invalid.  We just update constraints.
-    val newNameMap = subInNameMap(nameMap, tId, t)
-    val newConstraints = constraints + (tId -> SingletonTypeConstraint(t))
-    make(nameMap = newNameMap, constraints = newConstraints)
-    // new TypeEnv(newNameMap, newConstraints, cellReadMap, frame, stack)
-  }
+  // /** The TypeEnv formed from this by replacing TypeVar(tId) with t, as used at
+  //   * evaluation time: updates are not propagated to cell expressions. */
+  // def replaceEvalTime(tId: TypeID, t: TypeT): TypeEnv = {
+  //   // Note: we don't propagate updates to cell expressions during evaluation,
+  //   // since if there are subsequent changes to the spreadsheet, the updates
+  //   // to cell expressions would be invalid.  We just update constraints.
+  //   val newNameMap = subInNameMap(nameMap, tId, t)
+  //   val newConstraints = constraints + (tId -> SingletonTypeConstraint(t))
+  //   make(nameMap = newNameMap, constraints = newConstraints)
+  // }
 
   // ========= Scoping functions
 
@@ -177,7 +175,6 @@ class TypeEnv(
     frame.storeTParamMap(typeParamMap)
     make(frame = new Frame, stack = frame::stack)
   }
-  // new TypeEnv(nameMap, constraints, cellReadMap, new Frame, frame :: stack)
 
   /** End the current scope.  Return the type environment to use in the outer
     * scope. */
@@ -187,18 +184,20 @@ class TypeEnv(
     val newFrame = stack.head; val newTParamMap = newFrame.getTParamMap
     make(nameMap = newNameMap, typeParamMap = newTParamMap, 
       frame = newFrame, stack = stack.tail)
-    // new TypeEnv(newNameMap, constraints, cellReadMap, stack.head, stack.tail)
   }
 
   // ========= Generic helper functions
 
-  def showType(t: TypeT): String = t match{
-    case TypeVar(tId) => apply(tId).asStringE
-    case TypeParam(tp) => typeParamMap(tp) match{
-      case AnyTypeConstraint => tp; case c => s"$tp <: "+c.asString
-    }
-    case _ => t.asString
-  }
+  /** Get an EvaluationTypeEnv including the relevant components of this. */
+  def getEvaluationTypeEnv = new EvaluationTypeEnv(constraints, typeParamMap)
+
+  // def showType(t: TypeT): String = t match{
+  //   case TypeVar(tId) => apply(tId).asStringE
+  //   case TypeParam(tp) => typeParamMap(tp) match{
+  //     case AnyTypeConstraint => tp; case c => s"$tp <: "+c.asString
+  //   }
+  //   case _ => t.asString
+  // }
 
   override def toString = s"TypeEnv($nameMap, $constraints)"
 
@@ -211,20 +210,20 @@ class TypeEnv(
 /** Companion object for TypeEnv. */
 object TypeEnv{
 
-  type Name = String // Names of identifiers.  IMPROVE: export to NameExp
+  // type Name = String // Names of identifiers.  IMPROVE: export to NameExp
 
   /** A mapping from names in the script to their types. */
   private type NameMap = HashMap[Name, TypeT]
 
-  /** A mapping from type identifiers to MemberOf(ts) constraints. */
-  private type Constraints = HashMap[TypeID, StoredTypeConstraint]
+  // /** A mapping from type identifiers to MemberOf(ts) constraints. */
+  // private type Constraints = HashMap[TypeID, StoredTypeConstraint]
 
   /** A mapping giving the CellExprs whose type matches a particular TypeVar. */
   private type CellReadMap = HashMap[TypeID, List[CellExp]]
 
-  /** Mapping giving the type constraints on type parameters currently in
-    * scope. */
-  private type TypeParamMap = HashMap[TypeParamName, TypeParamConstraint]
+  // /** Mapping giving the type constraints on type parameters currently in
+  //   * scope. */
+  // private type TypeParamMap = HashMap[TypeParamName, TypeParamConstraint]
 
   /** A frame, corresponding to a particular nesting of scopes. */
   private class Frame{

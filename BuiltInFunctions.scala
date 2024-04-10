@@ -5,17 +5,14 @@ object BuiltInFunctions{
   /* Types. */
 
   private val headT = {
-    // val tid = TypeVar.getNext(); val t = TypeVar(tid)
     val t = TypeParam("A")
     FunctionType(List(("A", AnyTypeConstraint)), List(ListType(t)), t)
   }
   private val tailT = {
-    //val tid = TypeVar.getNext(); val t = TypeVar(tid)
     val t = TypeParam("A")
     FunctionType(List(("A", AnyTypeConstraint)), List(ListType(t)), ListType(t))
   }
   private val isEmptyT = { 
-    //val tid = TypeVar.getNext(); val t = TypeVar(tid)
     val t = TypeParam("A")
     FunctionType(List(("A", AnyTypeConstraint)), List(ListType(t)), BoolType)
   }
@@ -27,11 +24,11 @@ object BuiltInFunctions{
   /* Definitions. */
 
   private val headFn = 
-    BuiltInFunction{ case List(l:ListValue) => l.head }
+    FunctionValue{ case List(l:ListValue) => l.head }
   private val tailFn = 
-    BuiltInFunction{ case List(l:ListValue) => l.tail }
+    FunctionValue{ case List(l:ListValue) => l.tail }
   private val isEmptyFn = 
-    BuiltInFunction{ case List(l:ListValue) => l.isEmpty }
+    FunctionValue{ case List(l:ListValue) => l.isEmpty }
 
   /** The built-in functions. */
   val builtIns = 

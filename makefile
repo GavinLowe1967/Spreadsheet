@@ -16,6 +16,8 @@ $(DIR)/FunctionType.class: $(DIR)/TypeConstraint.class
 
 $(DIR)/Value.class: $(DIR)/Input.class $(DIR)/FunctionType.class
 
+$(DIR)/BuiltInFunctions.class: $(DIR)/Value.class $(DIR)/TypeConstraint.class
+
 # Syntax
 
 $(DIR)/HasExtent.class: $(DIR)/Input.class $(DIR)/Value.class
@@ -24,32 +26,30 @@ $(DIR)/Exp.class: $(DIR)/Value.class $(DIR)/HasExtent.class
 
 $(DIR)/Statement.class: $(DIR)/Exp.class 
 
-# Type checking basics
-
-$(DIR)/Reply.class: $(DIR)/HasExtent.class
-
-$(DIR)/Substitution.class: $(DIR)/FunctionType.class $(DIR)/Reply.class
-
-$(DIR)/BuiltInFunctions.class: $(DIR)/Value.class $(DIR)/TypeConstraint.class
-
-$(DIR)/TypeEnv.class: $(DIR)/TypeConstraint.class $(DIR)/Exp.class	\
-  $(DIR)/BuiltInFunctions.class $(DIR)/Substitution.class
 
 # Evaluation/execution
 
-$(DIR)/EvaluationTypeChecker.class: $(DIR)/TypeEnv.class
+$(DIR)/EvaluationTypeEnv.class: $(DIR)/TypeConstraint.class
+
+
+$(DIR)/Reply.class: $(DIR)/HasExtent.class
+
+$(DIR)/EvaluationTypeChecker.class: $(DIR)/EvaluationTypeEnv.class $(DIR)/Reply.class
 
 $(DIR)/Environment.class: $(DIR)/EvaluationTypeChecker.class	\
   $(DIR)/BuiltInFunctions.class
 
-$(DIR)/FunctionValue.class: $(DIR)/Exp.class $(DIR)/Environment.class
-
-$(DIR)/Execution.class: $(DIR)/Statement.class $(DIR)/Environment.class	\
-  $(DIR)/FunctionValue.class
+$(DIR)/Execution.class: $(DIR)/Statement.class $(DIR)/Environment.class
 
 # Type checking
 
-$(DIR)/Unification.scala: $(DIR)/TypeEnv.class	\
+$(DIR)/Substitution.class: $(DIR)/FunctionType.class $(DIR)/Reply.class
+
+$(DIR)/TypeEnv.class: $(DIR)/TypeConstraint.class $(DIR)/Exp.class	\
+  $(DIR)/BuiltInFunctions.class $(DIR)/Substitution.class		\
+  $(DIR)/EvaluationTypeEnv.class
+
+$(DIR)/Unification.class: $(DIR)/TypeEnv.class	\
   $(DIR)/EvaluationTypeChecker.class
 
 $(DIR)/TypeChecker.class: $(DIR)/Unification.class $(DIR)/Substitution.class	\

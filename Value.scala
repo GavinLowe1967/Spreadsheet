@@ -88,7 +88,6 @@ case class ColumnValue(column: Int) extends Value{
 }
 
 object ColumnValue{
-
   /** Convert column to the corresponding Int representation. */
   def asInt(column: String): Int = 
     if(column.length == 1) column(0)-'A' 
@@ -99,7 +98,6 @@ object ColumnValue{
     def toChar(n: Int) = (n+'A').toChar
     if(c < 26) toChar(c).toString else List(toChar(c/26),toChar(c%26)).mkString
   }
-
 }
 
 // =======================================================
@@ -128,28 +126,15 @@ object ListValue{
 
 // ==================================================================
 
-/** The value of a built-in function defined by `f`. */
-case class BuiltInFunction(f: PartialFunction[List[Value], Value]) 
-    extends Value{
-
+/** A function defined by `f`. */
+case class FunctionValue(f: PartialFunction[List[Value], Value]) extends Value{
   /** Apply this to `args`. */
   def apply(args: List[Value]): Value = {
     assert(f.isDefinedAt(args)); f(args)
   }
 }
 
-
-// /** A value of a function, params => body: rt, to be evaluated in environment
-//   * env.   */
-// case class FunctionValue(
-//   params: List[(String,TypeT)], rt: TypeT, body: Exp, env: Environment)
-//     extends Value{
-
-//   // protected val theType = FunctionType(List(), params.map(_._2), rt)
-// }
-
-
-// ========= Errors
+// ===========================================================  Errors
 
 trait ErrorValue extends Cell{
   def getType = null // IMPROVE? 
@@ -167,7 +152,3 @@ case class TypeError(msg: String) extends ErrorValue{
 case class EvalError(msg: String) extends ErrorValue{
   override def forError = s"Evaluation error: $msg"
 }
-
-
-//========= Note =========
-// FunctionValue.scala contains another subclass of Value, FunctionValue.

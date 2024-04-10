@@ -15,10 +15,9 @@ import scala.collection.mutable.HashMap
 class Environment(
   cells: Array[Array[Cell]], calculated: Array[Array[Boolean]],
   val height: Int, val width: Int, 
-  private var typeEnv: TypeEnv,
+  private var typeEnv: EvaluationTypeEnv,
   private val nameMap: HashMap[String, Value] = Environment.initNameMap
-) // extends EnvironmentT
-{
+){
   /** Get the value in cell (c,r). */
   def getCell(c: Int, r: Int): Cell = cells(c)(r).withCellSource(CellSource(c,r))
 
@@ -39,7 +38,6 @@ class Environment(
     EvaluationTypeChecker.unify(typeEnv, v.getType, t).map{ case(te,tt) =>
       // Note: the new type environment is stored, for use in subsequent steps
       // of the current evaluation.
-      // println(s"$v -> $t")
       typeEnv = te; Ok(()) 
     }
   }
@@ -47,6 +45,7 @@ class Environment(
   /** Clone this. */
   override def clone = 
     new Environment(cells, calculated, height, width, typeEnv, nameMap.clone)
+
 }
 
 // =======================================================

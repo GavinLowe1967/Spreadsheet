@@ -191,6 +191,9 @@ object ParserTest{
         List(("x",TypeParam("A"))), BoolType, 
         BinOp(NameExp("x"), "==", NameExp("x")) ))
 
+    println(pe("{ def f(x: Int): Int = 5/x; f(0) }"))
+    println(pe("{ def f(x: Int): Int = 5/x; f(1/0) }"))
+
     println("Done")
   }
 
