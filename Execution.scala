@@ -84,7 +84,7 @@ object Execution{
       case FunctionValue(params, rt, body, env1) =>
         assert(params.length == args.length) 
         // Try to bind params to values of args in env1; but catch errors
-        val env2 = env1.cloneE; var error: ErrorValue = null
+        val env2 = env1.clone; var error: ErrorValue = null
         var iter = params.zip(args).iterator
         while(error == null && iter.hasNext){
           val ((p,_),arg) = iter.next()
@@ -119,7 +119,7 @@ object Execution{
     }
 
     case BlockExp(stmts, exp) => 
-      val env1 = env.cloneE
+      val env1 = env.clone
       // If an error arises in performing stmts, it will be put in err.
       var err: ErrorValue = null
       def handleError(ev: ErrorValue) = { err = ev }
@@ -184,7 +184,7 @@ object Execution{
     * `handleError`.  Stop if an error occurs.
     * @return true if all succeeded.  */
   def performAll(
-    statements: List[Statement], env: EnvironmentT, 
+    statements: List[Statement], env: Environment, 
     handleError: ErrorValue => Unit) 
       : Boolean = {
     var ok = true; val iter = statements.iterator

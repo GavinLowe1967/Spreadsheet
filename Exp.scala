@@ -5,15 +5,15 @@ package spreadsheet
 
 /** The interface of an Environment as seen by Exp.  Defined here to avoid
   * cyclic compilation dependencies. */
-trait EnvironmentT{
-  def get(name: String) : Option[Value]
+// trait EnvironmentT{
+//   def get(name: String) : Option[Value]
 
-  def checkType(v: Cell, t: TypeT): Reply[Unit]
+//   def checkType(v: Cell, t: TypeT): Reply[Unit]
 
-  def getCell(c: Int, r: Int): Cell
+//   def getCell(c: Int, r: Int): Cell
 
-  def cloneE: EnvironmentT
-}
+//   def cloneE: EnvironmentT
+// }
 
 // =======================================================
 
@@ -75,7 +75,7 @@ object NameExp{
 
 /** An integer constant expression. */
 case class IntExp(value: Int) extends Exp{
-  def eval0(env: EnvironmentT) = IntValue(value) 
+  // def eval0(env: EnvironmentT) = IntValue(value) 
 
   override def toString = value.toString
 }
@@ -83,7 +83,7 @@ case class IntExp(value: Int) extends Exp{
 // ==================================================================
 
 case class FloatExp(value: Float) extends Exp{
-  def eval0(env: EnvironmentT) = FloatValue(value)
+  // def eval0(env: EnvironmentT) = FloatValue(value)
 
   override def toString = value.toString
 }
@@ -92,7 +92,7 @@ case class FloatExp(value: Float) extends Exp{
 
 /** A boolean constant. */
 case class BoolExp(value: Boolean) extends Exp{
-  def eval0(env: EnvironmentT) = BoolValue(value)
+  // def eval0(env: EnvironmentT) = BoolValue(value)
 
   override def toString = value.toString
 }
@@ -101,7 +101,7 @@ case class BoolExp(value: Boolean) extends Exp{
 
 /** A string literal. */
 case class StringExp(value: String) extends Exp{
-  def eval0(env: EnvironmentT) = StringValue(value)
+  // def eval0(env: EnvironmentT) = StringValue(value)
 
   override def toString = value
 }
@@ -214,7 +214,7 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
 
 /** A row literal. */
 case class RowExp(row: Int) extends Exp{
-  def eval0(env: EnvironmentT) = RowValue(row) 
+  // def eval0(env: EnvironmentT) = RowValue(row) 
 
   override def toString = s"#$row"
 }
@@ -226,7 +226,7 @@ case class ColumnExp(column: String) extends Exp{
   require(column.forall(_.isUpper))
   require(column.length <= 2) // surely? 
 
-  def eval0(env: EnvironmentT) = ColumnValue(asInt)
+  // def eval0(env: EnvironmentT) = ColumnValue(asInt)
 
   /** Int representation of this. */
   val asInt = ColumnValue.asInt(column)

@@ -17,7 +17,8 @@ class Environment(
   val height: Int, val width: Int, 
   private var typeEnv: TypeEnv,
   private val nameMap: HashMap[String, Value] = Environment.initNameMap
-) extends EnvironmentT{
+) // extends EnvironmentT
+{
   /** Get the value in cell (c,r). */
   def getCell(c: Int, r: Int): Cell = cells(c)(r).withCellSource(CellSource(c,r))
 
@@ -44,7 +45,7 @@ class Environment(
   }
 
   /** Clone this. */
-  override def cloneE = 
+  override def clone = 
     new Environment(cells, calculated, height, width, typeEnv, nameMap.clone)
 }
 

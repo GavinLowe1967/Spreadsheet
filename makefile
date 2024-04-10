@@ -16,52 +16,57 @@ $(DIR)/FunctionType.class: $(DIR)/TypeConstraint.class
 
 $(DIR)/Value.class: $(DIR)/Input.class $(DIR)/FunctionType.class
 
-$(DIR)/BuiltInFunctions.class: $(DIR)/Value.class $(DIR)/TypeConstraint.class
+# Syntax
 
 $(DIR)/HasExtent.class: $(DIR)/Input.class $(DIR)/Value.class
 
+$(DIR)/Exp.class: $(DIR)/Value.class $(DIR)/HasExtent.class
+
+$(DIR)/Statement.class: $(DIR)/Exp.class 
+
+$(DIR)/BlockExp.class: $(DIR)/Statement.class
+
+# Type checking basics
+
 $(DIR)/Reply.class: $(DIR)/HasExtent.class
-
-# Expression syntax
-
-$(DIR)/Exp.class: $(DIR)/Value.class $(DIR)/Reply.class
-
-# Type checking
 
 $(DIR)/Substitution.class: $(DIR)/FunctionType.class $(DIR)/Reply.class
 
-$(DIR)/TypeEnv.class: $(DIR)/TypeConstraint.class $(DIR)/Exp.class $(DIR)/BuiltInFunctions.class $(DIR)/Substitution.class
+$(DIR)/BuiltInFunctions.class: $(DIR)/Value.class $(DIR)/TypeConstraint.class
+
+$(DIR)/TypeEnv.class: $(DIR)/TypeConstraint.class $(DIR)/Exp.class	\
+  $(DIR)/BuiltInFunctions.class $(DIR)/Substitution.class
 
 $(DIR)/EvaluationTypeChecker.class: $(DIR)/TypeEnv.class
 
-$(DIR)/Unification.scala: $(DIR)/TypeEnv.class	\
-  $(DIR)/EvaluationTypeChecker.class
-
-# ======
+# Evaluation/execution
 
 $(DIR)/Environment.class: $(DIR)/Value.class \
   $(DIR)/EvaluationTypeChecker.class  $(DIR)/BuiltInFunctions.class
 
-$(DIR)/Statement.class: $(DIR)/Exp.class $(DIR)/ViewT.class $(DIR)/Environment.class
+$(DIR)/FunctionDeclaration.class: $(DIR)/Exp.class $(DIR)/Statement.class	\
+  $(DIR)/Environment.class
 
-$(DIR)/FunctionDeclaration.class: $(DIR)/Exp.class $(DIR)/Statement.class $(DIR)/Environment.class
+$(DIR)/Execution.class: $(DIR)/FunctionDeclaration.class	\
+  $(DIR)/BlockExp.class $(DIR)/Environment.class
 
-$(DIR)/BlockExp.class: $(DIR)/Statement.class
+# Type checking
 
-$(DIR)/Execution.class: $(DIR)/FunctionDeclaration.class $(DIR)/BlockExp.class $(DIR)/Environment.class
+$(DIR)/Unification.scala: $(DIR)/TypeEnv.class	\
+  $(DIR)/EvaluationTypeChecker.class
 
 $(DIR)/TypeChecker.class: $(DIR)/Unification.class $(DIR)/Substitution.class	\
   $(DIR)/Exp.class $(DIR)/FunctionValue.class $(DIR)/BlockExp.class
 
-# Parsing
+# Parsing and tests
 
 $(DIR)/Parser.class: $(DIR)/Input.class
 
 $(DIR)/StatementParser.class: $(DIR)/Parser.class $(DIR)/Value.class	\
-  $(DIR)/BlockExp.class $(DIR)/TypeConstraint.class
+  $(DIR)/BlockExp.class $(DIR)/TypeConstraint.class			\
+  $(DIR)/FunctionDeclaration.class
 
-$(DIR)/ParserTest.class: $(DIR)/StatementParser.class
-
+$(DIR)/ParserTest.class: $(DIR)/StatementParser.class $(DIR)/Execution.class
 
 $(DIR)/TypeCheckerTest.class: $(DIR)/TypeChecker.class $(DIR)/StatementParser.class
 

@@ -15,7 +15,8 @@ Outstanding:
 - TypeT.isSubclassOf -- done
 - Value.getType -- 
 
-- Remove eval from Exp classes.
+- Remove eval from Exp classes. and perform from Statement -- done
+- Move FunctionDeclaration and FunctionApp
 
 Current: 
 
