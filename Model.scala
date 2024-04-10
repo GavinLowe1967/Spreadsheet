@@ -76,7 +76,8 @@ class Model(val height: Int, val width: Int){
       cells, calculated, height, width, typeEnv)
     // Iterate over statements, unless an error is found.
     def handleError(err: ErrorValue) = {view.addInfo(err.msg)}
-    Statement.performAll(statements, env, handleError)
+    // Statement.performAll(statements, env, handleError)
+    Execution.performAll(statements, env, handleError)
     view.redisplay()
   }
 

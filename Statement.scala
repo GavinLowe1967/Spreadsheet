@@ -33,6 +33,8 @@ object Statement{
   }
 }
 
+import Execution.eval
+
 // =======================================================
 
 /** A simple Directive of the form `Cell(col,row) = exp`. */
@@ -42,11 +44,11 @@ case class Directive(cell: CellExp, expr: Exp) extends Statement{
   /** Perform this in `env`, handling errors with `handleError`. */
   def perform(env: Environment, handleError: ErrorValue => Unit): Boolean = {
     val CellExp(ce,re) = cell
-    ce.eval(env) match{
+    eval(env, ce) match{
       case ColumnValue(c) =>
-        if(0 <= c && c < env.width) re.eval(env) match{
+        if(0 <= c && c < env.width) eval(env, re) match{
           case RowValue(r) =>
-            if(0 <= r && r < env.height) expr.eval(env) match{
+            if(0 <= r && r < env.height) eval(env, expr) match{
               case ev: ErrorValue =>
                 val ev1 = liftError(ev); env.setCell(c, r, ev1)
                 handleError(ev1) 
@@ -78,7 +80,7 @@ case class ValueDeclaration(name: String, exp: Exp) extends Declaration{
   /** Perform this in `env`, handling errors with `handleError`.  The effect is
     * to update the environment, mapping `name` to the value of `exp`.*/
   def perform(env: Environment, handleError: ErrorValue => Unit): Boolean = {
-    val v = exp.eval(env)
+    val v = eval(env, exp)
     v match{
       case ev: ErrorValue => 
         val ev1 = liftError(ev); 

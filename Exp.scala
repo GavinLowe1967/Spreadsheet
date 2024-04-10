@@ -1,29 +1,5 @@
 package spreadsheet
 
-/** The result of a parse with an Extent. */
-trait HasExtent{
-  /** The Extent representing the string from which this was produced. */
-  protected var extent: Extent = null
-
-  def getExtent = extent
-
-  /** Set the Extent representing the string from which this was produced. */
-  def setExtent(e: Extent) = extent = e  
-
-  protected val tab = "     "
-
-  /** Lift an error value, by tagging on the extent of this. 
-    * @param lineNum if true, include line number. */
-  def liftError(error: ErrorValue, lineNum: Boolean = false) = {
-    assert(extent != null, s"Null extent in $this")
-    val lnString = if(lineNum) " at line "+extent.lineNumber else ""
-    def extend(msg: String) = s"$msg$lnString\n${tab}in \"${extent.asString}\""
-    error match{
-      case TypeError(msg) => TypeError(extend(msg))
-      case EvalError(msg) => EvalError(extend(msg))
-    } 
-  }
-}
 
 // =======================================================
 
@@ -44,7 +20,7 @@ trait EnvironmentT{
 /** Representation of an expression. */
 trait Exp extends HasExtent{
   /** Evaluate this in environment `env`. */
-  def eval0(env: EnvironmentT): Value
+  protected def eval0(env: EnvironmentT): Value
 
   /** Evaluate this in environment `env`, adding the extent from this. */
   def eval(env: EnvironmentT): Value = eval0(env).withSource(extent)
@@ -70,7 +46,7 @@ trait Exp extends HasExtent{
 
   /** Extend f(v) to: cases where v is an ErrorValue (passing on the error).
     * Other cases shouldn't happen. */ 
-  protected def lift(f: PartialFunction[Value, Value], v: Value) : Value = 
+  def lift(f: PartialFunction[Value, Value], v: Value) : Value = 
     if(f.isDefinedAt(v)) f(v) else handleError(v)
 
 }
@@ -206,7 +182,7 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
   }
 
   /** Apply the operation represented by `op` to values `v1` and `v2`. */
-  private def doBinOp(v1: Value, op: String, v2: => Value): Value = {
+  def doBinOp(v1: Value, op: String, v2: => Value): Value = {
     // The representation of op as a BinOpRep
     val f : BinOpRep = op match{
       case "+" => mkBinNumOp((_+_), (_+_)); case "-" => mkBinNumOp((_-_), (_-_))
@@ -253,7 +229,7 @@ case class ColumnExp(column: String) extends Exp{
   def eval0(env: EnvironmentT) = ColumnValue(asInt)
 
   /** Int representation of this. */
-  private val asInt = ColumnValue.asInt(column)
+  val asInt = ColumnValue.asInt(column)
 
   override def toString = s"#$column"
 }
@@ -286,7 +262,7 @@ case class CellExp(column: Exp, row: Exp) extends Exp{
 
   /** The type associated with this read of a cell.  It might be a TypeVar, in
     * which case the corresponding TypeEnv will have a constraint upon it. */
-  private var theType: TypeT = null
+  var theType: TypeT = null
 
   def setType(t: TypeT) = theType = t 
 
@@ -330,5 +306,5 @@ object Exp{
 }
 
 // ========= Note =========
-// FunctionValue.scala contains another subclass, FunctionApp, and 
+// FunctionDeclaration.scala contains another subclass, FunctionApp, and 
 // BlockExp.scala contains another subclass, BlockExp.

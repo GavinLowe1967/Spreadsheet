@@ -30,7 +30,7 @@ trait Cell extends Value{
 
 /** An empty cell. */
 case class Empty() extends Cell{
-  def getType = ??? // EmptyType
+  def getType = EmptyType
 
   override def asCell = ""
 
@@ -138,16 +138,14 @@ case class BuiltInFunction(f: PartialFunction[List[Value], Value])
   }
 }
 
-// object BuiltInFunction{
-//   // IMPROVE: think about types
 
-//   private val headFn = 
-//     BuiltInFunction{ case List(l:ListValue) => l.head }
-//   private val tailFn = 
-//     BuiltInFunction{ case List(l:ListValue) => l.tail }
+// /** A value of a function, params => body: rt, to be evaluated in environment
+//   * env.   */
+// case class FunctionValue(
+//   params: List[(String,TypeT)], rt: TypeT, body: Exp, env: Environment)
+//     extends Value{
 
-//   /** The built-in functions. */
-//   val builtIns = List("head" -> headFn, "tail" -> tailFn) 
+//   // protected val theType = FunctionType(List(), params.map(_._2), rt)
 // }
 
 
@@ -172,4 +170,4 @@ case class EvalError(msg: String) extends ErrorValue{
 
 
 //========= Note =========
-// FunctionValue contains another subclass of Value, FunctionValue.
+// FunctionValue.scala contains another subclass of Value, FunctionValue.

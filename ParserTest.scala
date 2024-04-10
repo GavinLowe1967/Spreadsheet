@@ -37,7 +37,7 @@ object ParserTest{
 
   // Parse and evaluate st, and check the extent
   def pe(st: String) = {
-    val v = p(st).eval(env)
+    val v = Execution.eval(env, p(st))
     if(v.source == null) println(s"pe: $st -> $v")
     else checkExtent(v.source.asInstanceOf[Extent], st)
     v

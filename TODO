@@ -12,8 +12,10 @@ Outstanding:
 - Check names of parameters of functions are disjoint.  
 - check declared names are disjoint in each block.
 - Improve Directive.perform re error handling.
-- TypeT.isSubclassOf
-- Value.getType
+- TypeT.isSubclassOf -- done
+- Value.getType -- 
+
+- Remove eval from Exp classes.
 
 Current: 
 
