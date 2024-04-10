@@ -1,30 +1,8 @@
 package spreadsheet
 
 
-// =======================================================
-
-/** The interface of an Environment as seen by Exp.  Defined here to avoid
-  * cyclic compilation dependencies. */
-// trait EnvironmentT{
-//   def get(name: String) : Option[Value]
-
-//   def checkType(v: Cell, t: TypeT): Reply[Unit]
-
-//   def getCell(c: Int, r: Int): Cell
-
-//   def cloneE: EnvironmentT
-// }
-
-// =======================================================
-
 /** Representation of an expression. */
 trait Exp extends HasExtent{
-  // /** Evaluate this in environment `env`. */
-  // protected def eval0(env: EnvironmentT): Value
-
-  // /** Evaluate this in environment `env`, adding the extent from this. */
-  // def eval(env: EnvironmentT): Value = eval0(env).withSource(extent)
-
   /** Make an error message, saying that `found` was found when `expected` was
     * expected`. */
   protected def mkErr(expected: String, found: Value): String = {
@@ -55,14 +33,6 @@ trait Exp extends HasExtent{
 
 /** A name. */
 case class NameExp(name: NameExp.Name) extends Exp{
-  // def eval0(env: EnvironmentT) = {
-  //   assert(extent != null, s"Null extent in $this")
-  //   env.get(name) match{
-  //     case Some(value) => value 
-  //     case None => sys.error(s"Name not found: $name")
-  //   }
-  // }
-
   override def toString = name
 }
 
@@ -75,16 +45,12 @@ object NameExp{
 
 /** An integer constant expression. */
 case class IntExp(value: Int) extends Exp{
-  // def eval0(env: EnvironmentT) = IntValue(value) 
-
   override def toString = value.toString
 }
 
 // ==================================================================
 
 case class FloatExp(value: Float) extends Exp{
-  // def eval0(env: EnvironmentT) = FloatValue(value)
-
   override def toString = value.toString
 }
 
@@ -92,8 +58,6 @@ case class FloatExp(value: Float) extends Exp{
 
 /** A boolean constant. */
 case class BoolExp(value: Boolean) extends Exp{
-  // def eval0(env: EnvironmentT) = BoolValue(value)
-
   override def toString = value.toString
 }
 
@@ -101,8 +65,6 @@ case class BoolExp(value: Boolean) extends Exp{
 
 /** A string literal. */
 case class StringExp(value: String) extends Exp{
-  // def eval0(env: EnvironmentT) = StringValue(value)
-
   override def toString = value
 }
 
@@ -117,13 +79,38 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
   // Note: extent might be overwritten if the corresponding syntax is in
   // parentheses.  This is normally what we want. 
 
-  // def eval0(env: EnvironmentT) = {
-  //   assert(left.getExtent != null, left.toString)
-  //   assert(right.getExtent != null, "right"+right.toString)
-  //   assert(extent != null)
-  //   doBinOp(left.eval(env), op, right.eval(env)) 
-  // }
+  import BinOp._
 
+  /** Apply the operation represented by `op` to values `v1` and `v2`. */
+  def doBinOp(v1: Value, v2: => Value): Value = {
+    // The representation of op as a BinOpRep
+    val f : BinOpRep = op match{
+      case "+" => mkBinNumOp((_+_), (_+_)); case "-" => mkBinNumOp((_-_), (_-_))
+      case "*" => mkBinNumOp((_*_), (_*_))
+      case "/" => 
+        def err = liftError(EvalError("Division by zero"), true) // inc line num
+        mkBinOp({case (n1,n2) => if(n2 != 0) IntValue(n1/n2) else err},
+          {case (x1,x2) => if(x2 != 0.0) FloatValue(x1/x2) else err} )
+      case "<=" => mkBinRelOp((_<=_), (_<=_))
+      case "<" => mkBinRelOp((_<_), (_<_))
+      case ">=" => mkBinRelOp((_>=_), (_>=_))
+      case ">" => mkBinRelOp((_>_), (_>_))
+      case "&&" => mkBoolOp((_&&_)); case "||" => mkBoolOp((_||_))
+      case "==" => equalOp(true); case "!=" => equalOp(false)
+      case "::" => consOp
+    }
+    if(f.isDefinedAt(v1)){ val f1 = f(v1); lift(f1, v2) }
+    else handleError(v1)
+  }
+
+  // Note: the following is for testing only: it over-uses parentheses.
+  override def toString = s"($left $op $right)"
+}
+
+// =================================
+
+/** Companion object for BinOp, giving semantics to the operators. */
+object BinOp{
   /** Shorthand for a partial function Value => A. */
   type PF[A] = PartialFunction[Value, A]
 
@@ -177,36 +164,8 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
 
   /** Representation of the cons (::) operator. */
   private def consOp: BinOpRep = {
-    case (v: Value) => 
-      { case ListValue(vs) => /*assert(v.isOfType(t));*/ ListValue(v::vs) }
+    case (v: Value) => { case ListValue(vs) => ListValue(v::vs) }
   }
-
-  /** Apply the operation represented by `op` to values `v1` and `v2`. */
-  def doBinOp(v1: Value, op: String, v2: => Value): Value = {
-    // The representation of op as a BinOpRep
-    val f : BinOpRep = op match{
-      case "+" => mkBinNumOp((_+_), (_+_)); case "-" => mkBinNumOp((_-_), (_-_))
-      case "*" => mkBinNumOp((_*_), (_*_))
-      case "/" => 
-        def err = liftError(EvalError("Division by zero"), true) // inc line num
-        mkBinOp({case (n1,n2) => if(n2 != 0) IntValue(n1/n2) else err},
-          {case (x1,x2) => if(x2 != 0.0) FloatValue(x1/x2) else err} )
-      case "<=" => mkBinRelOp((_<=_), (_<=_))
-      case "<" => mkBinRelOp((_<_), (_<_))
-      case ">=" => mkBinRelOp((_>=_), (_>=_))
-      case ">" => mkBinRelOp((_>_), (_>_))
-      case "&&" => mkBoolOp((_&&_)); case "||" => mkBoolOp((_||_))
-      case "==" => equalOp(true); case "!=" => equalOp(false)
-      case "::" => consOp
-    }
-    if(f.isDefinedAt(v1)){ val f1 = f(v1); lift(f1, v2) }
-    else handleError(v1)
-  }
-
-
-
-  // Note: the following is for testing only: it over-uses parentheses.
-  override def toString = s"($left $op $right)"
 }
 
 
@@ -214,8 +173,6 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
 
 /** A row literal. */
 case class RowExp(row: Int) extends Exp{
-  // def eval0(env: EnvironmentT) = RowValue(row) 
-
   override def toString = s"#$row"
 }
 
@@ -225,8 +182,6 @@ case class RowExp(row: Int) extends Exp{
 case class ColumnExp(column: String) extends Exp{
   require(column.forall(_.isUpper))
   require(column.length <= 2) // surely? 
-
-  // def eval0(env: EnvironmentT) = ColumnValue(asInt)
 
   /** Int representation of this. */
   val asInt = ColumnValue.asInt(column)
@@ -240,25 +195,6 @@ case class ColumnExp(column: String) extends Exp{
 /** A reference to a Cell.  Note: the coordinates are in the order
   * (column,row), matching standard spreadsheet usage. */
 case class CellExp(column: Exp, row: Exp) extends Exp{
-  // def eval0(env: EnvironmentT) = ??? 
-  // // Note: above never called, since env.getCell sets the source
-
-  // override def eval(env: EnvironmentT) = {
-  //   /* Read from cell(c,r). */
-  //   def doRead(c: Int, r: Int) = {
-  //     assert(theType != null); val v = env.getCell(c, r)
-  //     env.checkType(v, theType) match{
-  //       case Ok(()) => v; 
-  //       case FailureR(msg) => 
-  //         val cName = ColumnValue.getName(c)
-  //         liftError(TypeError(msg+s" in cell (#$cName,#$r)" ))
-  //     }
-  //   }
-  //   val cc = column.eval(env)
-  //   lift({ case ColumnValue(c) => 
-  //     val rr = row.eval(env); lift({ case RowValue(r) => doRead(c,r) }, rr)
-  //   }, cc)
-  // }
 
   /** The type associated with this read of a cell.  It might be a TypeVar, in
     * which case the corresponding TypeEnv will have a constraint upon it. */
@@ -272,39 +208,16 @@ case class CellExp(column: Exp, row: Exp) extends Exp{
 // ==================================================================
 
 /** An if expression `if(test) thenClause else elseClause`. */
-case class IfExp(test: Exp, thenClause: Exp, elseClause: Exp) extends Exp{
-  // def eval0(env: EnvironmentT) = test.eval(env) match{
-  //   case BoolValue(true) => thenClause.eval(env)
-  //   case BoolValue(false) => elseClause.eval(env)
-  //   case err: ErrorValue => liftError(err)
-  //   case other => sys.error(s"Unexpected type: $other")
-  // }
-}
+case class IfExp(test: Exp, thenClause: Exp, elseClause: Exp) extends Exp
 
 // =================================================================
 
-case class ListLiteral(elems: List[Exp]) extends Exp{
-  // def eval0(env: EnvironmentT) = {
-  //   // Traverse elems, evaluating each, and building in vs in reverse;
-  //   // maintain type of elements in theType; and catch any error.
-  //   var es = elems; var vs = List[Value](); var error: ErrorValue = null
-  //   while(es.nonEmpty && error == null){
-  //     es.head.eval(env) match{
-  //       case err: ErrorValue => error = liftError(err)
-  //       case v => vs ::= v;  es = es.tail
-  //     }
-  //   }
-  //   if(error != null) error else ListValue(vs.reverse)
-  // }
-
-}
+case class ListLiteral(elems: List[Exp]) extends Exp
 
 // ==================================================================
 
-object Exp{
-
-}
+/** The application of a function represented by `f` to `args`. */
+case class FunctionApp(f: Exp, args: List[Exp]) extends Exp
 
 // ========= Note =========
-// FunctionDeclaration.scala contains another subclass, FunctionApp, and 
-// BlockExp.scala contains another subclass, BlockExp.
+// Statement.scala contains another subclass, BlockExp.

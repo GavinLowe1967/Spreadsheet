@@ -16,7 +16,7 @@ Outstanding:
 - Value.getType -- 
 
 - Remove eval from Exp classes. and perform from Statement -- done
-- Move FunctionDeclaration and FunctionApp
+- Move FunctionDeclaration and FunctionApp and BlockExp -- done
 
 Current: 
 

@@ -1,8 +1,14 @@
 package spreadsheet
 
-import Statement.mkErr // IMPROVE: move? 
 
 object Execution{
+  def mkErr(expected: String, found: Value) = {
+    val source = found.source; assert(source != null)
+    s"Expected $expected, found value ${found.forError} from \""+
+      source.asString+"\""
+  }
+
+
   /** Evaluate `e` in environment `env`, adding the extent from `e`. */
   def eval(env: Environment, e: Exp): Value = e match{
     case  cell @ CellExp(column: Exp, row: Exp) =>
@@ -41,7 +47,7 @@ object Execution{
     case c @ ColumnExp(column) => ColumnValue(c.asInt)
 
     case b @ BinOp(left, op, right) => 
-      b.doBinOp(eval(env, left), op, eval(env, right))
+      b.doBinOp(eval(env, left), eval(env, right))
       // IMPROVE: move doBinOp
 
     // case cell @ CellExp(column: Exp, row: Exp) =>
