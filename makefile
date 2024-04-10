@@ -48,7 +48,7 @@ $(DIR)/FunctionDeclaration.class: $(DIR)/Exp.class $(DIR)/Statement.class $(DIR)
 
 $(DIR)/BlockExp.class: $(DIR)/Statement.class
 
-$(DIR)/Execution.class: $(DIR)/BlockExp.class $(DIR)/Environment.class
+$(DIR)/Execution.class: $(DIR)/FunctionDeclaration.class $(DIR)/BlockExp.class $(DIR)/Environment.class
 
 $(DIR)/TypeChecker.class: $(DIR)/Unification.class $(DIR)/Substitution.class	\
   $(DIR)/Exp.class $(DIR)/FunctionValue.class $(DIR)/BlockExp.class

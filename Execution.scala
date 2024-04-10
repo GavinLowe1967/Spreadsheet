@@ -1,9 +1,29 @@
 package spreadsheet
 
+import Statement.mkErr // IMPROVE: move? 
+
 object Execution{
   /** Evaluate `e` in environment `env`, adding the extent from `e`. */
-  def eval(env: Environment, e: Exp): Value =
-    eval0(env, e).withSource(e.getExtent)
+  def eval(env: Environment, e: Exp): Value = e match{
+    case  cell @ CellExp(column: Exp, row: Exp) =>
+      /* Read from cell(c,r). */
+      def doRead(c: Int, r: Int) = {
+        assert(cell.theType != null); val v = env.getCell(c, r)
+        // Note: the call to env.getCell sets the extent. 
+        env.checkType(v, cell.theType) match{
+          case Ok(()) => v;
+          case FailureR(msg) =>
+            val cName = ColumnValue.getName(c)
+            e.liftError(TypeError(msg+s" in cell (#$cName,#$r)" ))
+        }
+      }
+      val cc = eval(env, column)
+      e.lift({ case ColumnValue(c) =>
+        val rr = eval(env, row); e.lift({ case RowValue(r) => doRead(c,r) }, rr)
+      }, cc)
+
+    case _ => eval0(env, e).withSource(e.getExtent)
+  }
 
   /** Evaluate `e` in environment `env`. */
   def eval0(env: Environment, e: Exp): Value = e match{
@@ -24,21 +44,21 @@ object Execution{
       b.doBinOp(eval(env, left), op, eval(env, right))
       // IMPROVE: move doBinOp
 
-    case cell @ CellExp(column: Exp, row: Exp) =>
-      /* Read from cell(c,r). */
-      def doRead(c: Int, r: Int) = {
-        assert(cell.theType != null); val v = env.getCell(c, r)
-        env.checkType(v, cell.theType) match{
-          case Ok(()) => v;
-          case FailureR(msg) =>
-            val cName = ColumnValue.getName(c)
-            e.liftError(TypeError(msg+s" in cell (#$cName,#$r)" ))
-        }
-      }
-      val cc = eval(env, column)
-      e.lift({ case ColumnValue(c) =>
-        val rr = eval(env, row); e.lift({ case RowValue(r) => doRead(c,r) }, rr)
-      }, cc)
+    // case cell @ CellExp(column: Exp, row: Exp) =>
+    //   /* Read from cell(c,r). */
+    //   def doRead(c: Int, r: Int) = {
+    //     assert(cell.theType != null); val v = env.getCell(c, r)
+    //     env.checkType(v, cell.theType) match{
+    //       case Ok(()) => v;
+    //       case FailureR(msg) =>
+    //         val cName = ColumnValue.getName(c)
+    //         e.liftError(TypeError(msg+s" in cell (#$cName,#$r)" ))
+    //     }
+    //   }
+    //   val cc = eval(env, column)
+    //   e.lift({ case ColumnValue(c) =>
+    //     val rr = eval(env, row); e.lift({ case RowValue(r) => doRead(c,r) }, rr)
+    //   }, cc)
 
     case IfExp(test, thenClause, elseClause) => 
       eval(env, test) match{
@@ -116,11 +136,49 @@ object Execution{
     // case _ => e.eval(env)
   }
 
+  // ==================================================================
 
+  /** Perform `s` in `env`, handling errors with `handleError`. 
+    * @return false if an error occurred in a declaration. */
   def perform(env: Environment, handleError: ErrorValue => Unit, s: Statement)
-      : Boolean = 
-    s.perform(env, handleError)
+      : Boolean = s match{
+    case Directive(CellExp(ce,re), expr) => 
+      eval(env, ce) match{
+        case ColumnValue(c) =>
+          if(0 <= c && c < env.width) eval(env, re) match{
+            case RowValue(r) =>
+              if(0 <= r && r < env.height) eval(env, expr) match{
+                case ev: ErrorValue =>
+                  val ev1 = s.liftError(ev); env.setCell(c, r, ev1)
+                  handleError(ev1)
+                // Note: ErrorValue <: Cell, so the ordering is important.
+                case v1: Cell => env.setCell(c, r, v1)
+                case v => println(v); ??? // IMPROVE?
+              }
+              else println("Indexing error for row: found $r")
+              // end of case RowValue(r)
 
+            case rr => println(mkErr("row number", rr))
+          } // end of eval(env, re) match
+          else println("Indexing error for column: found $c")
+
+        case cc => println(mkErr("row identifier", cc))
+      } // end of eval(env, ce) match
+      true
+
+    case ValueDeclaration(name, exp) => 
+      val v = eval(env, exp)
+      v match{
+        case ev: ErrorValue => handleError(s.liftError(ev)); false
+        case _ => env.update(name, v); true
+      }
+
+    case FunctionDeclaration(name, tParams, params, rt, body) => 
+      val fv = FunctionValue(params, rt, body, env)
+      env.update(name, fv); true
+
+    // case _ => s.perform(env, handleError)
+  }
 
   /** Execute the elements of `statements` in `env`, handling errors with
     * `handleError`.  Stop if an error occurs.

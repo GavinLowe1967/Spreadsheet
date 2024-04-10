@@ -19,11 +19,11 @@ trait EnvironmentT{
 
 /** Representation of an expression. */
 trait Exp extends HasExtent{
-  /** Evaluate this in environment `env`. */
-  protected def eval0(env: EnvironmentT): Value
+  // /** Evaluate this in environment `env`. */
+  // protected def eval0(env: EnvironmentT): Value
 
-  /** Evaluate this in environment `env`, adding the extent from this. */
-  def eval(env: EnvironmentT): Value = eval0(env).withSource(extent)
+  // /** Evaluate this in environment `env`, adding the extent from this. */
+  // def eval(env: EnvironmentT): Value = eval0(env).withSource(extent)
 
   /** Make an error message, saying that `found` was found when `expected` was
     * expected`. */
@@ -55,13 +55,13 @@ trait Exp extends HasExtent{
 
 /** A name. */
 case class NameExp(name: NameExp.Name) extends Exp{
-  def eval0(env: EnvironmentT) = {
-    assert(extent != null, s"Null extent in $this")
-    env.get(name) match{
-      case Some(value) => value 
-      case None => sys.error(s"Name not found: $name")
-    }
-  }
+  // def eval0(env: EnvironmentT) = {
+  //   assert(extent != null, s"Null extent in $this")
+  //   env.get(name) match{
+  //     case Some(value) => value 
+  //     case None => sys.error(s"Name not found: $name")
+  //   }
+  // }
 
   override def toString = name
 }
@@ -117,12 +117,12 @@ case class BinOp(left: Exp, op: String, right: Exp) extends Exp{
   // Note: extent might be overwritten if the corresponding syntax is in
   // parentheses.  This is normally what we want. 
 
-  def eval0(env: EnvironmentT) = {
-    assert(left.getExtent != null, left.toString)
-    assert(right.getExtent != null, "right"+right.toString)
-    assert(extent != null)
-    doBinOp(left.eval(env), op, right.eval(env)) 
-  }
+  // def eval0(env: EnvironmentT) = {
+  //   assert(left.getExtent != null, left.toString)
+  //   assert(right.getExtent != null, "right"+right.toString)
+  //   assert(extent != null)
+  //   doBinOp(left.eval(env), op, right.eval(env)) 
+  // }
 
   /** Shorthand for a partial function Value => A. */
   type PF[A] = PartialFunction[Value, A]
@@ -240,25 +240,25 @@ case class ColumnExp(column: String) extends Exp{
 /** A reference to a Cell.  Note: the coordinates are in the order
   * (column,row), matching standard spreadsheet usage. */
 case class CellExp(column: Exp, row: Exp) extends Exp{
-  def eval0(env: EnvironmentT) = ??? 
-  // Note: above never called, since env.getCell sets the source
+  // def eval0(env: EnvironmentT) = ??? 
+  // // Note: above never called, since env.getCell sets the source
 
-  override def eval(env: EnvironmentT) = {
-    /* Read from cell(c,r). */
-    def doRead(c: Int, r: Int) = {
-      assert(theType != null); val v = env.getCell(c, r)
-      env.checkType(v, theType) match{
-        case Ok(()) => v; 
-        case FailureR(msg) => 
-          val cName = ColumnValue.getName(c)
-          liftError(TypeError(msg+s" in cell (#$cName,#$r)" ))
-      }
-    }
-    val cc = column.eval(env)
-    lift({ case ColumnValue(c) => 
-      val rr = row.eval(env); lift({ case RowValue(r) => doRead(c,r) }, rr)
-    }, cc)
-  }
+  // override def eval(env: EnvironmentT) = {
+  //   /* Read from cell(c,r). */
+  //   def doRead(c: Int, r: Int) = {
+  //     assert(theType != null); val v = env.getCell(c, r)
+  //     env.checkType(v, theType) match{
+  //       case Ok(()) => v; 
+  //       case FailureR(msg) => 
+  //         val cName = ColumnValue.getName(c)
+  //         liftError(TypeError(msg+s" in cell (#$cName,#$r)" ))
+  //     }
+  //   }
+  //   val cc = column.eval(env)
+  //   lift({ case ColumnValue(c) => 
+  //     val rr = row.eval(env); lift({ case RowValue(r) => doRead(c,r) }, rr)
+  //   }, cc)
+  // }
 
   /** The type associated with this read of a cell.  It might be a TypeVar, in
     * which case the corresponding TypeEnv will have a constraint upon it. */
@@ -273,29 +273,29 @@ case class CellExp(column: Exp, row: Exp) extends Exp{
 
 /** An if expression `if(test) thenClause else elseClause`. */
 case class IfExp(test: Exp, thenClause: Exp, elseClause: Exp) extends Exp{
-  def eval0(env: EnvironmentT) = test.eval(env) match{
-    case BoolValue(true) => thenClause.eval(env)
-    case BoolValue(false) => elseClause.eval(env)
-    case err: ErrorValue => liftError(err)
-    case other => sys.error(s"Unexpected type: $other")
-  }
+  // def eval0(env: EnvironmentT) = test.eval(env) match{
+  //   case BoolValue(true) => thenClause.eval(env)
+  //   case BoolValue(false) => elseClause.eval(env)
+  //   case err: ErrorValue => liftError(err)
+  //   case other => sys.error(s"Unexpected type: $other")
+  // }
 }
 
 // =================================================================
 
 case class ListLiteral(elems: List[Exp]) extends Exp{
-  def eval0(env: EnvironmentT) = {
-    // Traverse elems, evaluating each, and building in vs in reverse;
-    // maintain type of elements in theType; and catch any error.
-    var es = elems; var vs = List[Value](); var error: ErrorValue = null
-    while(es.nonEmpty && error == null){
-      es.head.eval(env) match{
-        case err: ErrorValue => error = liftError(err)
-        case v => vs ::= v;  es = es.tail
-      }
-    }
-    if(error != null) error else ListValue(vs.reverse)
-  }
+  // def eval0(env: EnvironmentT) = {
+  //   // Traverse elems, evaluating each, and building in vs in reverse;
+  //   // maintain type of elements in theType; and catch any error.
+  //   var es = elems; var vs = List[Value](); var error: ErrorValue = null
+  //   while(es.nonEmpty && error == null){
+  //     es.head.eval(env) match{
+  //       case err: ErrorValue => error = liftError(err)
+  //       case v => vs ::= v;  es = es.tail
+  //     }
+  //   }
+  //   if(error != null) error else ListValue(vs.reverse)
+  // }
 
 }
 
