@@ -2,7 +2,6 @@ package spreadsheet
 
 /** Object giving semantics to the binary infix operators. */
 object BinOpApply{
-
   /** Apply the operation represented by `op` to values `v1` and `v2`. 
     * Pre: v1 and v2 are non-error values, so applying op makes sense. */
   def apply(v1: Value, op: String, v2: => Value): Value = {

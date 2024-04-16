@@ -9,36 +9,48 @@ Outstanding:
 - EqTypeConstraint.intersection -- test **
 - parser for bools in spreadsheet
 - Parser for strings in script. 
+- Improve error messages concerning polymorphic types: "val xs = head(3)" ->
+  Expected List[TypeVar(133)], found Int at line 1
+- Allow function application where function is arbitrary expression
 
 Current: 
 
-- Check return type param in scope
+Try to allow arithmetic operators to be applied to Int and Float.
 
-- What is needed in TypeEnv at evaluation time?  constraints, apply(tid). typeParamMap, constraintForTypeParam, replaceEvalTime, showType
+Idea: give type of an integer litteral as a new TypeVar with
+NumTypeConstraint.  This nearly works.  It works for
 
-*** In TypeChecker on FunctionDeclarations: 
-// FIXME: if any of tparams gets bound to a TypeVar, update in typeEnv(name)
+def f[A <: Num](x: A): A = 3+x
 
-val y = #A3
-def f(x: Int): Int = x+y -- seems fine
-def g[A <: Num](x: A): A = x+y -- do we want this? 
+The unification replaces the TypeVar for "3" with TypeParam("A").
 
+But it doesn't work for
 
-- When calling functions/binops, check that lower bound of each actual
-  parameter is a subset of the type of the formal parameter. -- done for
-  functions, I think.  But not binops
+def f[A <: Num](x: A): A = x+3
+def f[A <: Num](): A = 3
 
-- Check that all types in function declaration signatures are declared. -- done
-1. In type environment, store (TypeParam => TypeConstraint) map.  -- done
-2. Update when processing function declaration --done
-3. Check names at same point --done
-3. Remove new names when leaving scope: store previous map in Frame -- done
+The unification tries to unify the TypeVar for "3" with TypeParam("A"), which
+fails.
 
-* Parsing of type constraints: Eq and Num
-* Type checking with constraints 
-  def add[A <: Num](x: A, y: A): A = x+y
-  def equal[A <: Eq](x: A, y: A) : Boolean = x == y
-  def sum[A <: Num](xs: List[A]) : A = ... base case ??
+...
+  
+Lists:
+- [_ .. _]
+- list comprehensions
+
+Long term
+---------
+
+* Allow arithmetic operators to be applied to Int and Float.
+def f[A <: NumType](): A = 3
+[3, 5.5]
+
+* "for"s. 
+
+* Allow type annonations in script, e.g. x = #A3 : Int
+
+Musings
+-------
 
 When can type t1 instantiate t2?
 
@@ -50,44 +62,7 @@ TypeVar(tid)    Type param     Constraint on tid \inter constraint on t2 nonempt
 Type param      Type param     t1 = t2
 ListType(tt1)   ListType(tt2)  tt1 can instantiate tt2
 ListType(tt1)   Type param     ListType(tt1) satisfies constraint on t2
-  
 
-
-- polymorphism (def id[A](x: A): A = x) -- done
-- type classes (def equal[A <: Eq](x: A, y: A): Boolean = x == y)
-- give polymorphic types to built-in functions, head, tail 
-
-- Num type class
-
-Lists:
--  null -- done
-- [_ .. _]
-- list comprehensions
-
-Improve error messages concerning polymorphic types: "val xs = head(3)" ->
-Expected List[TypeVar(133)], found Int at line 1
-
-
-
-* Think more about subclassing
-
-Function declarations and applications
-- parse function application -- done, but only for function names
-- ensure distinct param names - static analysis
-- More typenames, including in parser and ** catch incorrect types
-
-
-Improve parse error messages.
-
-* In parse errors, print relevant line, highlighting position; trim excessive
-  text - done
-
-Long term
----------
-
-"for"s. 
-
-Allow type annonations in script, e.g. x = #A3 : Int
 
 Behaviour
 =========
@@ -109,6 +84,46 @@ Code
 
 ===================================== DONE
 
+
+* In parse errors, print relevant line, highlighting position; trim excessive
+  text - done
+
+Function declarations and applications
+- parse function application -- done, but only for function names
+- ensure distinct param names - static analysis
+- More typenames, including in parser and ** catch incorrect types
+
+
+Improve parse error messages.
+-  null -- done
+
+- polymorphism (def id[A](x: A): A = x) -- done
+- type classes (def equal[A <: Eq](x: A, y: A): Boolean = x == y)
+- give polymorphic types to built-in functions, head, tail 
+
+- Num type class
+
+* Parsing of type constraints: Eq and Num
+* Type checking with constraints 
+  def add[A <: Num](x: A, y: A): A = x+y
+  def equal[A <: Eq](x: A, y: A) : Boolean = x == y
+  def sum[A <: Num](xs: List[A]) : A = ... base case ??
+- Check that all types in function declaration signatures are declared. -- done
+1. In type environment, store (TypeParam => TypeConstraint) map.  -- done
+2. Update when processing function declaration --done
+3. Check names at same point --done
+3. Remove new names when leaving scope: store previous map in Frame -- done
+- When calling functions/binops, check that lower bound of each actual
+  parameter is a subset of the type of the formal parameter. -- done for
+  functions, I think.  But not binops
+*** In TypeChecker on FunctionDeclarations: 
+// if any of tparams gets bound to a TypeVar, update in typeEnv(name) -- NO
+val y = #A3
+def f(x: Int): Int = x+y -- seems fine
+def g[A <: Num](x: A): A = x+y -- do we want this?  -- NO- Check return type param in scope -- done
+
+- What is needed in TypeEnv at evaluation time?  constraints,
+  apply(tid). typeParamMap, constraintForTypeParam, replaceEvalTime, showType
 - Check names of parameters of functions are disjoint.  -- done
 - check declared names are disjoint in each block. -- done
 - Improve Directive.perform re error handling. -- done

@@ -14,9 +14,10 @@ class EvaluationTypeEnv(
 
   /** The constraint associated with tid. */
   def apply(tid: TypeID) : StoredTypeConstraint = constraints(tid) match{
-    case SingletonTypeConstraint(TypeVar(tid1)) =>       // IMPROVE, unreachable?
-      assert(false) 
-      println(s"TypeEnv.apply: $tid -> $tid1"); apply(tid1)
+    case SingletonTypeConstraint(TypeVar(tid1)) =>  apply(tid1) 
+      // Arises with "def f[A](x: A, y: A): A = x; val y = f(3, 4)"
+      // val res = apply(tid1); println(s"TypeEnv.apply: $tid -> $tid1 -> $res");
+      // res
     case c => c 
   }
 

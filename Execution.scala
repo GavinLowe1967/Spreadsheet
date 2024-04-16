@@ -39,18 +39,16 @@ object Execution{
     case RowExp(row) => RowValue(row)
     case c @ ColumnExp(column) => ColumnValue(c.asInt)
 
-    case b @ BinOp(left, op, right) => 
-      eval(env, left) match{
-        case err1: ErrorValue => e.liftError(err1)
-        case v1 => eval(env, right) match{
-          case err2: ErrorValue => e.liftError(err2)
-          case v2 => BinOpApply(v1, op, v2) match{
-            case err: ErrorValue => e.liftError(err, true) // include line number
-            case res => res
-          }
+    case b @ BinOp(left, op, right) => eval(env, left) match{
+      case err1: ErrorValue => e.liftError(err1)
+      case v1 => eval(env, right) match{
+        case err2: ErrorValue => e.liftError(err2)
+        case v2 => BinOpApply(v1, op, v2) match{
+          case err: ErrorValue => e.liftError(err, true) // include line number
+          case res => res
         }
       }
-      // IMPROVE: move doBinOp
+    }
 
     case IfExp(test, thenClause, elseClause) => 
       eval(env, test) match{
@@ -109,10 +107,6 @@ object Execution{
       }
       else e.liftError(err)
   } // end of eval
-
-
-
-
 
   // ==================================================================
 
@@ -191,5 +185,4 @@ object Execution{
   object TestHooks{
     val eval = outer.eval _
   }
-
 }

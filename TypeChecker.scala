@@ -39,7 +39,10 @@ object TypeChecker{
       case None => FailureR("Name not found").lift(exp, true)
     }
 
-    case IntExp(v) => Ok((typeEnv,IntType))
+    // case IntExp(v) => Ok((typeEnv,IntType))
+    case IntExp(v) => 
+        val typeId = nextTypeID()
+        Ok((typeEnv + (typeId, NumTypeConstraint), TypeVar(typeId)))
     case FloatExp(v) => Ok((typeEnv,FloatType))
     case BoolExp(v) => Ok((typeEnv,BoolType))
     case StringExp(st) => Ok((typeEnv,StringType))
@@ -224,7 +227,8 @@ object TypeChecker{
               // Create a new scope, and extend with params and tparams
               val te1 = (typeEnv.newScope ++ params).addTypeParams(tparams)
               // Type parameters used in params
-              val usedTParams = params.flatMap(_._2.typeParams)
+              val usedTParams: List[TypeParamName] = 
+                params.flatMap(_._2.typeParams) ++ rt.typeParams
               val invalidTParams = usedTParams.filter(p => !te1.hasTypeParam(p))
               if(invalidTParams.nonEmpty)
                 FailureR(s"Unknown type(s): "+invalidTParams.mkString(", "))

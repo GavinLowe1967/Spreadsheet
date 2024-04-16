@@ -42,7 +42,10 @@ object Unification{
                                                       // TODO: test with ts1!=ts2
         }
 
-      case (TypeVar(tId1), TypeParam(tp)) => fail
+      case (TypeVar(tId1), TypeParam(tp)) => 
+        val c1 = typeEnv(tId1); val c2 = typeEnv.constraintForTypeParam(tp)
+        println(s"Unify: $tId1 -> $c1; $tp -> $c2"); 
+        fail
         // Note: the TypeParam(tp) represents a *universal* quantification
         // over at least two types.  The TypeVar(tId1) cannot simultaneously
         // have all of those types.  In particular, tId1 is associated with an
@@ -61,6 +64,9 @@ object Unification{
         }
         // Note: if the recursive call fails, the error message talks about
         // ListType(t1) and ListType(t2).
+
+      // case (TypeParam(tp1), TypeParam(tp2)) => 
+      //   println(s"$tp1 $tp2");  fail
 
       case (_, TypeParam(tp)) => fail // println(s"$t1 $t2"); ???
         // Check that t1 satisfies the type constraints on tp
