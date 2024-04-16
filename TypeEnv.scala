@@ -77,13 +77,8 @@ class TypeEnv(
 
   // ========= Constraints functions
 
-  // /** The constraint associated with tid. */
-  // def apply(tid: TypeID) : StoredTypeConstraint = constraints(tid) match{
-  //   case SingletonTypeConstraint(TypeVar(tid1)) =>       // IMPROVE, unreachable?
-  //     assert(false) 
-  //     println(s"TypeEnv.apply: $tid -> $tid1"); apply(tid1)
-  //   case c => c 
-  // }
+  // /** The constraint associated with tid.  In base class. */
+  // def apply(tid: TypeID) : StoredTypeConstraint = ... 
 
   /** The TypeEnv formed by adding  the constraint typeID -> tc. */
   def addTypeVarConstraint(typeID: TypeID, tc: StoredTypeConstraint) : TypeEnv = 
@@ -114,8 +109,7 @@ class TypeEnv(
   /** Is n a defined type parameter? */
   def hasTypeParam(n: TypeParamName) = typeParamMap.contains(n)
 
-  // def constraintForTypeParam(n: TypeParamName): TypeParamConstraint =
-  //   typeParamMap(n)
+  // def constraintForTypeParam(n: TypeParamName): TypeParamConstraint = ...
 
   // ========= cell constraints
 
@@ -157,17 +151,6 @@ class TypeEnv(
       cellReadMap = newCellReadMap)
   }
 
-  // /** The TypeEnv formed from this by replacing TypeVar(tId) with t, as used at
-  //   * evaluation time: updates are not propagated to cell expressions. */
-  // def replaceEvalTime(tId: TypeID, t: TypeT): TypeEnv = {
-  //   // Note: we don't propagate updates to cell expressions during evaluation,
-  //   // since if there are subsequent changes to the spreadsheet, the updates
-  //   // to cell expressions would be invalid.  We just update constraints.
-  //   val newNameMap = subInNameMap(nameMap, tId, t)
-  //   val newConstraints = constraints + (tId -> SingletonTypeConstraint(t))
-  //   make(nameMap = newNameMap, constraints = newConstraints)
-  // }
-
   // ========= Scoping functions
 
   /** Record that a new scope is being entered. */
@@ -186,18 +169,14 @@ class TypeEnv(
       frame = newFrame, stack = stack.tail)
   }
 
-  // ========= Generic helper functions
+  // ========= For evaluation
 
   /** Get an EvaluationTypeEnv including the relevant components of this. */
   def getEvaluationTypeEnv = new EvaluationTypeEnv(constraints, typeParamMap)
 
-  // def showType(t: TypeT): String = t match{
-  //   case TypeVar(tId) => apply(tId).asStringE
-  //   case TypeParam(tp) => typeParamMap(tp) match{
-  //     case AnyTypeConstraint => tp; case c => s"$tp <: "+c.asString
-  //   }
-  //   case _ => t.asString
-  // }
+  // ========= Generic helper functions
+
+  // def showType(t: TypeT): String = ...  In base class. 
 
   override def toString = s"TypeEnv($nameMap, $constraints)"
 
@@ -209,9 +188,6 @@ class TypeEnv(
 
 /** Companion object for TypeEnv. */
 object TypeEnv{
-
-  // type Name = String // Names of identifiers.  IMPROVE: export to NameExp
-
   /** A mapping from names in the script to their types. */
   private type NameMap = HashMap[Name, TypeT]
 

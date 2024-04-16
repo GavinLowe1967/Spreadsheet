@@ -9,9 +9,7 @@ Outstanding:
 - EqTypeConstraint.intersection -- test **
 - parser for bools in spreadsheet
 - Parser for strings in script. 
-- Check names of parameters of functions are disjoint.  
-- check declared names are disjoint in each block.
-- Improve Directive.perform re error handling.
+
 Current: 
 
 - Check return type param in scope
@@ -84,10 +82,15 @@ Improve parse error messages.
 * In parse errors, print relevant line, highlighting position; trim excessive
   text - done
 
+Long term
+---------
+
 "for"s. 
 
+Allow type annonations in script, e.g. x = #A3 : Int
+
 Behaviour
----------
+=========
 
 Don't allow directives to overwrite user data.
 
@@ -106,6 +109,9 @@ Code
 
 ===================================== DONE
 
+- Check names of parameters of functions are disjoint.  -- done
+- check declared names are disjoint in each block. -- done
+- Improve Directive.perform re error handling. -- done
 - TypeT.isSubclassOf -- done
 - Value.getType -- done
 

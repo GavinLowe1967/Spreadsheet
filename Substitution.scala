@@ -28,14 +28,17 @@ object Substitution{
       typeMap.get(tp) match{ case Some(t1) => t1; case None => t }
     // case TypeVar(tv) =>
     //   typeMap.get(tv) match{ case Some(t1) => t1; case None => t }
+
     case ListType(underlying) => ListType(remapBy(typeMap, underlying))
+
     case FunctionType(params, domain, range) =>
       assert(params.forall{ case (tp,_) => !typeMap.contains(tp) })
 // FIXME: other types
-      FunctionType(params, domain.map(remapBy(typeMap, _)), remapBy(typeMap, range))
+      FunctionType(params, domain.map(remapBy(typeMap, _)), 
+        remapBy(typeMap, range))
+
     case _ => t
   }
-
 
   /** Remap (ts,t) according to pairs. */
   def remapBy(pairs: List[(TypeParamName, TypeVar)], ts: List[TypeT], t: TypeT)

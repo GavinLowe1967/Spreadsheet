@@ -3,7 +3,7 @@ package spreadsheet
 /** Object responsible for evaluating expressions and executing statements. */
 object Execution{
   /** Evaluate `e` in environment `env`, adding the extent from `e`. */
-  def eval(env: Environment, e: Exp): Value = e match{
+  private def eval(env: Environment, e: Exp): Value = e match{
     case  cell @ CellExp(column: Exp, row: Exp) =>
       /* Read from cell(c,r). */
       def doRead(c: Int, r: Int) = {
@@ -25,7 +25,7 @@ object Execution{
   }
 
   /** Evaluate `e` in environment `env`. */
-  def eval0(env: Environment, e: Exp): Value = e match{
+  private def eval0(env: Environment, e: Exp): Value = e match{
     case NameExp(name) => 
       env.get(name) match{
         case Some(value) => value
@@ -40,24 +40,17 @@ object Execution{
     case c @ ColumnExp(column) => ColumnValue(c.asInt)
 
     case b @ BinOp(left, op, right) => 
-      b.doBinOp(eval(env, left), eval(env, right))
+      eval(env, left) match{
+        case err1: ErrorValue => e.liftError(err1)
+        case v1 => eval(env, right) match{
+          case err2: ErrorValue => e.liftError(err2)
+          case v2 => BinOpApply(v1, op, v2) match{
+            case err: ErrorValue => e.liftError(err, true) // include line number
+            case res => res
+          }
+        }
+      }
       // IMPROVE: move doBinOp
-
-    // case cell @ CellExp(column: Exp, row: Exp) =>
-    //   /* Read from cell(c,r). */
-    //   def doRead(c: Int, r: Int) = {
-    //     assert(cell.theType != null); val v = env.getCell(c, r)
-    //     env.checkType(v, cell.theType) match{
-    //       case Ok(()) => v;
-    //       case FailureR(msg) =>
-    //         val cName = ColumnValue.getName(c)
-    //         e.liftError(TypeError(msg+s" in cell (#$cName,#$r)" ))
-    //     }
-    //   }
-    //   val cc = eval(env, column)
-    //   e.lift({ case ColumnValue(c) =>
-    //     val rr = eval(env, row); e.lift({ case RowValue(r) => doRead(c,r) }, rr)
-    //   }, cc)
 
     case IfExp(test, thenClause, elseClause) => 
       eval(env, test) match{
@@ -99,6 +92,7 @@ object Execution{
       case err: ErrorValue => e.liftError(err)
 
       case other => sys.error(s"$f -> $other")
+        // Note: eval0 is never called on a CellExpr
     } // end of case FunctionApp(...)
 
     case BlockExp(stmts, exp) => 
@@ -116,6 +110,10 @@ object Execution{
       else e.liftError(err)
   } // end of eval
 
+
+
+
+
   // ==================================================================
 
   /** Make an error message. */
@@ -127,7 +125,8 @@ object Execution{
 
   /** Perform `s` in `env`, handling errors with `handleError`. 
     * @return false if an error occurred in a declaration. */
-  def perform(env: Environment, handleError: ErrorValue => Unit, s: Statement)
+  private def perform(
+    env: Environment, handleError: ErrorValue => Unit, s: Statement)
       : Boolean = s match{
     case Directive(CellExp(ce,re), expr) => 
       eval(env, ce) match{
@@ -140,16 +139,16 @@ object Execution{
                   handleError(ev1)
                 // Note: ErrorValue <: Cell, so the ordering is important.
                 case v1: Cell => env.setCell(c, r, v1)
-                // case v => println(v); ??? // IMPROVE?
-              }
+              } // end of inner match
               else handleError(EvalError("Indexing error for row: found $r"))
               // end of case RowValue(r)
 
-            case rr => sys.error(mkErr("row number", rr))
+            case err: ErrorValue => handleError(s.liftError(err))
           } // end of eval(env, re) match
           else handleError(EvalError("Indexing error for column: found $c"))
+          // end of case ColumnValue(c)
 
-        case cc => sys.error(mkErr("row identifier", cc))
+        case err: ErrorValue => handleError(s.liftError(err))
       } // end of eval(env, ce) match
       // Note: we always return true, even if this particular directive failed
       true
@@ -185,4 +184,12 @@ object Execution{
       ok = perform(env.asInstanceOf[Environment], handleError, iter.next())
     ok
   }
+
+  // ========= Testing hooks
+
+  private val outer = this
+  object TestHooks{
+    val eval = outer.eval _
+  }
+
 }

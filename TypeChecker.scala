@@ -248,15 +248,23 @@ object TypeChecker{
   /** Typecheck stmts in environment typeEnv. */
   private def typeCheckStmtList(typeEnv: TypeEnv, stmts: List[Statement])
       : Reply[TypeEnv] = {
-    // Extend typeEnv on assumption all FunctionDeclarations are correctly
-    // typed.
-    val updates = (
-      for(FunctionDeclaration(name, tparams, params, rt, body) <- stmts) yield 
-        name -> FunctionType(tparams, params.map(_._2), rt)
+    // Check bound names are disjoint
+    val names = (
+      (for(ValueDeclaration(name,_) <- stmts) yield name) ++
+      (for(FunctionDeclaration(name,_,_,_,_) <- stmts) yield name)
     )
-    val typeEnv1 = typeEnv ++ updates 
-    typeCheckStmtList1(typeEnv1, stmts) 
-                                          // TODO: check names disjoint
+    findRepetition(names) match{
+      case Some(name) => FailureR(s"$name has two definitions") // IMPROVE
+      case None =>
+        // Extend typeEnv on assumption all FunctionDeclarations are correctly
+        // typed.
+        val updates = (
+          for(FunctionDeclaration(name, tparams, params, rt, body) <- stmts) 
+          yield name -> FunctionType(tparams, params.map(_._2), rt)
+        )
+        val typeEnv1 = typeEnv ++ updates
+        typeCheckStmtList1(typeEnv1, stmts)
+    }
   }
 
   /** Typecheck stmts in environment typeEnv.  All names of functions should

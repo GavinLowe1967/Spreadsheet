@@ -37,7 +37,7 @@ object ParserTest{
 
   // Parse and evaluate st, and check the extent
   def pe(st: String) = {
-    val v = Execution.eval(env, p(st))
+    val v = Execution.TestHooks.eval(env, p(st))
     if(v.source == null) println(s"pe: $st -> $v")
     else checkExtent(v.source.asInstanceOf[Extent], st)
     v
@@ -45,6 +45,15 @@ object ParserTest{
   
   // Parse and evaluate st; print result and source
   def pep(st: String) = { val v = pe(st); println(v); println(v.source) }
+
+  var printErrors = false
+
+  /** Check that v is an error, printing the error message if printErrors is
+    * set. */
+  def assertFail(v: Value) = v match{
+    case EvalError(err) => if(printErrors) println(err)
+    case _ => sys.error(s"Error epected, $v found")
+  }
 
   // Note: various tests have been commented out, because the expressions
   // would fail typechecking, and with the current definition of evaluation
@@ -70,6 +79,8 @@ object ParserTest{
     assert(pe("(2+3)*4 > 6") == BoolValue(true))
     assert(pe("(2+3)*4 <= 6 || 6*7 == 42") == BoolValue(true))
     assert(pe("(2+3)*4 <= 6 && 6*7 == 42") == BoolValue(false))
+    assertFail(pe("3/0+4"))
+    assertFail(pe("2+5/0"))
 
     // ===== Rows, columns, cells
     assert(pe("#23") == RowValue(23))
@@ -92,20 +103,19 @@ object ParserTest{
     assert(pe("if(2+2 != 5) 3 else 4+2") == IntValue(3))
     assert(pe("7 * (if(2+2 == 4) 3 else 4+2)") == IntValue(21))
     assert(pe("7 * (if(2+2 == 5) 3 else 4+2)") == IntValue(42))
-    assert(pe("if(2/0 == 4) 3 else 4").isInstanceOf[EvalError])
+    assertFail(pe("if(2/0 == 4) 3 else 4"))
 
     // ===== List expressions
     assert(pe("[]") == ListValue(/*AnyType,*/ List()))
     assert(pe("[4/4, 2+0, 6-3]") == 
       ListValue(IntValue(1), IntValue(2), IntValue(3)))
-    assert(pe("[4/2, 3/0]").isInstanceOf[EvalError])
+    assertFail(pe("[4/2, 3/0]"))
 
     assert(pe("head([1,2,3])") == IntValue(1))
-    assert(pe("head([])").isInstanceOf[EvalError])
+    assertFail(pe("head([])"))
 
-    assert(pe("tail([1,2,3])") == 
-      ListValue(IntValue(2), IntValue(3)))
-    assert(pe("tail([])").isInstanceOf[EvalError])
+    assert(pe("tail([1,2,3])") == ListValue(IntValue(2), IntValue(3)))
+    assertFail(pe("tail([])"))
 
     assert(pe("[1,2] == [3,4]") == BoolValue(false))
     assert(pe("1 :: 2 :: []") == ListValue(IntValue(1), IntValue(2)))
@@ -175,6 +185,8 @@ object ParserTest{
   }
 
   def main(args: Array[String]) = {
+    printErrors = true
+
     expressions; testStatements;  
 
     assert(ps("def apply[A, B](f: A => B, x: A) : B = f(x)") == 
@@ -191,8 +203,8 @@ object ParserTest{
         List(("x",TypeParam("A"))), BoolType, 
         BinOp(NameExp("x"), "==", NameExp("x")) ))
 
-    println(pe("{ def f(x: Int): Int = 5/x; f(0) }"))
-    println(pe("{ def f(x: Int): Int = 5/x; f(1/0) }"))
+    assertFail(pe("{ def f(x: Int): Int = 5/x; f(0) }"))
+    assertFail(pe("{ def f(x: Int): Int = 5/x; f(1/0) }"))
 
     println("Done")
   }

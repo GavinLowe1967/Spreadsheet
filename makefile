@@ -26,28 +26,28 @@ $(DIR)/Exp.class: $(DIR)/Value.class $(DIR)/HasExtent.class
 
 $(DIR)/Statement.class: $(DIR)/Exp.class 
 
-
 # Evaluation/execution
 
 $(DIR)/EvaluationTypeEnv.class: $(DIR)/TypeConstraint.class
 
-
 $(DIR)/Reply.class: $(DIR)/HasExtent.class
 
-$(DIR)/EvaluationTypeChecker.class: $(DIR)/EvaluationTypeEnv.class $(DIR)/Reply.class
+$(DIR)/EvaluationTypeChecker.class: $(DIR)/EvaluationTypeEnv.class	\
+  $(DIR)/Reply.class
 
 $(DIR)/Environment.class: $(DIR)/EvaluationTypeChecker.class	\
   $(DIR)/BuiltInFunctions.class
 
-$(DIR)/Execution.class: $(DIR)/Statement.class $(DIR)/Environment.class
+$(DIR)/BinOpApply.class: $(DIR)/Value.class
+
+$(DIR)/Execution.class: $(DIR)/BinOpApply.class $(DIR)/Statement.class $(DIR)/Environment.class
 
 # Type checking
 
 $(DIR)/Substitution.class: $(DIR)/FunctionType.class $(DIR)/Reply.class
 
-$(DIR)/TypeEnv.class: $(DIR)/TypeConstraint.class $(DIR)/Exp.class	\
-  $(DIR)/BuiltInFunctions.class $(DIR)/Substitution.class		\
-  $(DIR)/EvaluationTypeEnv.class
+$(DIR)/TypeEnv.class: $(DIR)/Exp.class $(DIR)/BuiltInFunctions.class	\
+  $(DIR)/Substitution.class $(DIR)/EvaluationTypeEnv.class
 
 $(DIR)/Unification.class: $(DIR)/TypeEnv.class	\
   $(DIR)/EvaluationTypeChecker.class
