@@ -39,10 +39,10 @@ object TypeChecker{
       case None => FailureR("Name not found").lift(exp, true)
     }
 
-    // case IntExp(v) => Ok((typeEnv,IntType))
-    case IntExp(v) => 
-        val typeId = nextTypeID()
-        Ok((typeEnv + (typeId, NumTypeConstraint), TypeVar(typeId)))
+    case IntExp(v) => Ok((typeEnv,IntType))
+    // case IntExp(v) => 
+    //     val typeId = nextTypeID()
+    //     Ok((typeEnv + (typeId, NumTypeConstraint), TypeVar(typeId)))
     case FloatExp(v) => Ok((typeEnv,FloatType))
     case BoolExp(v) => Ok((typeEnv,BoolType))
     case StringExp(st) => Ok((typeEnv,StringType))

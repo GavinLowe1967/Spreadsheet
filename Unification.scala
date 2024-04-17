@@ -44,7 +44,7 @@ object Unification{
 
       case (TypeVar(tId1), TypeParam(tp)) => 
         val c1 = typeEnv(tId1); val c2 = typeEnv.constraintForTypeParam(tp)
-        println(s"Unify: $tId1 -> $c1; $tp -> $c2"); 
+        // println(s"Unify: $tId1 -> $c1; $tp -> $c2"); 
         fail
         // Note: the TypeParam(tp) represents a *universal* quantification
         // over at least two types.  The TypeVar(tId1) cannot simultaneously

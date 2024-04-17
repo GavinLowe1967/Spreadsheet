@@ -32,6 +32,17 @@ def f[A <: Num](): A = 3
 The unification tries to unify the TypeVar for "3" with TypeParam("A"), which
 fails.
 
+More test cases
+
+val y = #D3; def f[A <: Num]() : A = y
+
+I think NumTypeConstraint isn't quite the same as
+MemberOf(List(IntType,FloatType)).
+
+Allow a TypeVar to be unified with a TypeParam when the constraint on the
+TypeVar is a superset of that on the TypeParam?  This would narrow the
+constraint on the TypeVar.
+
 ...
   
 Lists:
