@@ -41,8 +41,14 @@ object BinOpApply{
   /** (Num, Num) -> Value functions. */
   private def mkBinOp(fi: (Int,Int) => Value, ff: (Float,Float) => Value) 
       : BinOpRep = {
-    case IntValue(n1) => { case IntValue(n2) => fi(n1,n2) }
-    case FloatValue(x1) => { case FloatValue(x2) => ff(x1,x2) }
+    case IntValue(n1) => { 
+      case IntValue(n2) => fi(n1,n2) 
+      case FloatValue(x2) => ff(n1.toFloat, x2)
+    }
+    case FloatValue(x1) => { 
+      case FloatValue(x2) => ff(x1,x2) 
+      case IntValue(n2) => ff(x1, n2.toFloat)
+    }
   }
 
   /** (Num, Num) -> Num functions. */
@@ -64,8 +70,14 @@ object BinOpApply{
     // Build the result from b which represents equality. 
     def mkRes(b: Boolean) = BoolValue(b == eq)
     _ match {
-      case IntValue(n1) => { case IntValue(n2) => mkRes(n1 == n2) }
-      case FloatValue(x1) => { case FloatValue(x2) => mkRes(x1 == x2) }
+      case IntValue(n1) => { 
+        case IntValue(n2) => mkRes(n1 == n2) 
+        case FloatValue(x2) => mkRes(n1.toFloat == x2)
+      }
+      case FloatValue(x1) => { 
+        case FloatValue(x2) => mkRes(x1 == x2) 
+        case IntValue(n2) => mkRes(x1 == n2.toFloat)
+      }
       case BoolValue(b1) => { case BoolValue(b2) => mkRes(b1 == b2) }
       case StringValue(st1) => { case StringValue(st2) => mkRes(st1 == st2) }
       case RowValue(r1) => { case RowValue(r2) => mkRes(r1 == r2) }

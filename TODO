@@ -1,49 +1,31 @@
 https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-paper-suffers-database-error/
 
 Language
---------
+========
 
 Outstanding:
+-----------
 
 - Clear boxes on reload
+
 - EqTypeConstraint.intersection -- test **
-- parser for bools in spreadsheet
-- Parser for strings in script. 
+
+- Parser for strings in script.  
+
 - Improve error messages concerning polymorphic types: "val xs = head(3)" ->
-  Expected List[TypeVar(133)], found Int at line 1
+  Expected List[TypeVar(133)], found Int at line 1.  Also 1:: [true]; 
+  tail([1]) == tail([false])
+
 - Allow function application where function is arbitrary expression
 
+- Line numbers for second definitions
+
 Current: 
+--------
 
-Try to allow arithmetic operators to be applied to Int and Float.
 
-Idea: give type of an integer litteral as a new TypeVar with
-NumTypeConstraint.  This nearly works.  It works for
-
-def f[A <: Num](x: A): A = 3+x
-
-The unification replaces the TypeVar for "3" with TypeParam("A").
-
-But it doesn't work for
-
-def f[A <: Num](x: A): A = x+3
-def f[A <: Num](): A = 3
-
-The unification tries to unify the TypeVar for "3" with TypeParam("A"), which
-fails.
-
-More test cases
-
-val y = #D3; def f[A <: Num]() : A = y
-
-I think NumTypeConstraint isn't quite the same as
-MemberOf(List(IntType,FloatType)).
-
-Allow a TypeVar to be unified with a TypeParam when the constraint on the
-TypeVar is a superset of that on the TypeParam?  This would narrow the
-constraint on the TypeVar.
-
-...
+Soon
+----
   
 Lists:
 - [_ .. _]
@@ -52,9 +34,6 @@ Lists:
 Long term
 ---------
 
-* Allow arithmetic operators to be applied to Int and Float.
-def f[A <: NumType](): A = 3
-[3, 5.5]
 
 * "for"s. 
 
@@ -62,6 +41,11 @@ def f[A <: NumType](): A = 3
 
 Musings
 -------
+
+Uses for TypeConstraints:
+- For type parameters (TypeParamConstraint): (Num, Eq, Any)
+- For Cells (Num, Cell, Singleton)
+- For type parameters (more general)
 
 When can type t1 instantiate t2?
 
@@ -91,10 +75,66 @@ Index cells from 1
 Code
 ----
 
+Split evaluation tests off from PerserTest.
+
+Tidy up TypeCheckerTest
 
 
 ===================================== DONE
 
+- parser for bools in spreadsheet -- done
+val b = [] == [3] fails to typecheck
+val b = [3] == [] succeeds (?)
+
+
+Try to allow arithmetic operators to be applied to Int and Float.  Mostly done. 
+
+* EvaluationTypeChecker.unify -- update for equality, inequality
+
+* Test other binary ops.  I think equality/inequality won't work yet. 
+
+
+* Allow arithmetic operators to be applied to Int and Float.
+def f[A <: NumType](): A = 3
+[3, 5.5]
+Idea: give type of an integer litteral as a new TypeVar with
+NumTypeConstraint.  This nearly works.  It works for
+
+def f[A <: Num](x: A): A = 3+x
+
+The unification replaces the TypeVar for "3" with TypeParam("A").
+
+But it doesn't work for
+
+def f[A <: Num](x: A): A = x+3
+def f[A <: Num](): A = 3
+
+The unification tries to unify the TypeVar for "3" with TypeParam("A"), which
+fails.
+
+More test cases
+
+val y = #D3; def f[A <: Num]() : A = y
+
+I think NumTypeConstraint isn't quite the same as
+MemberOf(List(IntType,FloatType)).
+
+Allow a TypeVar to be unified with a TypeParam when the constraint on the
+TypeVar is a superset of that on the TypeParam?  (The constraint on the
+TypeParam implies that on the TypeVar.)  This would narrow the constraint on
+the TypeVar.
+
+With "val y = #D3; def f[A <: Num]() : A = y", #D3 must be an Int.
+With "#A3 = #A1 + #A2", both #A1 and #A2 can be Int or Float.
+
+When reading a value from a cell, if the read has typeconstraint
+NumTypeConstraint:
+- If cell value is Float, don't update
+- If cell value Int, don't update   ????????
+
+In Unification.unify, case (TypeVar(tId1), TypeParam(tp)) allow success only
+when tp associated with NumTypeConstraint, and tId1 with a superset of that;
+upade environment to map tId1 to IntType, but return type TypeParam(tp).  
 
 * In parse errors, print relevant line, highlighting position; trim excessive
   text - done

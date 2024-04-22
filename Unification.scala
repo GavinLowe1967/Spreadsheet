@@ -12,8 +12,36 @@ object Unification{
     typeEnv: TypeEnv, tId: TypeID, t: TypeT, fail: => FailureR)
       : Reply[(TypeEnv, TypeT)] = {
     assert(!t.isInstanceOf[TypeVar])
-    if(typeEnv(tId).satisfiedBy(typeEnv, t)) Ok(typeEnv.replace(tId, t), t)
-    else fail
+    updateEnvToSatisfy(typeEnv, t, typeEnv(tId), fail).map{ te => 
+      Ok(te.replace(tId, t), t)
+    }
+  }
+
+  /** Test whether t can satisfy the constraint c.  If needs be, add constraints
+    * to TypeVars within t.  Return the resulting environment if successful;
+    * otherwise return fail. */
+  private def updateEnvToSatisfy(
+    typeEnv: TypeEnv, t: TypeT, c: StoredTypeConstraint, fail: => FailureR)
+      : Reply[TypeEnv] = t match{
+    case ListType(underlying) => c match{
+      case EqTypeConstraint => updateEnvToSatisfy(typeEnv, underlying, c, fail)
+      case AnyTypeConstraint => Ok(typeEnv)
+      case NumTypeConstraint => fail
+    }
+    case _ : FunctionType => c match{
+      case AnyTypeConstraint => Ok(typeEnv)
+      case EqTypeConstraint | NumTypeConstraint | MemberOf(_) => fail
+    }
+    case TypeVar(tId) => 
+      val c1 = typeEnv(tId)
+      c.intersection(typeEnv, c1) match{
+        case EmptyTypeConstraint => fail
+        case cc: StoredTypeConstraint =>
+          // println(s"$c, ${typeEnv(tId)}, $cc");
+          if(cc == c1) Ok(typeEnv) else Ok(typeEnv.addTypeVarConstraint(tId, cc))
+    }
+    case _ => // BaseTypes, TypeParam
+      if(c.satisfiedBy(typeEnv, t)) Ok(typeEnv) else fail
   }
 
   /** Identity on types. */
@@ -44,8 +72,13 @@ object Unification{
 
       case (TypeVar(tId1), TypeParam(tp)) => 
         val c1 = typeEnv(tId1); val c2 = typeEnv.constraintForTypeParam(tp)
-        // println(s"Unify: $tId1 -> $c1; $tp -> $c2"); 
-        fail
+        if(c2.implies(c1)){
+          assert(c2 == NumTypeConstraint, c2)
+          Ok(typeEnv.replace(tId1, IntType), t2)
+          // Ok((typeEnv + (tId1, c2), t1)) // OR t2 ?????
+          // println(s"Unify: $tId1 -> $c1; $tp -> $c2")
+        }
+        else fail
         // Note: the TypeParam(tp) represents a *universal* quantification
         // over at least two types.  The TypeVar(tId1) cannot simultaneously
         // have all of those types.  In particular, tId1 is associated with an
@@ -54,9 +87,14 @@ object Unification{
       case (TypeVar(tId1), _) => // t2 a concrete type.  Try to replace t1 by t2
         replaceInTypeEnv(typeEnv, tId1, t2, fail)
         
+
+      // case (ListType(tt1), TypeVar(tId2)) => ???
+
       case ( _, TypeVar(tId2)) =>           // Try to replace t2 by t1
         assert(!t1.isInstanceOf[TypeVar])
         replaceInTypeEnv(typeEnv, tId2, t1, fail)
+        // FIXME: this goes wrong with t1 = ListType(TypeVar(tv)) with tv
+        // AnyTypeConstraint, and tId2 EqTypeConstraint.
 
       case (ListType(tt1), ListType(tt2)) => 
         unify(typeEnv, tt1, tt2, ListType(_)).map{ 

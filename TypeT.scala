@@ -27,9 +27,7 @@ object TypeT{
 /** A type variable. */
 case class TypeVar(tv: TypeID) extends TypeT{
   def asString = toString                                // IMPROVE
-
   def typeVars = List(tv)
-
   def typeParams = List()
 }
 
@@ -49,10 +47,8 @@ object TypeVar{
 
 /** A type parameter, named in the script. */
 case class TypeParam(name: String) extends TypeT{
-  def asString = name // toString
-
+  def asString = name 
   def typeVars = List()
-
   def typeParams = List(name)
 }
 
@@ -65,61 +61,55 @@ object TypeParam{
 /** A marker trait for atomic equality types. */
 trait EqType extends TypeT
 
-case object IntType extends EqType {
+/** Marker trait for base types, i.e. atomic. */
+trait BaseType extends TypeT{
+  def typeVars = List()
+  def typeParams = List()
+}
+
+/** A marker trait for types that can appear in cells of the spreadsheet. */
+trait CellType extends EqType with BaseType
+
+/* Now all the base types. */
+
+case object IntType extends CellType {
   def asString = "Int"
-  def typeVars = List()
-  def typeParams = List()
 }
 
-case object FloatType extends EqType{
+case object FloatType extends CellType{
   def asString = "Float"
-  def typeVars = List()
-  def typeParams = List()
 }
 
-case object BoolType extends EqType{
+case object BoolType extends CellType{
   def asString = "Boolean"
-  def typeVars = List()
-  def typeParams = List()
 }
 
-case object StringType extends EqType{
+case object StringType extends CellType{
   def asString = "String"
-  def typeVars = List()
-  def typeParams = List()
 }
 
-case object RowType extends EqType{
+case object RowType extends EqType with BaseType{
   def asString = "Row"
-  def typeVars = List()
-  def typeParams = List()
 }
 
-case object ColumnType extends EqType{
+case object ColumnType extends EqType with BaseType{
   def asString = "Column"
-  def typeVars = List()
-  def typeParams = List()
 }
 
-case object EmptyType extends TypeT{
+case object EmptyType extends CellType{
   def asString = "empty cell"
-  def typeVars = List()
-  def typeParams = List()
 }
 
 // ==================================================================
 
 /** The type of lists with underlying type `underlying`. */
 case class ListType(underlying: TypeT) extends TypeT{
-
   def asString = { val u = underlying.asString; s"List[$u]" }
-
   def typeVars = underlying.typeVars
   def typeParams = underlying.typeParams
 }
 
 // ==================================================================
-
 
 
 // ====== Note: FunctionType is in its own file, as it depends on TypeConstraint

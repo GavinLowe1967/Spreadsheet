@@ -181,7 +181,10 @@ object ExpParser{
     (number <~ atEnd) > { 
       case IntExp(n) => IntValue(n); case FloatExp(x) => FloatValue(x) 
     }
-    | all > StringValue
+    | all > { 
+      case "true" => BoolValue(true); case "false" => BoolValue(false)
+      case v => StringValue(v)
+    }
   )
 
   /** Parse a value input into a cell.  Called by Spreadsheet. */

@@ -64,8 +64,11 @@ $(DIR)/StatementParser.class: $(DIR)/Parser.class $(DIR)/Statement.class	\
 
 $(DIR)/ParserTest.class: $(DIR)/StatementParser.class $(DIR)/Execution.class
 
-$(DIR)/TypeCheckerTest.class: $(DIR)/TypeChecker.class	\
+
+$(DIR)/TypeCheckerTest0.class: $(DIR)/TypeChecker.class	\
   $(DIR)/StatementParser.class
+
+$(DIR)/TypeCheckerTest.class: $(DIR)/TypeCheckerTest0.class
 
 # ===== Model
 

@@ -35,12 +35,13 @@ class Environment(
   /** Check that v has type t. 
     * Called from CellExp.eval. */
   def checkType(v: Cell, t: TypeT): Reply[Unit] = {
-    EvaluationTypeChecker.unify(typeEnv, v.getType, t).map{ case(te,tt) =>
+    EvaluationTypeChecker.unify(typeEnv, v.getType, t).map{ te2 =>
       // Note: the new type environment is stored, for use in subsequent steps
       // of the current evaluation.
-      typeEnv = te; Ok(()) 
+      typeEnv = te2; Ok(()) 
     }
   }
+// IMPROVE
 
   /** Clone this. */
   override def clone = 

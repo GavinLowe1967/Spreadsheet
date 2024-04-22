@@ -23,7 +23,7 @@ trait Cell extends Value{
   def withCellSource(cs: CellSource) = { source = cs; this }
 
   /** The type of this value.  Set in subclasses. */
-  def getType: TypeT
+  def getType: CellType // TypeT
 }
 
 // ==================================================================
@@ -144,7 +144,7 @@ trait ErrorValue extends Cell{
 
 /** A type error arising from evaluation of an expression. */
 case class TypeError(msg: String) extends ErrorValue{
-  override def forError = s"Type error: $msg\n\t$source"
+  override def forError = s"Type error: $msg" // \n\t$source"
 }
 
 /** An error arising from evaluation of an expression, such as division by

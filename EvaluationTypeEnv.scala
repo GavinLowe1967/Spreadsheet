@@ -11,19 +11,17 @@ class EvaluationTypeEnv(
   private val constraints: Constraints,
   private val typeParamMap: TypeParamMap
 ) extends TypeEnv0{
+  // ========= Constraints functions
 
   /** The constraint associated with tid. */
   def apply(tid: TypeID) : StoredTypeConstraint = constraints(tid) match{
     case SingletonTypeConstraint(TypeVar(tid1)) =>  apply(tid1) 
-      // Arises with "def f[A](x: A, y: A): A = x; val y = f(3, 4)"
-      // val res = apply(tid1); println(s"TypeEnv.apply: $tid -> $tid1 -> $res");
-      // res
+      // Arises with, e.g., "def f[A](x: A, y: A): A = x; val y = f(3, 4)"
     case c => c 
   }
 
-  /**The constraint associated with TypeParam(n). */
-  def constraintForTypeParam(n: TypeParamName): TypeParamConstraint =
-    typeParamMap(n)
+  // def addTypeVarConstraintEvalTime(tId: TypeID, tc: StoredTypeConstraint) =
+  //   new EvaluationTypeEnv(constraints +  (tId -> tc), typeParamMap)
 
   /** The EvaluationTypeEnv formed from this by replacing TypeVar(tId) with t.
     */
@@ -34,6 +32,19 @@ class EvaluationTypeEnv(
     val newConstraints = constraints + (tId -> SingletonTypeConstraint(t))
     new EvaluationTypeEnv(newConstraints, typeParamMap)
   }
+
+  /** The EvaluationTypeEnv formed from this by replacing TypeVar(tId) with tc.
+    */
+  def replaceEvalTime(tId: TypeID, tc: StoredTypeConstraint) = 
+    new EvaluationTypeEnv(constraints + (tId -> tc), typeParamMap)
+
+  // ========= TypeParamMap functions
+
+  /**The constraint associated with TypeParam(n). */
+  def constraintForTypeParam(n: TypeParamName): TypeParamConstraint =
+    typeParamMap(n)
+
+  // ========= Helper function
 
   /** A string representing type t, with relevant constraints. */
   def showType(t: TypeT): String = t match{

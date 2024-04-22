@@ -86,6 +86,7 @@ class View(model: Model) extends MainFrame with ViewT{
 
   /** Add `text` to the information box. */
   def addInfo(text: String) = {
+    // println(s"<<$text>>")
     infoBox.text += (text+"\n")
     infoBox.peer.select(0,0) // Move scrollbar to top of infoBox
   }

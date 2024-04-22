@@ -52,7 +52,14 @@ object ParserTest{
     * set. */
   def assertFail(v: Value) = v match{
     case EvalError(err) => if(printErrors) println(err)
-    case _ => sys.error(s"Error epected, $v found")
+    case _ => sys.error(s"Error expected, $v found")
+  }
+
+  /** Assert that v1 and v2 are FloatValues that are approximately equal.  Pesky
+    * rounding errors! */   
+  def assertApprox(v1: Value, v2: Value) = (v1,v2) match{
+    case (FloatValue(f1), FloatValue(f2)) => 
+      assert(Math.abs(f1-f2) < 0.00001, s"$f1 $f2")
   }
 
   // Note: various tests have been commented out, because the expressions
@@ -81,6 +88,26 @@ object ParserTest{
     assert(pe("(2+3)*4 <= 6 && 6*7 == 42") == BoolValue(false))
     assertFail(pe("3/0+4"))
     assertFail(pe("2+5/0"))
+
+    // Tests mixing floats and ints
+    assert(pe("2+5.7") == FloatValue(7.7F))
+    assert(pe("2.8+5") == FloatValue(7.8F))
+    assert(pe("2.3+5.5") == FloatValue(7.8F))
+    println(pe("4.3-2"))
+    assertApprox(pe("4.3-2"), FloatValue(2.3F))
+    assertApprox(pe("4-2.3"), FloatValue(1.7F))
+    assertApprox(pe("4*2.3"), FloatValue(9.2F))
+    assertApprox(pe("4.3*2"), FloatValue(8.6F))
+    assertApprox(pe("4.3/2"), FloatValue(2.15F))
+    assertApprox(pe("7.0/2"), FloatValue(3.5F))
+
+    assert(pe("2 <= 4.5") == BoolValue(true))
+    assert(pe("2.5 >= 4") == BoolValue(false))
+
+    assert(pe("2 == 4.5") == BoolValue(false))
+    assert(pe("4.4 == 4") == BoolValue(false))
+    assert(pe("4.0 == 4") == BoolValue(true))
+    assert(pe("4.0 != 4") == BoolValue(false))
 
     // ===== Rows, columns, cells
     assert(pe("#23") == RowValue(23))
