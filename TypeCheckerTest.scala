@@ -2,226 +2,12 @@ package spreadsheet
 
 import TypeT._
 import TypeCheckerTest0._
+import TypeCheckerTest1._
+import TypeChecker.TestHooks._
 
 /** Tests on the type checker. */
 object TypeCheckerTest{
 
-  /** Tests on single declarations and function applications. */
-  def singleDecTests() = {
-    // Value declarations
-    val Ok(te) = tcpss("val four = 4")
-    assertNum(tcp("four", te)); assertNum(tcp("2+four", te))
-    assertEq(tcp("5 == four", te), BoolType)
-    assertFail(tcpss("val x = 2+false"))
-    tcpss("val y = 3 + 4.5") match{ case Ok(te) => assert(te("y") == FloatType) }
-    tcpss("val y = 3 + 4") match{ case Ok(te) => assertNum(te, "y") }
-
-    //Function declarations
-    val Ok(te1) = tcpss("def f(x: Int): Int = x+1", te)
-    assertEq(tcp("f", te1), FunctionType(List(), List(IntType),IntType))
-    val Ok(te2) = tcpss("def g(f: Boolean, x: Int): Int = if(f) x else 4", te1)
-    assertEq(tcp("f", te2), FunctionType(List(), List(IntType), IntType))
-    assertEq(tcp("g", te2), FunctionType(List(), List(BoolType,IntType), IntType))
-    assertFail(tcpss("def f(x: Int): Int = if(x) 3 else 2"))
-    assertFail(tcpss("def f(b: Boolean): Boolean = if(b)  3 else 2"))
-    val Ok(te3) = 
-      tcpss("def fact(n: Int): Int = if(n <= 0) 1 else n * fact(n-1)")
-    assertEq(tcp("fact", te3), FunctionType(List(), List(IntType), IntType))
-
-    // Function applications
-    assertEq(tcp("f(3)", te2), IntType)
-    assertEq(tcp("g(true, 4)", te2), IntType)
-    assertEq(tcp("fact(4)", te3), IntType)
-    assertFail(tcp("f(true)", te2))
-    assertFail(tcp("g(true, false)", te2)); assertFail(tcp("g(3, 4)", te2))
-    assertFail(tcp("f(3,5)", te2)); assertFail(tcp("g(true)", te2))
-    assertFail(tcp("four(4)", te2))
-  }
-
-  // ==================================================================
-
-  /** Tests on basic scripts and blocks. */
-  def scriptTests() = {
-    val script = 
-      List(
-        "def f(x: Int): Int = h(x+1,true)",
-        "def g(f: Boolean, x: Int): Int = if(f) x else 4",
-        "def fact(n: Int): Int = if(n <= 0) 1 else n * fact(n-1)",
-        "def h(y: Int, b: Boolean): Int = if(b) y else f(y+1)",
-        "val four = 4"
-      ).mkString("\n")
-    val Ok(te) = tcpss(script)
-    assert(te("f") == FunctionType(List(), List(IntType), IntType))
-    assert(te("g") == FunctionType(List(), List(BoolType,IntType), IntType))
-    assert(te("fact") == FunctionType(List(), List(IntType), IntType))
-    assert(te("h") == FunctionType(List(), List(IntType,BoolType), IntType))
-    assertNum(te, "four")
-    val faultyScript = script+"; def ff(x: Int): Int = if(x) 3 else 2"
-    assertFail(tcpss(faultyScript))
-    // Functions aren't equality types
-    val script2 = "def f(x: Int): Int = x+1; val x = f == f"
-    assertFail(tcpss(script2))
-
-    // Tests on block expressions
-    assertEq(tcp("{"+script+"; fact(4) }"), IntType)
-    assertFail(tcp("{"+script+"; fact(true) }"))
-    assertFail(tcp("{"+faultyScript+"; fact(4) }"))
-  }
-
-  // ==================================================================
-
-  /** Tests on cell expressions. */
-  def cellTests() = {
-    val script = "val x = Cell(#B, #2); def f(y: Int): Int = 3"
-    tcpss(script) match{ case Ok(te) => 
-      // x is just a Cell here
-      te("x") match{ case TypeVar(t) => assert(te(t) == MemberOf(CellTypes)) }
-      tcp("if(x) 3 else 4", te) match{ case Ok((te2, TypeVar(tv))) =>
-        assert(te2(tv) == NumTypeConstraint)
-        assert(te2("x") == BoolType) // But now it's a Bool
-        assertFail(tcp("f(x)", te2))
-      }
-    }
-    val script2 = "val x = Cell(#B, #2); val ys = [x, 1]"
-    tcpss(script2) match{ case Ok(te) => 
-      te("x") match{ case TypeVar(tv) =>
-        assert(te(tv) == NumTypeConstraint)
-        assert(te("ys") == ListType(TypeVar(tv)))
-      }
-    }
-    val script3 = "val x = Cell(#B, #2); val ys = [1, x]"
-    tcpss(script3) match{ case Ok(te) => 
-      te("x") match{ case TypeVar(tv) => 
-        assert(te(tv) == MemberOf(TypeT.NumTypes)) 
-        assert(te("ys") == ListType(TypeVar(tv)))
-      }
-    }
-    val script4 = "val x = Cell(#B, #2); val y = #A1; val ys = [y, x]"
-    tcpss(script4) match{ case Ok(te) => 
-      te("x") match{ case TypeVar(t) =>
-        assert(te("y") == TypeVar(t) && te("ys") == ListType(TypeVar(t)))
-        assert(te(t) == MemberOf(CellTypes))
-        tcp("[y, 2]", te) match{ case Ok((te2, ListType(TypeVar(tv)))) =>
-          assert(te2(tv) == NumTypeConstraint)
-          assertNum(te2, "x") // Now it's a NumType
-        }
-      }
-    }
-    val script5 = "val x = #C3; def f(y: Int): Int = 3; val z = f(x)"
-    tcpss(script5) match{ case Ok(te) => 
-      assert(te("x") == IntType && te("z") == IntType)
-    }
-    val script6 = "val x = #C3; val y = #A2; "+
-        "def f(y: Int, b: Boolean): Int = 3; val z = f(x,y)"
-    tcpss(script6) match{ case Ok(te) => 
-      assert(te("x") == IntType && te("y") == BoolType && te("z") == IntType)
-    }
-    val script7 =
-      "val x = #C3; def f(y: Int, b: Boolean): Int = 3; val z = f(x,x)"
-    assertFail(tcpss(script7))
-
-    assertNum(tcp("if(2+2 == 4) 3 else #A2"))
-    assertEq(tcp("if(2+2 == 4) #B3 else false"), BoolType)
-    tcp("if(2+2 == 4) #B3 else #A5") match{ case Ok((_, TypeVar(_))) => {} }
-
-    val script8 = "val x = #C3; val y = x; def f(x: Int): Int = if(y) x else 3"
-    tcpss(script8) match{ case Ok(te) => 
-      assert(te("x") == BoolType && te("y") == BoolType && 
-        te("f") == FunctionType(List(), List(IntType), IntType))
-    }
-    val script9 = 
-      "val x = #C3; val y = x; def f(x: Int): Int = if(x==y) x else 3"
-    tcpss(script9) match{ case Ok(te) => 
-      assert(te("x") == IntType && te("y") == IntType && 
-        te("f") == FunctionType(List(), List(IntType), IntType))
-    }
-    val script10 = 
-      "val x = #C3; val y = x; val z = { val x = 3; y && false }"
-    tcpss(script10) match{ case Ok(te) => 
-      assert(te("x") == BoolType && te("y") == BoolType && te("z") == BoolType)
-    }
-    val script11 = "val x = #C3; val y = x; val z = { val x = 3; y == 5 }"
-    tcpss(script11) match{ case Ok(te) => 
-      assertNum(te, "x"); assertNum(te, "y"); assert(te("z") == BoolType)
-    }
-    val script12 = "val x = #C3; def f(y: Int): Int = x"
-    tcpss(script12) match{ case Ok(te) => assert(te("x") == IntType) }
-
-    tcpss("val x = #C3; val y = x == 3") match{ case Ok(te) =>
-      assertNum(te, "x"); assert(te("y") == BoolType)
-    }
-    tcpss("val x = #C3; val y = #C4; val z = x == y") match{ case Ok(te) =>
-      te("x") match{ case TypeVar(tid) => 
-        assert(te("y") == te("x") && te(tid) == MemberOf(CellTypes) &&
-          te("z") == BoolType)
-      }
-    }
-    val script13 = 
-      "val x = #C3; val y = #C4; val w = if(x) y+3 else 4; val z = x == y"
-    assertFail(tcpss(script13))
-    val script14 = "val x = #A4; val x2 = #A5; val y = x == x; "+
-      "val z = x2+x2; val w = x == x2"
-    tcpss(script14) match{ case Ok(te) => 
-      te("x") match{ case TypeVar(tId) => 
-        assert(te(tId) == NumTypeConstraint); 
-        assert(te("x2") == TypeVar(tId)); assert(te("z") == TypeVar(tId))
-      }
-      assert(te("w") == BoolType); assert(te("y") == BoolType)
-    }
-
-  }
-
-  // ==================================================================
-
-  /** Tests writing to cells. */
-  def cellWriteTests() = {
-    tcpss("#A3 = 5") match{ case Ok(_) => {} }
-    assertFail(tcpss("def f(y: Int): Int = 3; #A3 = f"))
-    assertFail(tcpss("#A3 = true+5"))
-    tcpss("val y = #B4; #A3 = y") match{ case Ok(te) => te("y") match{
-      case TypeVar(tid) => assert(te(tid) == MemberOf(CellTypes))
-    }}
-    tcpss("val y = #B4+#B5; #A3 = y") match{ case Ok(te) => te("y") match{
-      case TypeVar(tid) => assert(te(tid) == MemberOf(NumTypes))
-    }}
-  }
-
- // ==================================================================
-
-  /** Tests on lists. */
-  def listTests() = {
-    tcpss("val xs = 3 :: []") match{ case Ok(te) => assertListNum(te, "xs") }
-    tcpss("val xs = 1 :: 2 :: []") match{ case Ok(te) => assertListNum(te,"xs") }
-    assertFail(tcpss("val xs = [1]; val ys = true::xs"))  // IMPROVE error
-    tcpss("val xs = []; val ys = 1::xs") match{ case Ok(te) => 
-      assertListNum(te, "xs"); assertListNum(te, "ys") }
-    tcpss("val x = #A1; val xs = [x, #A2]; val y = x+3") match{ case Ok(te) => 
-      assertListNum(te, "xs") }
-    tcpss("val x = #D0; val y = #D3; val eq = [x] == [y]") match{ case Ok(te) => 
-      assert(te("eq") == BoolType)
-      te("x") match { case TypeVar(tid) => 
-        assert(te("y") == TypeVar(tid) && te(tid) == MemberOf(CellTypes))
-      }}
-    tcpss("val xs = [#D0]; val y = #D3; val eq = xs == [y]") match{ 
-      case Ok(te) =>
-        assert(te("eq") == BoolType)
-        te("y") match { case TypeVar(tid) =>
-          assert(te("xs") == ListType(TypeVar(tid)) && 
-            te(tid) == MemberOf(CellTypes))
-        }}
-    tcpss("val xs = [1,2,3]; val x = head(xs)") match{
-      case Ok(te) => assertListNum(te, "xs"); assertNum(te, "x")
-    }
-    tcpss("val xs = [true, false]; val x = head(xs)") match{ case Ok(te) => 
-      assert(te("xs") == ListType(BoolType) && te("x") == BoolType)
-    }
-    tcpss("val xs = [[1,2],[3]]; val x = head(xs)") match{ case Ok(te) => 
-      assertListListNum(te, "xs"); assertListNum(te, "x")
-    }
-    tcpss("val xs = [[1,2],[3]]; val ys = tail(xs)") match{ case Ok(te) => 
-      assertListListNum(te, "xs"); assertListListNum(te, "ys")
-    }
-  }
 
   // ==================================================================
 
@@ -374,24 +160,141 @@ object TypeCheckerTest{
     val script12 = "def f[A <: Eq](x: A): Boolean = g(x); "+
       "def g[B <: Num](y: B): Boolean = y == y"
     assertFail(tcpss(script12))
-
+    val script2 = "def f[A <: Num](x: A): A = x; val y = f(3.0)"
+    tcpss(script2) match{ case Ok(te) => 
+      assert(te("f") == FunctionType(
+        List(("A",NumTypeConstraint)), List(TypeParam("A")), TypeParam("A")) )
+      assert(te("y") == FloatType)
+    }
   }
+
+  // =======================================================
+
+  /* Some definitions of functions for use in tests. */
+  val double = "def double[C <: Num](y: C) : C = 2*y\n"
+  val apply = "def apply[A,B](f: A => B, x: A): B = f(x)\n"
+  val map = "def map[A, B](f: A => B, xs: List[A]): List[B] = "+
+  "  if(isEmpty(xs)) [] else f(head(xs)) :: map(f, tail(xs))\n"
+  val applyToThree = "def applyToThree[A <: Num, B](f: A => B): B = f(3)\n"
+  val id = "def id[A](x: A): A = x\n"
+
+  /** Tests using higher-order functions. */
+  def higherOrderTests() = {
+    // double
+    tcpss(double+"val y = double(3); val z = double(2.2)") match{ case Ok(te) =>
+      assert(te("double") == FunctionType(
+        List(("C",NumTypeConstraint)), List(TypeParam("C")), TypeParam("C")))
+      assertNum(te, "y"); assert(te("z") == FloatType)
+    }
+    // apply
+    tcpss(apply+double+"val z = apply(double, 2)") match{ case Ok(te) => 
+      assertNum(te, "z") 
+      assert(te("apply") == FunctionType(
+        List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
+        List(FunctionType(List(), List(TypeParam("A")), TypeParam("B")), 
+          TypeParam("A")),
+        TypeParam("B") ))
+    }
+    // map
+    tcpss(map) match{ case Ok(te) => 
+      assert(te("map") == FunctionType(
+        List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
+        List(FunctionType(List(), List(TypeParam("A")), TypeParam("B")), 
+          ListType(TypeParam("A"))),
+        ListType(TypeParam("B"))) )
+    }
+    val doubleI = "def doubleI(x: Int): Int = x*2\n"
+    val scriptDI = map+doubleI+"val xs = map(doubleI, [1,2])"
+    tcpss(scriptDI) match{ case Ok(te) => assert(te("xs") == ListType(IntType)) }
+    val scriptMD = doubleI+map+
+      "def md(ys: List[Int]): List[Int] = map(doubleI, ys)"
+    tcpss(scriptMD) match{ case Ok(te) => 
+      assert(te("md") == FunctionType(
+        List(), List(ListType(IntType)), ListType(IntType)) )
+    }
+    // map(double,_)
+    val scriptMC1 = map+double+"val xs = map(double, [1,2])"
+    tcpss(scriptMC1) match{ case Ok(te) => assertListNum(te, "xs") }
+    // ==================== applyToThree
+    val scriptA31 = applyToThree+double+"val y = applyToThree(double)"
+    tcpss(scriptA31) match{ case Ok(te) => 
+      assert(te("applyToThree") == FunctionType(
+        List(("A",NumTypeConstraint), ("B",AnyTypeConstraint)),
+        List(FunctionType(List(), List(TypeParam("A")), TypeParam("B"))),
+        TypeParam("B")) )
+      assertNum(te, "y")
+    }
+    val scriptA32 = applyToThree+id+"val y = applyToThree(id)"
+    tcpss(scriptA32) match{ case Ok(te) => assertNum(te, "y")}
+
+    // ===== apply returning Num
+    val applyX = "def applyX[A, B <: Num ](f: A => B, x: A): B = f(x)\n"
+    val three = "def three[A](x: A): Int = 3\n"
+    val scriptAX3 = applyX+three+"val y = applyX(three, true)"
+    tcpss(scriptAX3) match{ case Ok(te) => 
+      assert(te("applyX") == FunctionType(
+        List(("A",AnyTypeConstraint), ("B",NumTypeConstraint)),
+        List(FunctionType(List(), List(TypeParam("A")), TypeParam("B")),
+          TypeParam("A")),
+        TypeParam("B")) )
+      assert(te("three") == FunctionType(
+        List(("A",AnyTypeConstraint)), List(TypeParam("A")), IntType) )
+      assert(te("y") == IntType)
+    }
+    val scriptAXId = applyX+id+"val y = applyX(id, 4)"
+    tcpss(scriptAXId) match{ case Ok(te) =>
+      assert(te("id") == FunctionType(
+        List(("A",AnyTypeConstraint)), List(TypeParam("A")), TypeParam("A")) )
+      assertNum(te, "y")
+    }
+    // Following fails
+    val scriptAXIdTrue = applyX+id+"val y = applyX(id, true)"
+    assertFail(tcpss(scriptAXIdTrue))
+    val script = "def applyToThreeF[A <: Num](f: A => A): A = f(3.0)\n"
+    tcpss(script) match{ case Ok(te) =>
+      assert(te("applyToThreeF") == FunctionType(
+        List(("A",NumTypeConstraint)), 
+        List(FunctionType(List(), List(TypeParam("A")), TypeParam("A"))),
+        TypeParam("A")) )
+    }
+  }
+
 
 
   // =======================================================
 
   def main(args: Array[String]) = {
-    // printErrors = true
-    TypeCheckerTestExpr.expTests()
-    singleDecTests()
-    scriptTests()
-    cellTests()
-    cellWriteTests()
-    listTests()
-    polyTests()
-    typeConstraintTests()
-    // printErrors = true
- 
+    var doAll = true; var i = 0
+    while(i < args.length) args(i) match{
+      case "--restrict" => doAll = false; i += 1
+    }
+
+
+// FIXME: following should fail// 
+    val doubleI = "def doubleI(x: Int): Int = x*2\n"
+    val scriptA33 = applyToThree+doubleI+"val y = applyToThree(doubleI)"
+    println(tcpss(scriptA33))
+
+if(doAll){
+  println("script")
+    val script = "def f[A <: Num](x: A): Int = { def g(y: Int): Int = 3; g(x) }"
+    assertFail(tcpss(script))
+}
+
+    // TODO: more tests here
+
+    if(doAll){
+      // printErrors = true
+      TypeCheckerTestExpr.expTests()
+      singleDecTests()
+      scriptTests()
+      cellTests()
+      cellWriteTests()
+      listTests()
+      polyTests()
+      typeConstraintTests()
+      higherOrderTests()
+    }
     println("Done")
   }
 

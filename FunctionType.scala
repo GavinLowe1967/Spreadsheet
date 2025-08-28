@@ -16,6 +16,7 @@ case class FunctionType(
     assert(params.isEmpty)    // IMPROVE ???
     domain.flatMap(_.typeParams) ++ range.typeParams
   }
+
 }
 
 object FunctionType{

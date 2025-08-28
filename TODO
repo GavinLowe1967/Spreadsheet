@@ -6,6 +6,8 @@ Language
 Outstanding:
 -----------
 
+- Seems to need newline at end 
+
 - Clear boxes on reload
 
 - EqTypeConstraint.intersection -- test **
@@ -22,6 +24,28 @@ Outstanding:
 
 Current: 
 --------
+
+"applyToThree(doubleI)".  Needs to unify (Int => Int) against (A => B) with A
+<: Num. happens It tries to unify FunctionType(List(),List(IntType),IntType)
+and FunctionType(List(),List(TypeVar(3)),TypeVar(4)) with 3 ->
+NumTypeConstraint, 4 -> AnyTypeConstraint
+
+
+ I think we should be testing whether Int is a superset of (A <: Num). 
+
+
+What happens with
+
+def f[A <: Num](x: A): Int = { def g(y: Int): Int = 3; g(x) } ?  There it
+tries to unify IntType with TypeParam A, which fails.
+
+
+
+- Test more.  Another case not working in TypeCheckerTest "applyToThree(doubleI)"
+
+(low priority)
+
+- Rename TypeChecker.typeCheckListUnify, and improve comment
 
 
 Soon
@@ -82,6 +106,20 @@ Tidy up TypeCheckerTest
 
 ===================================== DONE
 
+
+Typechecking of "def applyToThreeF[A <: Num](f: A => A): A = f(3.0)" not
+working.  Gets to call of unify(..., FloatType, TypeParam("A")), but that
+fails.  ** The restriction on A seems to have been lost from the typechecker.
+It's there just before the call to typeCheckListUnify.....  No!  I was using
+the wrong function!  Working now
+
+Type checking of "apply" not working -- done
+
+- USe TypeChecker.subTypeParams in case for FunctionApp
+
+- Also use in mkInstance. -- done
+
+- In case for FunctionApp, replace each FunctionType by an instance using mkInstance -- done
 - parser for bools in spreadsheet -- done
 val b = [] == [3] fails to typecheck
 val b = [3] == [] succeeds (?)

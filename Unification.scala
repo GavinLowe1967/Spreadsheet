@@ -54,7 +54,7 @@ object Unification{
     */
   def unify(typeEnv: TypeEnv, t1: TypeT, t2: TypeT, f: TypeT => TypeT = idT)
       : Reply[(TypeEnv, TypeT)] = {
-    // println(s"unify($typeEnv,\n$t1, $t2)")
+    //println(s"\nunify($typeEnv,\n$t1, $t2)")
     def fail = mkFailure(typeEnv, f(t1), f(t2)) 
     if(t1 == t2) Ok(typeEnv, t1)
     else (t1,t2) match{
@@ -97,23 +97,33 @@ object Unification{
         // AnyTypeConstraint, and tId2 EqTypeConstraint.
 
       case (ListType(tt1), ListType(tt2)) => 
+        // println(s"**** Unifying $t1 and $t2 in $typeEnv\n")
         unify(typeEnv, tt1, tt2, ListType(_)).map{ 
           case (te2, tt) => Ok((te2, ListType(tt))) 
         }
         // Note: if the recursive call fails, the error message talks about
         // ListType(t1) and ListType(t2).
 
-      // case (TypeParam(tp1), TypeParam(tp2)) => 
+      case (TypeParam(tp1), TypeParam(tp2)) => fail
       //   println(s"$tp1 $tp2");  fail
 
-      case (_, TypeParam(tp)) => fail // println(s"$t1 $t2"); ???
+      case (_, TypeParam(tp)) => 
+        //println(s"Unification: $typeEnv  $t1 $t2")
         // Check that t1 satisfies the type constraints on tp
+        val c = typeEnv.constraintForTypeParam(tp)
+        // println(s"Unification: $t1 $t2 $c")
+        if(c.satisfiedBy(typeEnv, t1)) Ok((typeEnv, t1)) // ????????????
+        else fail 
 
-      case (FunctionType(List(),d1,r1), FunctionType(List(),d2,r2)) =>  
-                                // TODO: test.  The "List()"s look odd
-        // println(s"Unifying $t1, $t2")
+      case (FunctionType(tc1,d1,r1), FunctionType(tc2,d2,r2)) =>  
+                                // TODO: test.  The tc1, tc2 aren't being used
+        println(s"**** Unifying $t1 and $t2 in $typeEnv\n")
         unifyList(typeEnv, d1, d2).map{ case (te1, dd) =>
+        // unifyList(typeEnv, d2, d1).map{ case (te1, dd) =>
+// FIXME: reverse d1, d2?  No, need d2 subset of d1
+          println(s"**Unifying (domain) $d1, $d2 gives $dd, $te1\n")
           unify(te1, r1, r2).map{ case (te2, rr) =>
+            // println(s"**Unifying (range) $r1 and $r2 gives $rr, $te2")
             Ok((te2, FunctionType(List(), dd, rr)))
           }
         }

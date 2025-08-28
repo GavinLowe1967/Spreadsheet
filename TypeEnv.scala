@@ -178,10 +178,16 @@ class TypeEnv(
 
   // def showType(t: TypeT): String = ...  In base class. 
 
-  override def toString = s"TypeEnv($nameMap, $constraints)"
+  private def showNameMap = (
+    for((n,v) <- nameMap; if ! builtInNames.contains(n)) yield s"$n -> $v"
+  ).mkString("\n{ ", ",\n  ", " }")
 
-  def showBindings: String = 
-    (for((n,t) <- nameMap.iterator) yield s"$n -> $t\n").fold("")(_+_) 
+  override def toString = s"TypeEnv($showNameMap,\n$constraints,\n$typeParamMap)"
+
+  // def showBindings: String = (
+  //   for((n,t) <- nameMap.iterator; if ! builtInNames.contains(n))
+  //   yield s"$n -> $t\n"
+  // ).fold("")(_+_)
 }
 
 // ==================================================================
@@ -258,6 +264,7 @@ object TypeEnv{
     new TypeEnv(
       nameMap, new Constraints, new CellReadMap, new TypeParamMap, 
       new Frame, List[Frame]())
-
   }
+
+  private val builtInNames = BuiltInFunctions.builtInTypes.map(_._1)
 } 
