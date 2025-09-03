@@ -66,7 +66,7 @@ object TypeChecker{
               else mkIntFloatErr(tl, left)
             case "==" | "!=" => 
               // FIXME: check tl is an equality type
-              if(tl.isEqType(te2))
+              if(te2.isEqType(tl))
                 unify(te2, tr, tl).map{ case (te3,_) => Ok((te3,BoolType)) }
               else FailureR(s"Expected equality type, found $tl in "+
                 exp.getExtent.asString)
@@ -85,41 +85,41 @@ object TypeChecker{
         }
       }.lift(exp)
 /*
-      def idT(t: TypeT) = t
-      // Create a triple: (1) an updated type environment; (2) the expected
-      // type of the first argument; (3) a function to create the expected
-      // type of the second argument from the type of the first argument; (4)
-      // a function to create the type of the result from the type of the
-      // second argument.  This represents that op has type (t,t) => mkRes(t),
-      // where te captures type constraints on t.
-      val (te, t, mk2nd, mkRes) = op match{
-        case "+" | "-" | "*" | "/" =>   // Num a => (a,a) -> a
-          val typeId = nextTypeID()
-          val te = typeEnv + (typeId, NumTypeConstraint) // MemberOf(NumTypes))
-          (te, TypeVar(typeId), idT _, (t1: TypeT) => t1)
-        case "==" | "!=" =>                    // Eq a => (a,a) -> Boolean
-          val typeId = nextTypeID()
-          val te = typeEnv + (typeId, EqTypeConstraint)
-          (te, TypeVar(typeId), idT _, (_: TypeT) => BoolType)
-        case "&&" | "||" =>             // (BoolType, BoolType) -> BoolType
-          (typeEnv, BoolType, idT _, (_:TypeT) => BoolType)
-        case "<=" | "<" | ">=" | ">" => // Num a => (a,a) -> a
-          val typeId = nextTypeID()
-          val te = typeEnv + (typeId, NumTypeConstraint) // MemberOf(NumTypes)) 
-          (te, TypeVar(typeId), idT _, (_: TypeT) => BoolType)
-        case "::" =>  //  (a, ListType(a)) => ListType(a)
-          val typeId = nextTypeID()
-          val te = typeEnv + (typeId, AnyTypeConstraint)
-          (te, TypeVar(typeId), ListType(_), idT _)
-      }
-      // Below t is the expected type of args; tl is the unification of t with
-      // the type of left; tr is the unification of tl with the type of r; and
-      // mkRes(tr) is the type of the result.
-      typeCheckUnify(te, left, t).map{ case (te2, tl) =>
-        typeCheckUnify(te2, right, mk2nd(tl)).map{ case (te3, tr) => 
-          Ok((te3, mkRes(tr)))
-        }
-      }.lift(exp)
+      // def idT(t: TypeT) = t
+      // // Create a triple: (1) an updated type environment; (2) the expected
+      // // type of the first argument; (3) a function to create the expected
+      // // type of the second argument from the type of the first argument; (4)
+      // // a function to create the type of the result from the type of the
+      // // second argument.  This represents that op has type (t,t) => mkRes(t),
+      // // where te captures type constraints on t.
+      // val (te, t, mk2nd, mkRes) = op match{
+      //   case "+" | "-" | "*" | "/" =>   // Num a => (a,a) -> a
+      //     val typeId = nextTypeID()
+      //     val te = typeEnv + (typeId, NumTypeConstraint) // MemberOf(NumTypes))
+      //     (te, TypeVar(typeId), idT _, (t1: TypeT) => t1)
+      //   case "==" | "!=" =>                    // Eq a => (a,a) -> Boolean
+      //     val typeId = nextTypeID()
+      //     val te = typeEnv + (typeId, EqTypeConstraint)
+      //     (te, TypeVar(typeId), idT _, (_: TypeT) => BoolType)
+      //   case "&&" | "||" =>             // (BoolType, BoolType) -> BoolType
+      //     (typeEnv, BoolType, idT _, (_:TypeT) => BoolType)
+      //   case "<=" | "<" | ">=" | ">" => // Num a => (a,a) -> a
+      //     val typeId = nextTypeID()
+      //     val te = typeEnv + (typeId, NumTypeConstraint) // MemberOf(NumTypes)) 
+      //     (te, TypeVar(typeId), idT _, (_: TypeT) => BoolType)
+      //   case "::" =>  //  (a, ListType(a)) => ListType(a)
+      //     val typeId = nextTypeID()
+      //     val te = typeEnv + (typeId, AnyTypeConstraint)
+      //     (te, TypeVar(typeId), ListType(_), idT _)
+      // }
+      // // Below t is the expected type of args; tl is the unification of t with
+      // // the type of left; tr is the unification of tl with the type of r; and
+      // // mkRes(tr) is the type of the result.
+      // typeCheckUnify(te, left, t).map{ case (te2, tl) =>
+      //   typeCheckUnify(te2, right, mk2nd(tl)).map{ case (te3, tr) => 
+      //     Ok((te3, mkRes(tr)))
+      //   }
+      // }.lift(exp)
  */
 
     case ce @ CellExp(column, row, theType) =>

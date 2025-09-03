@@ -82,33 +82,33 @@ case class SingletonTypeConstraint(t: TypeT) extends StoredTypeConstraint{
 /** A constraint that a type variable represents a type within ts. 
   * Note: we assume each element of ts is a simple concrete type, corresponding 
   * to the EqType trait. */
-case class MemberOf(ts: List[EqType]) extends StoredTypeConstraint{
-  require(ts.length >= 2)
-  def satisfiedBy(typeEnv: TypeEnv0, t: TypeT) = {
-    require(!t.isInstanceOf[TypeVar])
-    t match{
-      case TypeParam(tp) => typeEnv.constraintForTypeParam(tp).implies(this)
-      case _ => ts.contains(t) // includes EqType, ListType, ...
-    }
-  }
+// case class MemberOf(ts: List[EqType]) extends StoredTypeConstraint{
+//   require(ts.length >= 2)
+//   def satisfiedBy(typeEnv: TypeEnv0, t: TypeT) = {
+//     require(!t.isInstanceOf[TypeVar])
+//     t match{
+//       case TypeParam(tp) => typeEnv.constraintForTypeParam(tp).implies(this)
+//       case _ => ts.contains(t) // includes EqType, ListType, ...
+//     }
+//   }
 
-  def intersection(typeEnv: TypeEnv0, other: StoredTypeConstraint) = {
-    val ts2 = ts.filter(t => other.satisfiedBy(typeEnv, t)) 
-    MemberOf.build(ts2)
-  }
+//   def intersection(typeEnv: TypeEnv0, other: StoredTypeConstraint) = {
+//     val ts2 = ts.filter(t => other.satisfiedBy(typeEnv, t)) 
+//     MemberOf.build(ts2)
+//   }
 
-  def asStringE = ts.map(_.asString).mkString(" or ")
-}
+//   def asStringE = ts.map(_.asString).mkString(" or ")
+// }
 
-// =========
+// // =========
 
-object MemberOf{
-  /** Build a constraint corresponding to the options in ts. */
-  def build(ts: List[EqType]): TypeConstraint = 
-    if(ts.isEmpty) EmptyTypeConstraint
-    else if(ts.length == 1) SingletonTypeConstraint(ts.head)
-    else MemberOf(ts)
-}
+// object MemberOf{
+//   /** Build a constraint corresponding to the options in ts. */
+//   def build(ts: List[EqType]): TypeConstraint = 
+//     if(ts.isEmpty) EmptyTypeConstraint
+//     else if(ts.length == 1) SingletonTypeConstraint(ts.head)
+//     else MemberOf(ts)
+// }
  
 // ==================================================================
 
@@ -149,7 +149,7 @@ case object EqTypeConstraint extends TypeParamConstraint{
         case EqTypeConstraint => true
         case SingletonTypeConstraint(t) => // can this happen?
           println(s"EqTypeConstraint $t"); satisfiedBy(typeEnv, t)
-        case MemberOf(ts) => ts.forall(t => satisfiedBy(typeEnv, t))
+//        case MemberOf(ts) => ts.forall(t => satisfiedBy(typeEnv, t))
         case AnyTypeConstraint => false
       }
       case TypeParam(tp) => typeEnv.constraintForTypeParam(tp).implies(this)
@@ -165,7 +165,7 @@ case object EqTypeConstraint extends TypeParamConstraint{
 
     case AnyTypeConstraint => EqTypeConstraint
 
-    case MemberOf(ts) => MemberOf.build(ts.filter(t => satisfiedBy(typeEnv, t)))
+//    case MemberOf(ts) => MemberOf.build(ts.filter(t => satisfiedBy(typeEnv, t)))
   }
 
   /** Does this imply other?  I.e., the types that satisfy this are a subset of
@@ -173,7 +173,7 @@ case object EqTypeConstraint extends TypeParamConstraint{
   def implies(other: StoredTypeConstraint): Boolean = other match{
     case EqTypeConstraint => true
     case AnyTypeConstraint => true  // In fact, never called
-    case MemberOf(ts) => false      // Note: ts can't contain Lists
+//    case MemberOf(ts) => false      // Note: ts can't contain Lists
   }
 
   override def asString = "Eq" 

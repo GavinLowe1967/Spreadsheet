@@ -35,7 +35,7 @@ $(DIR)/Reply.class: $(DIR)/HasExtent.class
 $(DIR)/EvaluationTypeChecker.class: $(DIR)/EvaluationTypeEnv.class	\
   $(DIR)/Reply.class
 
-$(DIR)/Environment.class:  $(DIR)/BuiltInFunctions.class
+$(DIR)/Environment.class:  $(DIR)/BuiltInFunctions.class $(DIR)/EvaluationTypeEnv.class
 # $(DIR)/EvaluationTypeChecker.class	\
 $(DIR)/BinOpApply.class: $(DIR)/Value.class
 

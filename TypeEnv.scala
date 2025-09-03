@@ -11,6 +11,8 @@ import TypeEnv._
 /** A type environment.
   * @param nameMap A mapping from names in the script to their types.
   * @param constraints A mapping from type identifiers to constraints.
+  * @param cellReadMap ???
+  * @param typeParamMap map from TypeParamName to StoredTypeConstraint
   * @param frame The Frame corresponding to the current scope. 
   * @param stack The frames for outer scopes. 
   * Inv: constraints includes a mapping tid -> MemberOf(ts) for each
@@ -92,6 +94,16 @@ class TypeEnv(
     * tc) in pairs. */
   def addConstraints(pairs: List[(TypeID, StoredTypeConstraint)]) : TypeEnv = 
     make(constraints = constraints ++ pairs)
+
+  /** Is t an equality type? */
+  def isEqType(t: TypeT): Boolean = t match{
+    case TypeVar(tv) => true // ???, FIXME
+    case TypeParam(name) =>
+      constraintForTypeParam(name).implies(EqTypeConstraint)
+    case _: EqType => true
+    case ListType(underlying) => isEqType(underlying)
+    case FunctionType(_,_,_) => false
+  }
 
   // ========= TypeParamMap functions
 

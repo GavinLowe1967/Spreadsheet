@@ -34,7 +34,7 @@ object Unification{
     }
     case _ : FunctionType => c match{
       case AnyTypeConstraint => Ok(typeEnv)
-      case EqTypeConstraint | MemberOf(_) => fail
+      case EqTypeConstraint => fail
     }
     case TypeVar(tId) => 
       val c1 = typeEnv(tId)
