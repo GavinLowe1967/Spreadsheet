@@ -3,6 +3,26 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Language
 ========
 
+Require cell references to be typed, e.g. #B3 : Int (":" binding tightly):
+  - change CellExp to take type (Exp.scala) - done
+  - change parser (ExpParser.cell, in StatementParser.scala) - done
+  - change type of Directive - done
+  - function replace in TypeEnv
+  - change CellExp case in TypeChecker.scala
+  - typeCheckStmt in TypeChecker.scala
+  - do we need TypeConstraint.MemberOf - in TypeEnv?  
+  - do we need cell constraints in TypeEnv? 
+  - what's the role of EvaluationTypeChecker?
+  - execution of cell read, Execution.scala, l8 - done
+
+Add cell type matching, e.g. 
+ #B3 match{ case x: Int => ...; case st: String => ...; case Blank => ... }
+This is a new syntactic category. 
+
+I think we no longer need the EvaluationTypeChecker or EvaluationTypeEnv.
+When the evaluation engine reads a cell, it knows the expected type.
+
+
 Outstanding:
 -----------
 

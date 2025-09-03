@@ -1,6 +1,5 @@
 package spreadsheet
 
-
 /** The type of functions from `domain` to `range`. 
   * @param params A list of free type identities, paired with a constraint upon
   * them. */

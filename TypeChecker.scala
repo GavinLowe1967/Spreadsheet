@@ -41,9 +41,9 @@ object TypeChecker{
     }
 
     // case IntExp(v) => Ok((typeEnv,IntType))
-    case IntExp(v) => 
-      val typeId = nextTypeID()
-      Ok((typeEnv + (typeId, NumTypeConstraint), TypeVar(typeId)))
+    case IntExp(v) => Ok((typeEnv,IntType))
+      // val typeId = nextTypeID()
+      // Ok((typeEnv + (typeId, NumTypeConstraint), TypeVar(typeId)))
     case FloatExp(v) => Ok((typeEnv,FloatType))
     case BoolExp(v) => Ok((typeEnv,BoolType))
     case StringExp(st) => Ok((typeEnv,StringType))
@@ -87,17 +87,16 @@ object TypeChecker{
         }
       }.lift(exp)
 
-    case ce @ CellExp(column, row) => 
+    case ce @ CellExp(column, row, theType) =>
       typeCheck(typeEnv, column).mapOrLift(exp, { case (te1, tc) => 
         if(tc != ColumnType) mkErr(ColumnType, tc, column)
         else typeCheck(te1, row).mapOrLift(exp, { case (te2, tr) => 
           if(tr != RowType) mkErr(RowType, tr, row)
-          else{
-            // Associate type identifier with this read.
-            val typeId = nextTypeID(); val typeVar = TypeVar(typeId); 
-            ce.setType(typeVar)
-            Ok((typeEnv.addCellConstraint(typeId, ce), typeVar))
-          }
+          else Ok(typeEnv, theType)
+            // // Associate type identifier with this read.
+            // val typeId = nextTypeID(); val typeVar = TypeVar(typeId); 
+            // ce.setType(typeVar)
+            // Ok((typeEnv.addCellConstraint(typeId, ce), typeVar))
         })
       }).lift(exp)
 
@@ -105,7 +104,10 @@ object TypeChecker{
       typeCheckUnify(typeEnv, test, BoolType).map{ case (te1, bt) =>
         assert(bt == BoolType)
         typeCheck(te1, thenClause).map{ case (te2,t1) =>
-          typeCheckUnify(te2, elseClause, t1)
+          typeCheckUnify(te2, elseClause, t1)// .map{ case (te3,t2) => 
+// // FIXME: this instance of map is the identity
+//             println(s"IF: t1 = $t1; t2 = $t2; te3 = $te3"); Ok((te3,t2)) 
+//           }
         }
       }.lift(exp)
 
@@ -159,6 +161,7 @@ object TypeChecker{
   private def typeCheckUnify(typeEnv: TypeEnv, exp: Exp, eType: TypeT)
       : Reply[(TypeEnv, TypeT)] =
     typeCheck(typeEnv, exp).map{ case (te1,t) =>
+      // println(s"typeCheckUnify t = $t, eType = $eType")
       unify(te1, t, eType).lift(exp, true) // add line number here
     }
 
@@ -245,16 +248,26 @@ object TypeChecker{
   private 
   def typeCheckStmt(typeEnv: TypeEnv, stmt: Statement): Reply[TypeEnv] = 
     stmt match{
-      case Directive(cell, expr) => 
+      case Directive(column, row, expr) =>
         typeCheck(typeEnv, expr).map{ case (te1, t) => 
-          typeCheck(te1, cell).map{ case(te2, TypeVar(tId)) => 
-            assert(te2(tId) == MemberOf(TypeT.CellTypes))
-            // Unify t with above constraint: expr should give a cell value
-            unify(te2, t, TypeVar(tId)).map{ case (te3, tt) => 
-              Ok(te3) 
-            }.lift(expr, true)
-          }
+          if(! TypeT.CellTypes.contains(t))
+            FailureR(s"Expected cell type, found ${t.asString} in ${expr}")
+          else
+            typeCheckUnify(te1, row, RowType).map{ case(te2, RowType) =>
+              typeCheckUnify(te2, column, ColumnType).map{
+                case(te3, ColumnType) => Ok(te3)
+              }
+            }
         }.lift(stmt)
+
+        //   typeCheck(te1, cell).map{ case(te2, TypeVar(tId)) => 
+        //     assert(te2(tId) == MemberOf(TypeT.CellTypes))
+        //     // Unify t with above constraint: expr should give a cell value
+        //     unify(te2, t, TypeVar(tId)).map{ case (te3, tt) => 
+        //       Ok(te3) 
+        //     }.lift(expr, true)
+        //   }
+        // }.lift(stmt)
 
       case ValueDeclaration(name, exp) => 
         typeCheck(typeEnv, exp).mapOrLift(stmt, { case (te1, t) => 
@@ -281,6 +294,8 @@ object TypeChecker{
               else
                 // Typecheck body, and make sure return type matches rt
                 typeCheckUnify(te1, body, rt).map{ case (te3, tt) =>
+                  // println(s"name = $name"); println(s"te3 = $te3")
+                  // println(s"tt = $tt")
                   // println(s"$name ---> ${te3.endScope}")
                   Ok(te3.endScope) // back to the old scope
                 }

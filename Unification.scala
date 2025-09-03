@@ -70,7 +70,7 @@ object Unification{
                                                       // TODO: test with ts1!=ts2
         }
 
-      case (TypeVar(tId1), TypeParam(tp)) => 
+      case (TypeVar(tId1), TypeParam(tp)) =>
         val c1 = typeEnv(tId1); val c2 = typeEnv.constraintForTypeParam(tp)
         if(c2.implies(c1)){
           assert(c2 == NumTypeConstraint, c2)
@@ -108,7 +108,7 @@ object Unification{
       //   println(s"$tp1 $tp2");  fail
 
       case (_, TypeParam(tp)) => 
-        //println(s"Unification: $typeEnv  $t1 $t2")
+        // println(s"Unification: $typeEnv  $t1 $t2")
         // Check that t1 satisfies the type constraints on tp
         val c = typeEnv.constraintForTypeParam(tp)
         // println(s"Unification: $t1 $t2 $c")
@@ -117,11 +117,11 @@ object Unification{
 
       case (FunctionType(tc1,d1,r1), FunctionType(tc2,d2,r2)) =>  
                                 // TODO: test.  The tc1, tc2 aren't being used
-        println(s"**** Unifying $t1 and $t2 in $typeEnv\n")
+        // println(s"**** Unifying $t1 and $t2 in $typeEnv\n")
         unifyList(typeEnv, d1, d2).map{ case (te1, dd) =>
         // unifyList(typeEnv, d2, d1).map{ case (te1, dd) =>
 // FIXME: reverse d1, d2?  No, need d2 subset of d1
-          println(s"**Unifying (domain) $d1, $d2 gives $dd, $te1\n")
+          //println(s"**Unifying (domain) $d1, $d2 gives $dd, $te1\n")
           unify(te1, r1, r2).map{ case (te2, rr) =>
             // println(s"**Unifying (range) $r1 and $r2 gives $rr, $te2")
             Ok((te2, FunctionType(List(), dd, rr)))

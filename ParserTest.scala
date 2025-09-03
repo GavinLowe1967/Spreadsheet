@@ -115,7 +115,8 @@ object ParserTest{
     // Is the following what we want?? 
     assert(expr("#Aa").asInstanceOf[Success[Exp]].result == ColumnExp("A"))
     assert(expr("#a").isInstanceOf[Failure])
-    assert(p("Cell(#HW, #23)") == CellExp(ColumnExp("HW"), RowExp(23)))
+    assert(p("Cell(#HW, #23): Int") == 
+      CellExp(ColumnExp("HW"), RowExp(23), IntType))
 
     // ===== Blocks
     assert(pe("{ val x = 3; x+1 }") == IntValue(4))
@@ -171,16 +172,17 @@ object ParserTest{
     val vDecR = ValueDeclaration("three", BinOp(IntExp(1), "+", IntExp(2)))
     assert(ps(vDec) == vDecR)
 
-    def cellExp(c: String, r: Int) = CellExp(ColumnExp(c), RowExp(r))
-    val dir1 = "Cell(#A, #3) = Cell(#A, #1) + Cell(#A, #2)"
-    val dir1R = 
-      Directive(cellExp("A",3), BinOp(cellExp("A",1), "+", cellExp("A",2)))
+    def cellExp(c: String, r: Int, t: CellType) = 
+      CellExp(ColumnExp(c), RowExp(r), t)
+    val dir1 = "Cell(#A, #3) = Cell(#A, #1): Float + Cell(#A, #2): Int"
+    val dir1R = Directive(ColumnExp("A"), RowExp(3), 
+      BinOp(cellExp("A",1,FloatType), "+", cellExp("A",2,IntType)))
     assert(ps(dir1) == dir1R)
 
-    val dir2 = "#B3 = #B1 + #B2 - three" 
-    val dir2R = Directive(
-      cellExp("B",3),
-      BinOp( BinOp(cellExp("B",1), "+", cellExp("B",2)),  "-", NameExp("three") )
+    val dir2 = "#B3 = #B1: Int + #B2: Int - three" 
+    val dir2R = Directive(ColumnExp("B"), RowExp(3),
+      BinOp( BinOp(cellExp("B",1,IntType), "+", cellExp("B",2,IntType)),
+        "-", NameExp("three") )
     )
     assert(ps(dir2) == dir2R)
 

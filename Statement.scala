@@ -10,8 +10,9 @@ trait Declaration extends Statement
 // =======================================================
 
 /** A simple Directive of the form `Cell(col,row) = exp`. */
-case class Directive(cell: CellExp, expr: Exp) extends Statement{
-  override def toString = s"$cell = $expr"
+// case class Directive(cell: CellExp, expr: Exp) extends Statement{
+case class Directive(col: Exp, row: Exp, expr: Exp) extends Statement{
+  override def toString = s"Cell($col,$row) = $expr"
 }
 
 // =======================================================

@@ -105,16 +105,17 @@ case class ColumnExp(column: String) extends Exp{
 // ==================================================================
 
 /** A reference to a Cell.  Note: the coordinates are in the order
-  * (column,row), matching standard spreadsheet usage. */
-case class CellExp(column: Exp, row: Exp) extends Exp{
+  * (column,row), matching standard spreadsheet usage.  `theType` gives the
+  * expected type of the value in the cell. */
+case class CellExp(column: Exp, row: Exp, theType: CellType) extends Exp{
 
   /** The type associated with this read of a cell.  It might be a TypeVar, in
-    * which case the corresponding TypeEnv will have a constraint upon it. */
-  var theType: TypeT = null
+  //   * which case the corresponding TypeEnv will have a constraint upon it. */
+  // var theType: TypeT = null
 
-  def setType(t: TypeT) = theType = t 
+  def setType(t: TypeT) = ??? //  theType = t
 
-  override def toString = s"Cell($column, $row)"
+  override def toString = s"Cell($column, $row): $theType"
 }
 
 // ==================================================================

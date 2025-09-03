@@ -130,7 +130,7 @@ class TypeEnv(
     val newCellReadMap = cellReadMap.get(tId) match {
         case Some(cellEs) =>
           // println(s"TypeEnv.replace: $cells -> $t")
-          for(cellE <- cellEs) cellE.setType(t)
+          for(cellE <- cellEs) cellE.setType(t) // FIXME
           t match{
             case TypeVar(tId1) =>       // Add cellEs to celllReadMap(tId1)
               val newCellEs = cellReadMap.get(tId1) match{
@@ -182,7 +182,9 @@ class TypeEnv(
     for((n,v) <- nameMap; if ! builtInNames.contains(n)) yield s"$n -> $v"
   ).mkString("\n{ ", ",\n  ", " }")
 
-  override def toString = s"TypeEnv($showNameMap,\n$constraints,\n$typeParamMap)"
+  override def toString = 
+    s"TypeEnv(nameMap = $showNameMap,\nconstraints = $constraints,\n"+
+      s"typeParamMap = $typeParamMap)"
 
   // def showBindings: String = (
   //   for((n,t) <- nameMap.iterator; if ! builtInNames.contains(n))

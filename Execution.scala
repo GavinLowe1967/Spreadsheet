@@ -4,17 +4,24 @@ package spreadsheet
 object Execution{
   /** Evaluate `e` in environment `env`, adding the extent from `e`. */
   private def eval(env: Environment, e: Exp): Value = e match{
-    case  cell @ CellExp(column: Exp, row: Exp) =>
+    case  cell @ CellExp(column: Exp, row: Exp, theType: CellType) =>
       /* Read from cell(c,r). */
-      def doRead(c: Int, r: Int) = {
-        assert(cell.theType != null); val v = env.getCell(c, r)
-        // Note: the call to env.getCell sets the extent. 
-        env.checkType(v, cell.theType) match{
-          case Ok(()) => v;
-          case FailureR(msg) =>
-            val cName = ColumnValue.getName(c)
-            e.liftError(TypeError(msg+s" in cell (#$cName,#$r)" ))
+      def doRead(c: Int, r: Int): Value = {
+        val v = env.getCell(c,r); val vType = v.getType
+        if(vType == theType) v 
+        else{
+          val cName = ColumnValue.getName(c)
+          e.liftError(TypeError(
+            s"Expected $theType, found $vType in cell #$cName$r"))
         }
+        // assert(cell.theType != null); val v = env.getCell(c, r)
+        // // Note: the call to env.getCell sets the extent. 
+        // env.checkType(v, cell.theType) match{
+        //   case Ok(()) => v;
+        //   case FailureR(msg) =>
+        //     val cName = ColumnValue.getName(c)
+        //     e.liftError(TypeError(msg+s" in cell (#$cName,#$r)" ))
+        // }
       }
       val cc = eval(env, column)
       e.lift({ case ColumnValue(c) =>
@@ -122,7 +129,7 @@ object Execution{
   private def perform(
     env: Environment, handleError: ErrorValue => Unit, s: Statement)
       : Boolean = s match{
-    case Directive(CellExp(ce,re), expr) => 
+    case Directive(ce, re, expr) => 
       eval(env, ce) match{
         case ColumnValue(c) =>
           if(0 <= c && c < env.width) eval(env, re) match{

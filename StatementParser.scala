@@ -97,7 +97,7 @@ object ExpParser{
       case (n, Some(ps)) => FunctionApp(n, ps)
     }
     // TODO: allow more general definitions of the function.  
-    | cell1
+    | typedCell
     | lit("#") ~~ hashTerm > { _._2 }  
     | inParens(expr) // Note: sets extent to include parentheses.
     | list
@@ -152,13 +152,36 @@ object ExpParser{
     (lit("[") ~> repSep(expr, ",")) <~ lit("]") > ListLiteral
   )
 
-  /** Parse a subexpression folling a "#". */
+  /** Parse a subexpression folling a "#" that represents either a row or
+    * column.. */
   private def hashTerm: Parser[Exp] = (
-    int > RowExp
-    | ((colName > ColumnExp) ~~ opt(int)) > 
-      { case (ce,None) => ce; case (ce,Some(r)) => CellExp(ce, RowExp(r)) }
+    int > RowExp | colName > ColumnExp
+    // | ((colName > ColumnExp) ~~ opt(int)) > 
+    //   { case (ce,None) => ce; case (ce,Some(r)) => CellExp(ce, RowExp(r)) }
   )
 
+  /** A parser for a CellType. */
+  def cellType: Parser[CellType] = (
+    lit("Int") > { _ => IntType }
+    | lit("Float") > { _ => FloatType }
+    | lit("Boolean") > { _ => BoolType }
+    | lit("String") > { _ => StringType }
+  )
+
+  /** A parser for an expression such as "Cell(B,3)" of "#B3". */
+  def cell: Parser[(Exp,Exp)] = (
+    lit("Cell") ~> inParens((expr <~ lit(",")) ~ expr) 
+    | lit("#") ~> colName ~ int > 
+      { case (c,r) => (ColumnExp(c), RowExp(r)) }
+  )
+
+  /** A parser for a reference to a cell with the expected type. */
+  private def typedCell: Parser[CellExp] = 
+    (cell <~ lit(":")) ~ cellType > { case ((ce,re), t) => CellExp(ce, re, t) }
+
+
+
+/*
   /** Parse a reference to a Cell, a string of the form "Cell([...], [...])". */
   private def cell1: Parser[CellExp] = 
     ( lit("Cell") ~> inParens((expr <~ lit(",")) ~ expr) ) > toPair(CellExp) 
@@ -169,6 +192,7 @@ object ExpParser{
     | lit("#") ~> colName ~ int > 
       { case (c,r) => CellExp(ColumnExp(c), RowExp(r)) }
   )
+ */
 
   /** Parse the name of a column: a non-empty sequence of uppercase letters.*/
   private def colName: Parser[String] = 
@@ -194,11 +218,11 @@ object ExpParser{
 // =======================================================
 
 object StatementParser{
-  import ExpParser.{expr,cell,withExtent}
+  import ExpParser.{expr,cell,cellType,withExtent}
 
   /** Parser for a directive, <cell> = <expr>. */
   private def directive: Parser[Directive] = 
-    (cell <~ lit("=")) ~ expr > toPair(Directive) 
+    (cell <~ lit("=")) ~ expr > { case ((ce,re), e) => Directive(ce,re,e) } // toPair(Directive) 
 
   /** A parser for a value declaration, "val <name> = <expr>". */
   private def valDec: Parser[ValueDeclaration] =
@@ -210,9 +234,10 @@ object StatementParser{
 
   /** A parser for a type. */
   private def typeP1: Parser[TypeT] = (
-    lit("Int") > { _ => IntType }
-    | lit("Float") > { _ => FloatType }
-    | lit("Boolean") > { _ => BoolType }
+    cellType
+    // lit("Int") > { _ => IntType }
+    // | lit("Float") > { _ => FloatType }
+    // | lit("Boolean") > { _ => BoolType }
     | lit("Row") > { _ => RowType }
     | lit("Column") > { _ => ColumnType }
     //     // TODO: and more
