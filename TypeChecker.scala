@@ -27,6 +27,12 @@ object TypeChecker{
       s"\n\tin $source")
   }
 
+  private def mkIntFloatErr(fType: TypeT, exp: Exp) = {
+    val source = exp.getExtent.asString
+    FailureR(s"Expected Int or Float, found "+fType.asString+
+      s"\n\tin $source")
+  }
+
   /** Contents of the result of a successful call to typeCheck. */
   type TypeCheckRes = (TypeEnv,TypeT)
 
@@ -51,6 +57,34 @@ object TypeChecker{
     case ColumnExp(column) => Ok((typeEnv, ColumnType))
 
     case BinOp(left, op, right) =>
+      typeCheck(typeEnv, left).map{ case (te1, tl) =>
+        typeCheck(te1, right).map{ case (te2, tr) =>
+          op match{
+            case "+" | "-" | "*" | "/" =>
+              if(tl == IntType || tl == FloatType)
+                if(tl == tr) Ok((te2, tl)) else mkErr(tl, tr, right)
+              else mkIntFloatErr(tl, left)
+            case "==" | "!=" => 
+              // FIXME: check tl is an equality type
+              if(tl.isEqType(te2))
+                unify(te2, tr, tl).map{ case (te3,_) => Ok((te3,BoolType)) }
+              else FailureR(s"Expected equality type, found $tl in "+
+                exp.getExtent.asString)
+              // if(tl == tr) Ok((te2, BoolType)) else mkErr(tl, tr, right)
+            case "<=" | "<" | ">=" | ">" =>
+              if(tl == IntType || tl == FloatType)
+                if(tl == tr) Ok((te2, BoolType)) else mkErr(tl, tr, right)
+              else mkIntFloatErr(tl, left)
+            case "&&" | "||" =>
+              if(tl == BoolType)
+                if(tr == BoolType) Ok((te2, BoolType)) else mkErr(tl, tr, right)
+              else mkErr(BoolType, tl, left)
+            case "::" => 
+              unify(te2, tr, ListType(tl))
+          } // end of op match
+        }
+      }.lift(exp)
+/*
       def idT(t: TypeT) = t
       // Create a triple: (1) an updated type environment; (2) the expected
       // type of the first argument; (3) a function to create the expected
@@ -86,6 +120,7 @@ object TypeChecker{
           Ok((te3, mkRes(tr)))
         }
       }.lift(exp)
+ */
 
     case ce @ CellExp(column, row, theType) =>
       typeCheck(typeEnv, column).mapOrLift(exp, { case (te1, tc) => 

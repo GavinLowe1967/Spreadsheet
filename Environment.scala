@@ -32,15 +32,15 @@ class Environment(
   /** Optionally get the value associated with `name` in the environment. */
   def get(name: String): Option[Value] = nameMap.get(name)
 
-  /** Check that v has type t. 
-    * Called from CellExp.eval. */
-  def checkType(v: Cell, t: TypeT): Reply[Unit] = {
-    EvaluationTypeChecker.unify(typeEnv, v.getType, t).map{ te2 =>
-      // Note: the new type environment is stored, for use in subsequent steps
-      // of the current evaluation.
-      typeEnv = te2; Ok(()) 
-    }
-  }
+  // /** Check that v has type t. 
+  //   * Called from CellExp.eval. */
+  // def checkType(v: Cell, t: TypeT): Reply[Unit] = {
+  //   EvaluationTypeChecker.unify(typeEnv, v.getType, t).map{ te2 =>
+  //     // Note: the new type environment is stored, for use in subsequent steps
+  //     // of the current evaluation.
+  //     typeEnv = te2; Ok(()) 
+  //   }
+  // }
 // IMPROVE
 
   /** Clone this. */

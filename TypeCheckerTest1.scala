@@ -61,6 +61,7 @@ object TypeCheckerTest1{
     assertFail(tcpss(faultyScript))
     // Functions aren't equality types
     val script2 = "def f(x: Int): Int = x+1; val x = f == f"
+    // println(tcpss(script2))
     assertFail(tcpss(script2))
 
     // Tests on block expressions

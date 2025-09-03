@@ -23,20 +23,20 @@ class EvaluationTypeEnv(
   // def addTypeVarConstraintEvalTime(tId: TypeID, tc: StoredTypeConstraint) =
   //   new EvaluationTypeEnv(constraints +  (tId -> tc), typeParamMap)
 
-  /** The EvaluationTypeEnv formed from this by replacing TypeVar(tId) with t.
-    */
-  def replaceEvalTime(tId: TypeID, t: TypeT): EvaluationTypeEnv = {
-    // Note: we don't propagate updates to cell expressions during evaluation,
-    // since if there are subsequent changes to the spreadsheet, the updates
-    // to cell expressions would be invalid.  We just update constraints.
-    val newConstraints = constraints + (tId -> SingletonTypeConstraint(t))
-    new EvaluationTypeEnv(newConstraints, typeParamMap)
-  }
+  // /** The EvaluationTypeEnv formed from this by replacing TypeVar(tId) with t.
+  //   */
+  // def replaceEvalTime(tId: TypeID, t: TypeT): EvaluationTypeEnv = {
+  //   // Note: we don't propagate updates to cell expressions during evaluation,
+  //   // since if there are subsequent changes to the spreadsheet, the updates
+  //   // to cell expressions would be invalid.  We just update constraints.
+  //   val newConstraints = constraints + (tId -> SingletonTypeConstraint(t))
+  //   new EvaluationTypeEnv(newConstraints, typeParamMap)
+  // }
 
-  /** The EvaluationTypeEnv formed from this by replacing TypeVar(tId) with tc.
-    */
-  def replaceEvalTime(tId: TypeID, tc: StoredTypeConstraint) = 
-    new EvaluationTypeEnv(constraints + (tId -> tc), typeParamMap)
+  // /** The EvaluationTypeEnv formed from this by replacing TypeVar(tId) with tc.
+  //   */
+  // def replaceEvalTime(tId: TypeID, tc: StoredTypeConstraint) = 
+  //   new EvaluationTypeEnv(constraints + (tId -> tc), typeParamMap)
 
   // ========= TypeParamMap functions
 

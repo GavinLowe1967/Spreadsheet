@@ -3,7 +3,11 @@ package spreadsheet
 /** Unification of types. */
 object Unification{
 
-  import EvaluationTypeChecker.mkFailure
+
+  /** Make a Failure Repl, for use in unify and TypeChecker.unify. */
+  def mkFailure(typeEnv: EvaluationTypeEnv, t1: TypeT, t2: TypeT) = 
+    FailureR(s"Expected "+typeEnv.showType(t2)+", found "+typeEnv.showType(t1))
+  // import EvaluationTypeChecker.mkFailure
   import TypeVar.TypeID // Type variables (Ints)
 
   /** Replace tId by t in typeEnv, if it is consistent with the constraints in
@@ -26,11 +30,11 @@ object Unification{
     case ListType(underlying) => c match{
       case EqTypeConstraint => updateEnvToSatisfy(typeEnv, underlying, c, fail)
       case AnyTypeConstraint => Ok(typeEnv)
-      case NumTypeConstraint => fail
+      // case NumTypeConstraint => fail
     }
     case _ : FunctionType => c match{
       case AnyTypeConstraint => Ok(typeEnv)
-      case EqTypeConstraint | NumTypeConstraint | MemberOf(_) => fail
+      case EqTypeConstraint | MemberOf(_) => fail
     }
     case TypeVar(tId) => 
       val c1 = typeEnv(tId)
@@ -70,15 +74,15 @@ object Unification{
                                                       // TODO: test with ts1!=ts2
         }
 
-      case (TypeVar(tId1), TypeParam(tp)) =>
-        val c1 = typeEnv(tId1); val c2 = typeEnv.constraintForTypeParam(tp)
-        if(c2.implies(c1)){
-          assert(c2 == NumTypeConstraint, c2)
-          Ok(typeEnv.replace(tId1, IntType), t2)
-          // Ok((typeEnv + (tId1, c2), t1)) // OR t2 ?????
-          // println(s"Unify: $tId1 -> $c1; $tp -> $c2")
-        }
-        else fail
+      case (TypeVar(tId1), TypeParam(tp)) => fail
+        // val c1 = typeEnv(tId1); val c2 = typeEnv.constraintForTypeParam(tp)
+        // if(c2.implies(c1)){
+        //   assert(c2 == NumTypeConstraint, c2)
+        //   Ok(typeEnv.replace(tId1, IntType), t2)
+        //   // Ok((typeEnv + (tId1, c2), t1)) // OR t2 ?????
+        //   // println(s"Unify: $tId1 -> $c1; $tp -> $c2")
+        // }
+        // else fail
         // Note: the TypeParam(tp) represents a *universal* quantification
         // over at least two types.  The TypeVar(tId1) cannot simultaneously
         // have all of those types.  In particular, tId1 is associated with an

@@ -113,13 +113,13 @@ class TypeEnv(
 
   // ========= cell constraints
 
-  /** Add a constraint that typeId is a Cell type corresponding to `cell`. */
-  def addCellConstraint(typeId: TypeID, cell: CellExp): TypeEnv = {
-    assert(!cellReadMap.contains(typeId))
-    val newConstraints = constraints + (typeId -> MemberOf(TypeT.CellTypes))
-    val newCellReadMap = cellReadMap + (typeId -> List(cell))
-    make(constraints = newConstraints, cellReadMap = newCellReadMap)
-  }
+  // /** Add a constraint that typeId is a Cell type corresponding to `cell`. */
+  // def addCellConstraint(typeId: TypeID, cell: CellExp): TypeEnv = {
+  //   assert(!cellReadMap.contains(typeId))
+  //   val newConstraints = constraints + (typeId -> MemberOf(TypeT.CellTypes))
+  //   val newCellReadMap = cellReadMap + (typeId -> List(cell))
+  //   make(constraints = newConstraints, cellReadMap = newCellReadMap)
+  // }
 
   // ========= update functions
 

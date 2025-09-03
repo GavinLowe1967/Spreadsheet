@@ -16,6 +16,8 @@ case class FunctionType(
     domain.flatMap(_.typeParams) ++ range.typeParams
   }
 
+  def isEqType(env: TypeEnv) = false
+
 }
 
 object FunctionType{

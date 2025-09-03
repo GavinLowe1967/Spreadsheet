@@ -70,8 +70,10 @@ trait TypeParamConstraint extends StoredTypeConstraint{
 case class SingletonTypeConstraint(t: TypeT) extends StoredTypeConstraint{
   def satisfiedBy(typeEnv: TypeEnv0, t1: TypeT) = t1 == t
 
-  def intersection(typeEnv: TypeEnv0, other: StoredTypeConstraint) = ??? //FIXME
-
+  def intersection(typeEnv: TypeEnv0, other: StoredTypeConstraint) = other match{
+    case AnyTypeConstraint => this
+    case _ =>  println(s"$t $other"); ??? //FIXME
+  }
   def asStringE = t.asString
 }
 
@@ -107,32 +109,32 @@ object MemberOf{
     else if(ts.length == 1) SingletonTypeConstraint(ts.head)
     else MemberOf(ts)
 }
-
+ 
 // ==================================================================
 
 /** Type constraint corresponding to the "Eq" constraint on a type parameter
   * of a function.  This object differs from its MemberOf base class only in
   * the asString method, so as to match the way type constraints are written
   * in scripts. */
-object NumTypeConstraint
-    extends MemberOf(TypeT.NumTypes) with TypeParamConstraint{
+// object NumTypeConstraint
+//     extends MemberOf(TypeT.NumTypes) with TypeParamConstraint{
 
-  /** Does this imply other?  I.e., the types that satisfy this are a subset of
-    * the types that satisfy other? */
-  override def implies(other: StoredTypeConstraint): Boolean = {
-    // println(s"$this implies $other")
-    other match{
-      case MemberOf(ts1) => ts.forall(ts1.contains(_))
-      case EqTypeConstraint => true
-      case AnyTypeConstraint => true  // In fact, never called
-    }
-  }
+//   /** Does this imply other?  I.e., the types that satisfy this are a subset of
+//     * the types that satisfy other? */
+//   override def implies(other: StoredTypeConstraint): Boolean = {
+//     // println(s"$this implies $other")
+//     other match{
+//       case MemberOf(ts1) => ts.forall(ts1.contains(_))
+//       case EqTypeConstraint => true
+//       case AnyTypeConstraint => true  // In fact, never called
+//     }
+//   }
 
-  override def toString = "NumTypeConstraint"
+//   override def toString = "NumTypeConstraint"
 
-  override def asString = "Num"
-  // asStringE is as in MemberOf
-}
+//   override def asString = "Num"
+//   // asStringE is as in MemberOf
+// }
 
 // ==================================================================
 
@@ -159,7 +161,7 @@ case object EqTypeConstraint extends TypeParamConstraint{
     case EqTypeConstraint => println("TypeConstraint.EqEq"); EqTypeConstraint
     // Note: above is currently untested
 
-    case NumTypeConstraint => NumTypeConstraint
+    // case NumTypeConstraint => NumTypeConstraint
 
     case AnyTypeConstraint => EqTypeConstraint
 

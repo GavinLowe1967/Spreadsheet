@@ -264,7 +264,7 @@ object StatementParser{
   private def typeConstraint: Parser[TypeParamConstraint] = (
     lit("<:") ~> (
       lit ("Eq") > (_ => EqTypeConstraint) 
-      | lit("Num") > (_ => NumTypeConstraint) // MemberOf(TypeT.NumTypes))
+      // | lit("Num") > (_ => NumTypeConstraint) // MemberOf(TypeT.NumTypes))
     ) 
     | success(AnyTypeConstraint)
   )
