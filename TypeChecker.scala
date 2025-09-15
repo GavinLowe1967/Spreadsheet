@@ -27,6 +27,7 @@ object TypeChecker{
       s"\n\tin $source")
   }
 
+  /** Make a FailureR: "Expected Int or Float...". */
   private def mkIntFloatErr(fType: TypeT, exp: Exp) = {
     val source = exp.getExtent.asString
     FailureR(s"Expected Int or Float, found "+fType.asString+
@@ -45,17 +46,14 @@ object TypeChecker{
       case Some(t) => Ok((typeEnv,t))
       case None => FailureR("Name not found").lift(exp, true)
     }
-
-    // case IntExp(v) => Ok((typeEnv,IntType))
+    // Atomic types
     case IntExp(v) => Ok((typeEnv,IntType))
-      // val typeId = nextTypeID()
-      // Ok((typeEnv + (typeId, NumTypeConstraint), TypeVar(typeId)))
     case FloatExp(v) => Ok((typeEnv,FloatType))
     case BoolExp(v) => Ok((typeEnv,BoolType))
     case StringExp(st) => Ok((typeEnv,StringType))
     case RowExp(row) => Ok((typeEnv, RowType))
     case ColumnExp(column) => Ok((typeEnv, ColumnType))
-
+    // Binary operators  
     case BinOp(left, op, right) =>
       typeCheck(typeEnv, left).map{ case (te1, tl) =>
         typeCheck(te1, right).map{ case (te2, tr) =>
@@ -65,12 +63,10 @@ object TypeChecker{
                 if(tl == tr) Ok((te2, tl)) else mkErr(tl, tr, right)
               else mkIntFloatErr(tl, left)
             case "==" | "!=" => 
-              // FIXME: check tl is an equality type
               if(te2.isEqType(tl))
                 unify(te2, tr, tl).map{ case (te3,_) => Ok((te3,BoolType)) }
               else FailureR(s"Expected equality type, found $tl in "+
                 exp.getExtent.asString)
-              // if(tl == tr) Ok((te2, BoolType)) else mkErr(tl, tr, right)
             case "<=" | "<" | ">=" | ">" =>
               if(tl == IntType || tl == FloatType)
                 if(tl == tr) Ok((te2, BoolType)) else mkErr(tl, tr, right)
@@ -84,68 +80,22 @@ object TypeChecker{
           } // end of op match
         }
       }.lift(exp)
-/*
-      // def idT(t: TypeT) = t
-      // // Create a triple: (1) an updated type environment; (2) the expected
-      // // type of the first argument; (3) a function to create the expected
-      // // type of the second argument from the type of the first argument; (4)
-      // // a function to create the type of the result from the type of the
-      // // second argument.  This represents that op has type (t,t) => mkRes(t),
-      // // where te captures type constraints on t.
-      // val (te, t, mk2nd, mkRes) = op match{
-      //   case "+" | "-" | "*" | "/" =>   // Num a => (a,a) -> a
-      //     val typeId = nextTypeID()
-      //     val te = typeEnv + (typeId, NumTypeConstraint) // MemberOf(NumTypes))
-      //     (te, TypeVar(typeId), idT _, (t1: TypeT) => t1)
-      //   case "==" | "!=" =>                    // Eq a => (a,a) -> Boolean
-      //     val typeId = nextTypeID()
-      //     val te = typeEnv + (typeId, EqTypeConstraint)
-      //     (te, TypeVar(typeId), idT _, (_: TypeT) => BoolType)
-      //   case "&&" | "||" =>             // (BoolType, BoolType) -> BoolType
-      //     (typeEnv, BoolType, idT _, (_:TypeT) => BoolType)
-      //   case "<=" | "<" | ">=" | ">" => // Num a => (a,a) -> a
-      //     val typeId = nextTypeID()
-      //     val te = typeEnv + (typeId, NumTypeConstraint) // MemberOf(NumTypes)) 
-      //     (te, TypeVar(typeId), idT _, (_: TypeT) => BoolType)
-      //   case "::" =>  //  (a, ListType(a)) => ListType(a)
-      //     val typeId = nextTypeID()
-      //     val te = typeEnv + (typeId, AnyTypeConstraint)
-      //     (te, TypeVar(typeId), ListType(_), idT _)
-      // }
-      // // Below t is the expected type of args; tl is the unification of t with
-      // // the type of left; tr is the unification of tl with the type of r; and
-      // // mkRes(tr) is the type of the result.
-      // typeCheckUnify(te, left, t).map{ case (te2, tl) =>
-      //   typeCheckUnify(te2, right, mk2nd(tl)).map{ case (te3, tr) => 
-      //     Ok((te3, mkRes(tr)))
-      //   }
-      // }.lift(exp)
- */
-
+    // Cell expressions
     case ce @ CellExp(column, row, theType) =>
-      typeCheck(typeEnv, column).mapOrLift(exp, { case (te1, tc) => 
-        if(tc != ColumnType) mkErr(ColumnType, tc, column)
-        else typeCheck(te1, row).mapOrLift(exp, { case (te2, tr) => 
-          if(tr != RowType) mkErr(RowType, tr, row)
-          else Ok(typeEnv, theType)
-            // // Associate type identifier with this read.
-            // val typeId = nextTypeID(); val typeVar = TypeVar(typeId); 
-            // ce.setType(typeVar)
-            // Ok((typeEnv.addCellConstraint(typeId, ce), typeVar))
-        })
-      }).lift(exp)
-
+      typeCheckUnify(typeEnv, column, ColumnType).map{ case (te1, ColumnType) => 
+        typeCheckUnify(te1, row, RowType).map{ case (te2, RowType) =>
+          Ok(te2, theType)
+        }
+      }.lift(exp)
+    // Conditionals
     case IfExp(test, thenClause, elseClause) =>
       typeCheckUnify(typeEnv, test, BoolType).map{ case (te1, bt) =>
         assert(bt == BoolType)
         typeCheck(te1, thenClause).map{ case (te2,t1) =>
-          typeCheckUnify(te2, elseClause, t1)// .map{ case (te3,t2) => 
-// // FIXME: this instance of map is the identity
-//             println(s"IF: t1 = $t1; t2 = $t2; te3 = $te3"); Ok((te3,t2)) 
-//           }
+          typeCheckUnify(te2, elseClause, t1)
         }
       }.lift(exp)
-
+    // List literals
     case ListLiteral(elems) => 
       if(elems.isEmpty){
         // Associate type identifier with this list.
@@ -154,41 +104,36 @@ object TypeChecker{
       }
       else typeCheck(typeEnv, elems.head).map{ case (te1, t1) =>
         // Try to unify types of remainder with t1
-        typeCheckListSingleType(te1, elems.tail, t1).mapOrLift(exp, {
-          case (te1, t) => Ok((te1, ListType(t)))
-        })
+        typeCheckListSingleType(te1, elems.tail, t1).lift(exp)
       }
-
+    // Function applications
     case FunctionApp(f, args) => 
       typeCheck(typeEnv, f).map{ case (te1, ff) => ff match{
         case FunctionType(tParams, domain, range) =>
           if(domain.length != args.length)
-            FailureR(s"Expected ${domain.length} arguments, found "+
-              args.length).lift(exp, true)
+            FailureR(s"Expected ${domain.length} arguments, found "+args.length)
           else{
-            //println(exp)
             // Create fresh type variables to replace tParams in domain and range
             val (te2, domain1, range1) = 
               subTypeParams(te1, tParams, domain, range)
-            // We generate a new name, and bind it to range1 in the environment.
-            // Then unify the types of args with domain1, so the new name gets
+            // Generate a new name, and bind it to range1 in the environment;
+            // then unify the types of args with domain1, so the new name gets
             // updated to the appropriate return type.
+            // println(FunctionApp(f,args)); 
+            // println(s"tParams = $tParams; domain1 = $domain1")
             val name = newName(); val te3 = te2 + (name, range1)
-            // println(s"TypeChecker:  te3 = $te3\n"+
-            //   s"  exp = $exp $tParams $domain $range")
-            typeCheckListUnify(te3, args, domain1).mapOrLift(exp, { te4 =>
+            typeCheckListUnify(te3, args, domain1).map{ te4 => 
               Ok((te4-name, te4(name)))  // extract type of name
-            })
-          }
-
-        case _ => FailureR("Non-function applied as function").lift(exp, true)
-      }}
-
+            }
+          } 
+        case _ => FailureR("Non-function applied as function")
+      }}.lift(exp, true)
+    // Block
     case BlockExp(stmts, e) => 
-      // We create a new scope for this block, but return to the outer scope
-      // at the end.
-      typeCheckStmtList(typeEnv.newScope, stmts).map{ te2 => 
-        typeCheck(te2, e).map{ case (te3, te) => Ok((te3.endScope, te)) }
+      // Create a new scope for this block, but return to the outer scope at
+      // the end.
+      typeCheckStmtList(typeEnv.newScope, stmts).map{ te1 => 
+        typeCheck(te1, e).map{ case (te2, te) => Ok((te2.endScope, te)) }
       }
   }
 
@@ -196,16 +141,16 @@ object TypeChecker{
   private def typeCheckUnify(typeEnv: TypeEnv, exp: Exp, eType: TypeT)
       : Reply[(TypeEnv, TypeT)] =
     typeCheck(typeEnv, exp).map{ case (te1,t) =>
-      // println(s"typeCheckUnify t = $t, eType = $eType")
       unify(te1, t, eType).lift(exp, true) // add line number here
     }
 
-  /** Typecheck exps, unifying all their types with t.  Used in typechecking a
-    * ListLiteral, so ensure all elements have the same type. */
+  /** Typecheck exps, unifying all their types with t.  Return an appropriate
+    * ListType if successful.  Used in typechecking a ListLiteral, so ensure
+    * all elements have the same type. */
   private 
   def typeCheckListSingleType(typeEnv: TypeEnv, exps: List[Exp], t: TypeT)
-      : Reply[(TypeEnv, TypeT)] = 
-    if(exps.isEmpty) Ok((typeEnv, t))
+      : Reply[(TypeEnv, ListType)] = 
+    if(exps.isEmpty) Ok((typeEnv, ListType(t)))
     else typeCheckUnify(typeEnv, exps.head, t).map{ case (te1,t1) =>
       // Try to unify types of remainder with t1
       typeCheckListSingleType(te1, exps.tail, t1)
@@ -222,15 +167,11 @@ object TypeChecker{
   def typeCheckListUnify(typeEnv: TypeEnv, es: List[Exp], ts: List[TypeT])
       : Reply[TypeEnv] = 
     if(es.isEmpty){ assert(ts.isEmpty); Ok(typeEnv) }
-    // else typeCheckUnify(typeEnv, es.head, ts.head).map{ case (te2, t11) =>
-    //   typeCheckListUnify(te2, es.tail, ts.tail)
-    // }
     else typeCheck(typeEnv, es.head).map{ case (te1,t1) => 
       // If t1 is a FunctionType, instantiate type parameters
       val (te2,t2) = mkInstance(te1,t1) 
-      // println(s"typeCheckListUnift: te1 = $te1\nte2 = $te2")
-      // Unify with formal parameter type  in ts
-      unify(te2, t2, ts.head).lift(es.head, true).map{  case (te3, _) => 
+      // Unify with formal parameter type in ts, and recurse.
+      unify(te2, t2, ts.head).lift(es.head, true).map{ case (te3, _) => 
         typeCheckListUnify(te3, es.tail, ts.tail)
       }
     }
@@ -243,7 +184,7 @@ object TypeChecker{
       : (TypeEnv, List[TypeT], TypeT) = {
     // Create fresh type variables to replace tParams in domain and range
     var updates = List[(TypeParamName, TypeVar)]();
-    var constraints = List[(TypeID, StoredTypeConstraint)]()
+    var constraints = List[(TypeID, TypeConstraint)]()
     for((p,c) <- tParams){
       val tId = nextTypeID(); updates ::= (p, TypeVar(tId))
       constraints ::= (tId,c)
@@ -263,20 +204,7 @@ object TypeChecker{
     case _ => (typeEnv, t)
   }
 
-  // /** For each FunctionType in ts, replace each type parameter by a fresh type
-  //   * variable, and add suitable constraints to typeEnv. */
-  // private def mkInstances(typeEnv: TypeEnv, ts: List[TypeT])
-  //     : (TypeEnv, List[TypeT]) =
-  //   if(ts.isEmpty) (typeEnv, List())
-  //   else{ 
-  //     val (te1, t1) = mkInstance(typeEnv, ts.head)
-  //     val (te2, ts2) = mkInstances(te1, ts.tail)
-  //     (te2, t1 :: ts2)
-  //   }
-
-
-  // ==================================================================
-  // Statements
+  // ============================================================= Statements
 
   /** Typecheck the statement `stmt`. 
     * If successful, return the resulting type environment. */
@@ -295,22 +223,14 @@ object TypeChecker{
             }
         }.lift(stmt)
 
-        //   typeCheck(te1, cell).map{ case(te2, TypeVar(tId)) => 
-        //     assert(te2(tId) == MemberOf(TypeT.CellTypes))
-        //     // Unify t with above constraint: expr should give a cell value
-        //     unify(te2, t, TypeVar(tId)).map{ case (te3, tt) => 
-        //       Ok(te3) 
-        //     }.lift(expr, true)
-        //   }
-        // }.lift(stmt)
-
       case ValueDeclaration(name, exp) => 
         typeCheck(typeEnv, exp).mapOrLift(stmt, { case (te1, t) => 
           Ok(te1 + (name, t))
         })
 
       case FunctionDeclaration(name, tparams, params, rt, body) =>
-        // name should already be bound to an appropriate FunctionType
+        // name should already be bound to an appropriate FunctionType, by
+        // typeCheckStmtList
         require(typeEnv(name) == FunctionType(tparams, params.map(_._2), rt))
         // Check names of params, tparams are disjoint
         (findRepetition(params.map(_._1)) match{
@@ -329,9 +249,6 @@ object TypeChecker{
               else
                 // Typecheck body, and make sure return type matches rt
                 typeCheckUnify(te1, body, rt).map{ case (te3, tt) =>
-                  // println(s"name = $name"); println(s"te3 = $te3")
-                  // println(s"tt = $tt")
-                  // println(s"$name ---> ${te3.endScope}")
                   Ok(te3.endScope) // back to the old scope
                 }
 // FIXME: if any of tparams gets bound to a TypeVar, update in typeEnv(name)
@@ -359,12 +276,10 @@ object TypeChecker{
       case None =>
         // Extend typeEnv on assumption all FunctionDeclarations are correctly
         // typed.
-        val updates = (
+        val updates = 
           for(FunctionDeclaration(name, tparams, params, rt, body) <- stmts) 
           yield name -> FunctionType(tparams, params.map(_._2), rt)
-        )
-        val typeEnv1 = typeEnv ++ updates
-        typeCheckStmtList1(typeEnv1, stmts)
+        typeCheckStmtList1(typeEnv++updates, stmts)
     }
   }
 

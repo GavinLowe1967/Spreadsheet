@@ -6,41 +6,26 @@ import TypeVar.TypeID // Type variables (Ints)
 import EvaluationTypeEnv._
 import TypeParam.TypeParamName // Names of type parameters (Strings)
 
-/** A type environment for use during evaluation. */
+/** A type environment for use during evaluation. 
+  * @param constraints a mapping giving constraints on type variables.
+  * @param typeParamMap a mapping giving constraints on type parameters.  */
 class EvaluationTypeEnv(
   private val constraints: Constraints,
   private val typeParamMap: TypeParamMap
 ) extends TypeEnv0{
+
   // ========= Constraints functions
 
   /** The constraint associated with tid. */
-  def apply(tid: TypeID) : StoredTypeConstraint = constraints(tid) match{
+  def apply(tid: TypeID) : TypeConstraint = constraints(tid) match{
     case SingletonTypeConstraint(TypeVar(tid1)) =>  apply(tid1) 
       // Arises with, e.g., "def f[A](x: A, y: A): A = x; val y = f(3, 4)"
     case c => c 
   }
 
-  // def addTypeVarConstraintEvalTime(tId: TypeID, tc: StoredTypeConstraint) =
-  //   new EvaluationTypeEnv(constraints +  (tId -> tc), typeParamMap)
-
-  // /** The EvaluationTypeEnv formed from this by replacing TypeVar(tId) with t.
-  //   */
-  // def replaceEvalTime(tId: TypeID, t: TypeT): EvaluationTypeEnv = {
-  //   // Note: we don't propagate updates to cell expressions during evaluation,
-  //   // since if there are subsequent changes to the spreadsheet, the updates
-  //   // to cell expressions would be invalid.  We just update constraints.
-  //   val newConstraints = constraints + (tId -> SingletonTypeConstraint(t))
-  //   new EvaluationTypeEnv(newConstraints, typeParamMap)
-  // }
-
-  // /** The EvaluationTypeEnv formed from this by replacing TypeVar(tId) with tc.
-  //   */
-  // def replaceEvalTime(tId: TypeID, tc: StoredTypeConstraint) = 
-  //   new EvaluationTypeEnv(constraints + (tId -> tc), typeParamMap)
-
   // ========= TypeParamMap functions
 
-  /**The constraint associated with TypeParam(n). */
+  /** The constraint associated with TypeParam(n). */
   def constraintForTypeParam(n: TypeParamName): TypeParamConstraint =
     typeParamMap(n)
 
@@ -52,6 +37,7 @@ class EvaluationTypeEnv(
     case TypeParam(tp) => typeParamMap(tp) match{
       case AnyTypeConstraint => tp; case c => s"$tp <: "+c.asString
     }
+    case ListType(underlying) => s"List(${showType(underlying)})"
     case _ => t.asString
   }
 }
@@ -60,7 +46,7 @@ class EvaluationTypeEnv(
 
 object EvaluationTypeEnv{
   /** A mapping from type identifiers to MemberOf(ts) constraints. */
-  type Constraints = HashMap[TypeID, StoredTypeConstraint]
+  type Constraints = HashMap[TypeID, TypeConstraint]
 
   /** Mapping giving the type constraints on type parameters currently in
     * scope. */

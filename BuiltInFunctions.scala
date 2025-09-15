@@ -16,10 +16,12 @@ object BuiltInFunctions{
     val t = TypeParam("A")
     FunctionType(List(("A", AnyTypeConstraint)), List(ListType(t)), BoolType)
   }
+  private val notT = 
+    FunctionType(List(), List(BoolType), BoolType)
 
   /** The types of built-in functions. */
   val builtInTypes = 
-    List("head" -> headT, "tail" -> tailT, "isEmpty" -> isEmptyT)
+    List("head" -> headT, "tail" -> tailT, "isEmpty" -> isEmptyT, "not" -> notT)
 
   /* Definitions. */
 
@@ -29,9 +31,11 @@ object BuiltInFunctions{
     FunctionValue{ case List(l:ListValue) => l.tail }
   private val isEmptyFn = 
     FunctionValue{ case List(l:ListValue) => l.isEmpty }
+  private val notFn = FunctionValue{ case List(BoolValue(b)) => BoolValue(!b) }
 
   /** The built-in functions. */
   val builtIns = 
-    List("head" -> headFn, "tail" -> tailFn, "isEmpty" -> isEmptyFn)
+    List("head" -> headFn, "tail" -> tailFn, "isEmpty" -> isEmptyFn, 
+      "not" -> notFn)
 
 }

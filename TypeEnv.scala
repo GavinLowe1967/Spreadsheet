@@ -11,11 +11,9 @@ import TypeEnv._
 /** A type environment.
   * @param nameMap A mapping from names in the script to their types.
   * @param constraints A mapping from type identifiers to constraints.
-  * @param typeParamMap map from TypeParamName to StoredTypeConstraint
+  * @param typeParamMap A mapping from TypeParamName to TypeConstraint
   * @param frame The Frame corresponding to the current scope. 
   * @param stack The frames for outer scopes. 
-  * Inv: constraints includes a mapping tid -> MemberOf(ts) for each
-  * TypeVar(tid) used in nameMap. 
   * Note: type environments are treated immutably. */
 class TypeEnv(
   private val nameMap: NameMap, 
@@ -36,7 +34,7 @@ class TypeEnv(
   // ========= NameMap functions
 
   /** The type associated with name. */
-  def apply(name: Name) : TypeT = nameMap(name)
+  def apply(name: Name): TypeT = nameMap(name)
 
   /** Optionally, the type associated with name. */
   def get(name: Name): Option[TypeT] = nameMap.get(name)
@@ -77,16 +75,16 @@ class TypeEnv(
   // ========= Constraints functions
 
   /** The TypeEnv formed by adding  the constraint typeID -> tc. */
-  def addTypeVarConstraint(typeID: TypeID, tc: StoredTypeConstraint) : TypeEnv = 
+  def addTypeVarConstraint(typeID: TypeID, tc: TypeConstraint) : TypeEnv = 
     make(constraints = constraints + (typeID -> tc))
 
   /** The TypeEnv formed by adding  the constraint typeID -> tc. */
-  def + (typeID: TypeID, tc: StoredTypeConstraint) : TypeEnv = 
+  def + (typeID: TypeID, tc: TypeConstraint) : TypeEnv = 
     addTypeVarConstraint(typeID, tc)
 
   /** The TypeEnv formed by adding the constraint typeID -> tc for each (typeID,
     * tc) in pairs. */
-  def addConstraints(pairs: List[(TypeID, StoredTypeConstraint)]) : TypeEnv = 
+  def addConstraints(pairs: List[(TypeID, TypeConstraint)]) : TypeEnv = 
     make(constraints = constraints ++ pairs)
 
   /** Is t an equality type? */
@@ -115,7 +113,6 @@ class TypeEnv(
   /** Is n a defined type parameter? */
   def hasTypeParam(n: TypeParamName) = typeParamMap.contains(n)
 
-
   // ========= update functions
 
   /** The TypeEnv formed from this by replacing TypeVar(tId) with t, as used
@@ -131,14 +128,14 @@ class TypeEnv(
   // ========= Scoping functions
 
   /** Record that a new scope is being entered. */
-  def newScope : TypeEnv = {
+  def newScope: TypeEnv = {
     frame.storeTParamMap(typeParamMap)
     make(frame = new Frame, stack = frame::stack)
   }
 
   /** End the current scope.  Return the type environment to use in the outer
     * scope. */
-  def endScope : TypeEnv = {
+  def endScope: TypeEnv = {
     require(stack.nonEmpty)
     val newNameMap = frame.updateAtEndOfScope(nameMap)
     val newFrame = stack.head; val newTParamMap = newFrame.getTParamMap
@@ -187,11 +184,11 @@ object TypeEnv{
     private def getOldName(nn: Name) = nn.takeWhile(_ != '$')
 
     /** Names that have been declared in the current scope. */
-    var newNames = List[Name]()
+    private var newNames = List[Name]()
 
     /** The temporary names that are used in place of names that have been
       * overwritten in the current scope. */
-    var tempNames = List[Name]()
+    private var tempNames = List[Name]()
 
     /** Record that name is being overwritten in the current scope.  Return the
       * new name to use in place of name. */

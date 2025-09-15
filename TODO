@@ -10,15 +10,16 @@ Require cell references to be typed, e.g. #B3 : Int (":" binding tightly):
   - function replace in TypeEnv
   - change CellExp case in TypeChecker.scala
   - typeCheckStmt in TypeChecker.scala
-  - do we need TypeConstraint.MemberOf - in TypeEnv?  
-  - do we need cell constraints in TypeEnv? 
+  - do we need TypeConstraint.MemberOf - in TypeEnv?  -- no, removed
+  - do we need cell constraints in TypeEnv? -- no, removed
   - what's the role of EvaluationTypeChecker?
   - execution of cell read, Execution.scala, l8 - done
 
 - Simplify TypeChecker case BinOp -- done
 - Get rid of EqTypeConstraint??  I'm not sure about this.
 - Get rid of NumTypeConstraint -- done
-- Get rid of MemberOf in TypeConstraint?? ****
+- Get rid of MemberOf in TypeConstraint?? -- done
+- Look again at Unification.scala
 
 Add cell type matching, e.g. 
  #B3 match{ case x: Int => ...; case st: String => ...; case Blank => ... }
@@ -26,6 +27,8 @@ This is a new syntactic category.
 
 I think we no longer need the EvaluationTypeChecker or EvaluationTypeEnv.
 When the evaluation engine reads a cell, it knows the expected type.
+
+** Test assertion in unify FunctionType -- function that takes lists of functions? 
 
 
 Outstanding:

@@ -12,8 +12,6 @@ trait TypeT{
 
   /** The type parameters included in this type. */
   def typeParams: List[TypeParamName]
-
-//  def isEqType(env: TypeEnv): Boolean
 }
 
 object TypeT{
@@ -26,12 +24,11 @@ object TypeT{
 
 // ==================================================================
 
-/** A type variable. */
+/** A type variable.  At present, only used for the types of Lists. */
 case class TypeVar(tv: TypeID) extends TypeT{
   def asString = toString                                // IMPROVE
   def typeVars = List(tv)
   def typeParams = List()
-//  def isEqType(env: TypeEnv) = true // ??? // FIXME
 }
 
 // =========
@@ -53,8 +50,6 @@ case class TypeParam(name: String) extends TypeT{
   def asString = name 
   def typeVars = List()
   def typeParams = List(name)
-  // def isEqType(env: TypeEnv) = 
-  //   env.constraintForTypeParam(name).implies(EqTypeConstraint)  // ???
 }
 
 object TypeParam{
@@ -64,9 +59,7 @@ object TypeParam{
 // ==================================================================
 
 /** A marker trait for atomic equality types. */
-trait EqType extends TypeT{
-  // def isEqType(env: TypeEnv) = true
-}
+trait EqType extends TypeT
 
 /** Marker trait for base types, i.e. atomic. */
 trait BaseType extends TypeT{
@@ -114,10 +107,8 @@ case class ListType(underlying: TypeT) extends TypeT{
   def asString = { val u = underlying.asString; s"List[$u]" }
   def typeVars = underlying.typeVars
   def typeParams = underlying.typeParams
-  // def isEqType(env: TypeEnv) = underlying.isEqType(env)
 }
 
 // ==================================================================
-
 
 // ====== Note: FunctionType is in its own file, as it depends on TypeConstraint

@@ -13,6 +13,8 @@ abstract class Reply[+A]{
   def lift(exp: HasExtent, lineNum: Boolean = false): Reply[A]
 }
 
+// =======================================================
+
 /** The result of a successful typechecking, corresponding to x. */
 case class Ok[+A](x: A) extends Reply[A]{
   def map[B](f: A => Reply[B]) = f(x)
@@ -22,12 +24,13 @@ case class Ok[+A](x: A) extends Reply[A]{
   def lift(exp: HasExtent, lineNum: Boolean = false) = this
 }
 
+// =======================================================
+
 /** The result of an unsuccessful typechecking, as explained by err. */
 case class FailureR(err: String) extends Reply[Nothing]{
-  def map[B](f: Nothing => Reply[B]) = this // FailureR(err)
+  def map[B](f: Nothing => Reply[B]) = this 
 
   def mapOrLift[B](exp: HasExtent, f: Nothing => Reply[B]) = lift(exp)
-  //  FailureR(err+"\n\tin "+exp.getExtent.asString)
 
   /** Add the source of `exp` to the message. */
   def lift(exp: HasExtent, lineNum: Boolean = false) = {
