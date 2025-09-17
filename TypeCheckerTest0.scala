@@ -17,6 +17,7 @@ object TypeCheckerTest0{
     if(printErrors) x match{ case FailureR(msg) => println(msg); case _ => {} }
   
   def assertFail[A](r: Reply[A]) = assert(r.isInstanceOf[FailureR], r)
+  def assertOk[A](r: Reply[A]) = assert(r.isInstanceOf[Ok[A]], r)
   
   /* Assert that r is an Ok for type t. */
   def assertEq(r: Reply[TypeCheckRes], t: TypeT) =

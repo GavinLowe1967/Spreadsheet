@@ -24,7 +24,8 @@ object TypeT{
 
 // ==================================================================
 
-/** A type variable.  At present, only used for the types of Lists. */
+/** A type variable.  Used for the types of Lists and to replace formal
+  * parameters of a function when the function is applied. */
 case class TypeVar(tv: TypeID) extends TypeT{
   def asString = toString                                // IMPROVE
   def typeVars = List(tv)

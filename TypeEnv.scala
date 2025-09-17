@@ -164,7 +164,7 @@ class TypeEnv(
 /** Companion object for TypeEnv. */
 object TypeEnv{
   /** A mapping from names in the script to their types. */
-  private type NameMap = HashMap[Name, TypeT]
+  private type NameMap = HashMap[Name, TypeT] // immutable 
 
   /** A frame, corresponding to a particular nesting of scopes. */
   private class Frame{

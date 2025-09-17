@@ -30,6 +30,19 @@ case class FunctionDeclaration(
 
 // =======================================================
 
+/** A binder for a "for" statement. */
+trait Binder
+/** A generator, "name <- exp". */
+case class Generator(name: String, exp: Exp) extends Binder
+// IMPROVE: more general forms of pattern matching?
+/** A filter, "if exp". */
+case class Filter(exp: Exp) extends Binder
+
+/** A for statement, for(binders){ stmts }. */
+case class ForStatement(binders: List[Binder], stmts: List[Statement]) 
+    extends Declaration
+
+
 /* Note: we can't include this in Exp.scala, because it builds on Statement. */
 
 /** A block expression of the form { stmt_1; ...; stmt_n; exp }. */ 

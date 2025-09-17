@@ -255,6 +255,9 @@ object TypeChecker{
           }
         }).lift(stmt)
 
+      case ForStatement(binders, stmts) => 
+        checkFor(typeEnv.newScope, binders, stmts).lift(stmt)
+
     } // end of "stmt match"
 
   /** Find a repeated value in xs, if there is one. */
@@ -279,18 +282,43 @@ object TypeChecker{
         val updates = 
           for(FunctionDeclaration(name, tparams, params, rt, body) <- stmts) 
           yield name -> FunctionType(tparams, params.map(_._2), rt)
-        typeCheckStmtList1(typeEnv++updates, stmts)
+        iterTypeCheckStmts(typeEnv++updates, stmts)
     }
   }
 
   /** Typecheck stmts in environment typeEnv.  All names of functions should
     * already be bound to the claimed types. */ 
-  private def typeCheckStmtList1(typeEnv: TypeEnv, stmts: List[Statement])
+  private def iterTypeCheckStmts(typeEnv: TypeEnv, stmts: List[Statement])
       : Reply[TypeEnv] =
     if(stmts.isEmpty) Ok(typeEnv)
     else typeCheckStmt(typeEnv, stmts.head).map{ te1 => 
-      typeCheckStmtList1(te1, stmts.tail)
+      iterTypeCheckStmts(te1, stmts.tail)
     }
+
+  /** Typecheck a "for" statement. */
+  private
+  def checkFor(typeEnv: TypeEnv, binders: List[Binder], stmts: List[Statement])
+      : Reply[TypeEnv] =
+    if(binders.isEmpty) 
+      // Typecheck stmts, and end the scope.
+      typeCheckStmtList(typeEnv, stmts).map{ case te => Ok(te.endScope) }
+    else{
+      binders.head match{
+        case Generator(name, list) => 
+          // list should be a ListType
+          typeCheck(typeEnv, list).map{ 
+            case (te1, ListType(t)) => 
+              checkFor(te1+(name,t), binders.tail, stmts) // bind name
+            case (_, t1) => 
+              FailureR(s"Expected List, found ${t1.asString}").lift(list)
+          }
+
+        case Filter(test) => ???
+      }
+    }
+
+
+  // ======================================================= Top level
 
   /** Typecheck stmts. */
   def apply(stmts: List[Statement]): Reply[TypeEnv] =

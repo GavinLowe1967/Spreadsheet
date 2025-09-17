@@ -76,6 +76,9 @@ object Unification{
         }
 
       case (TypeVar(tId1), TypeParam(tp)) => fail
+        // The above happens in cases like "def mkEmpty[A](x: A): List[A] =
+        // []", which leads to an attempt to unify ListType(TypeVar(tId1))
+        // against ListType(TypeParam("A")), which recurses here.
 
       case (TypeVar(tId1), _) => // t2 a concrete type.  Try to replace t1 by t2
         replaceInTypeEnv(typeEnv, tId1, t2, fail)

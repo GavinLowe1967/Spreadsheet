@@ -28,7 +28,13 @@ This is a new syntactic category.
 I think we no longer need the EvaluationTypeChecker or EvaluationTypeEnv.
 When the evaluation engine reads a cell, it knows the expected type.
 
-** Test assertion in unify FunctionType -- function that takes lists of functions? 
+** Test assertion in unify FunctionType -- function that takes lists of functions?
+
+for statements:
+- Syntax - done
+- Parsing - done
+- Type checking
+- Execution 
 
 
 Outstanding:

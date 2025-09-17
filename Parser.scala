@@ -145,6 +145,11 @@ object Parser{
     | success(List())
   )
 
+  /** A parser that expects to find a non-empty sequence of expressions matching
+    * `p`, separated by `sep`. */
+  def repSepNonEmpty[A](p: Parser[A], sep: String): Parser[List[A]] =
+    (p ~ (lit(sep) ~> repSep(p, sep) | success(List())) ) > toPair(_ :: _)
+
   /** A parser that optionally applies `p`. */
   def opt[A](p: => Parser[A]): Parser[Option[A]] = 
     (p > (x => Some(x))) | success(None)

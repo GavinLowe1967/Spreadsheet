@@ -22,7 +22,7 @@ object ExpParser{
   /** Binary operators, in increasing order of precedence.  Each is tagged with
     * L or R to indicate associativity. */
   private val operators = Array(
-    (List("||"), L), (List("&&"), L), // 2-3 in Haskell  *** OR R?
+    (List("||"), R), (List("&&"), R), // 2-3 in Haskell 
     (List("==", "!=", "<", "<=", ">", ">="), L), // 4
     (List("::"), R), // 5
     (List("+", "-"), L), (List("*", "/"), L)  // 6-7
@@ -90,15 +90,17 @@ object ExpParser{
   /** A parser for expressions that use no infix operators outside of
     * parentheses: atomic terms and parenthesised expressions. */
   private def factor: Parser[Exp] = withExtent( 
-    number // int > IntExp
+    number
     // Name or application of named function 
     | name1 ~~ params > {
       case (n, None) => n
       case (n, Some(ps)) => FunctionApp(n, ps)
     }
-    // TODO: allow more general definitions of the function.  
-    | typedCell
-    | lit("#") ~~ hashTerm > { _._2 }  
+    // TODO: allow more general definitions of the function. 
+      // Cell expressions, with a type
+    | (cell <~ lit(":")) ~ cellType > { case ((ce,re), t) => CellExp(ce, re, t) }
+      // Row and column literals
+    | lit("#") ~~ (int > RowExp | colName > ColumnExp) > { _._2 }  
     | inParens(expr) // Note: sets extent to include parentheses.
     | list
     | block
@@ -135,7 +137,6 @@ object ExpParser{
     posNum
   }
 
-
   import StatementParser.{listOf,declaration,separator}
 
   /** A parser for a block expression. */
@@ -154,11 +155,9 @@ object ExpParser{
 
   /** Parse a subexpression folling a "#" that represents either a row or
     * column.. */
-  private def hashTerm: Parser[Exp] = (
-    int > RowExp | colName > ColumnExp
-    // | ((colName > ColumnExp) ~~ opt(int)) > 
-    //   { case (ce,None) => ce; case (ce,Some(r)) => CellExp(ce, RowExp(r)) }
-  )
+  // private def hashTerm: Parser[Exp] = (
+  //   int > RowExp | colName > ColumnExp
+  // )
 
   /** A parser for a CellType. */
   def cellType: Parser[CellType] = (
@@ -176,23 +175,8 @@ object ExpParser{
   )
 
   /** A parser for a reference to a cell with the expected type. */
-  private def typedCell: Parser[CellExp] = 
-    (cell <~ lit(":")) ~ cellType > { case ((ce,re), t) => CellExp(ce, re, t) }
-
-
-
-/*
-  /** Parse a reference to a Cell, a string of the form "Cell([...], [...])". */
-  private def cell1: Parser[CellExp] = 
-    ( lit("Cell") ~> inParens((expr <~ lit(",")) ~ expr) ) > toPair(CellExp) 
-
-  /** Parse a reference to a Cell, either of the form Cell(#C,#3) or #C3. */
-  def cell: Parser[CellExp] = (
-    cell1
-    | lit("#") ~> colName ~ int > 
-      { case (c,r) => CellExp(ColumnExp(c), RowExp(r)) }
-  )
- */
+  // private def typedCell: Parser[CellExp] = 
+  //   (cell <~ lit(":")) ~ cellType > { case ((ce,re), t) => CellExp(ce, re, t) }
 
   /** Parse the name of a column: a non-empty sequence of uppercase letters.*/
   private def colName: Parser[String] = 
@@ -201,7 +185,6 @@ object ExpParser{
 
   /** Parser for a value entered in a cell by the user. */
   private def userValue: Parser[Cell] = (
-    // (int <~ atEnd) > IntValue 
     (number <~ atEnd) > { 
       case IntExp(n) => IntValue(n); case FloatExp(x) => FloatValue(x) 
     }
@@ -222,7 +205,7 @@ object StatementParser{
 
   /** Parser for a directive, <cell> = <expr>. */
   private def directive: Parser[Directive] = 
-    (cell <~ lit("=")) ~ expr > { case ((ce,re), e) => Directive(ce,re,e) } // toPair(Directive) 
+    (cell <~ lit("=")) ~ expr > { case ((ce,re), e) => Directive(ce,re,e) } 
 
   /** A parser for a value declaration, "val <name> = <expr>". */
   private def valDec: Parser[ValueDeclaration] =
@@ -235,9 +218,6 @@ object StatementParser{
   /** A parser for a type. */
   private def typeP1: Parser[TypeT] = (
     cellType
-    // lit("Int") > { _ => IntType }
-    // | lit("Float") > { _ => FloatType }
-    // | lit("Boolean") > { _ => BoolType }
     | lit("Row") > { _ => RowType }
     | lit("Column") > { _ => ColumnType }
     //     // TODO: and more
@@ -271,14 +251,15 @@ object StatementParser{
 
   /** Parser for a single type parameter. */
   private  def typeParam: Parser[TypeParameter] =
-    upperName ~ typeConstraint // > { t => (t, AnyTypeConstraint) } 
+    upperName ~ typeConstraint
 
   /** Parser for type parameters. */
   private def typeParams: Parser[List[TypeParameter]] = 
     opt(inSquare(repSep(typeParam, ","))) > 
       { case Some(ts) => ts; case None => List() }
 
-  /** A parser for a function declaration "def <name>(<params>) = <expr>". */
+  /** A parser for a function declaration 
+    * "def <name>(<params>): <type> = <expr>". */
   def funDec: Parser[FunctionDeclaration] = 
     (lit("def") ~> name ~ typeParams ~ inParens(params)) ~ 
       ((lit(":") ~> typeP) ~ (lit("=") ~> expr)) >
@@ -287,9 +268,31 @@ object StatementParser{
   /** A parser for a declaration: either a value or function declaration. */
   def declaration = valDec | funDec
 
+  /** A parser for a single binder. */
+  private def binder: Parser[Binder] = (
+    name ~ (lit("<-") ~> expr) > toPair(Generator) 
+    | lit("if") ~> expr > Filter
+  )
+// IMPROVE: more general pattern matching?
+
+  /** A parser for one or more binders, in parentheses. */
+  private def binders: Parser[List[Binder]] = 
+    inParens(repSepNonEmpty(binder, ";"))
+
+  /** A parser for a single statement, or several statements in curly
+    * brackets. */
+  private def block: Parser[List[Statement]] = (
+    statement > ((s: Statement) => List(s))
+    | lit("{") ~> listOf(withExtent(statement)) <~ lit("}")
+  )
+
+  /** A parser for a "for" statement. */
+  def forLoop: Parser[ForStatement] = 
+    (lit("for") ~> binders ~ block) > toPair(ForStatement) 
+
   /** A parser for a statement. */
   def statement: Parser[Statement] = withExtent(
-    directive | declaration
+    directive | forLoop | declaration
   )
 
   /** A parser for a separator between statements, either a newline or a
@@ -297,7 +300,7 @@ object StatementParser{
     * it should be sequenced with the preceding parser using `~~`. */
   def separator: Parser[String] = toLineEnd | consumeWhite ~> lit(";")
 
-  /** A parser running `p` repeatedly. */
+  /** A parser running `p` repeatedly, at least once. */
   def listOf[A <: Statement](p: Parser[A]): Parser[List[A]] = 
     p ~~ repeat1(separator ~> p) > toPair(_::_)
 
@@ -315,17 +318,10 @@ object StatementParser{
   /** A parser for one or more statements. */
   def statements: Parser[List[Statement]] = 
     repeatUntil(statement, separator, atEnd) > (_._1)
-    // listOf(statement)
-  // statement ~~ repeat1(separator ~> statement) > toPair(_::_)
 
   /** Try to parse `input`, returning either the result or an error message. */
   def parseStatements(input: String): Either[List[Statement], String] = {
-    val stmts = parseWith(statements, input)
-    // stmts match{ 
-    //   case Left(ss) => println(ss.mkString("\n"))
-    //   case Right(msg) => //  println(msg)
-    // }
-    stmts
+    parseWith(statements, input)
   }
 
 }
