@@ -75,8 +75,7 @@ class Model(val height: Int, val width: Int){
     val env = new Environment(
       cells, calculated, height, width, typeEnv.getEvaluationTypeEnv)
     // Iterate over statements, unless an error is found.
-    def handleError(err: ErrorValue) = {view.addInfo(err.msg)}
-    // Statement.performAll(statements, env, handleError)
+    def handleError(err: ErrorValue) = view.addInfo(err.msg)
     Execution.performAll(statements, env, handleError)
     view.redisplay()
   }

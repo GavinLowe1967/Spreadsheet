@@ -65,8 +65,7 @@ object TypeChecker{
             case "==" | "!=" => 
               if(te2.isEqType(tl))
                 unify(te2, tr, tl).map{ case (te3,_) => Ok((te3,BoolType)) }
-              else FailureR(s"Expected equality type, found $tl in "+
-                exp.getExtent.asString)
+              else FailureR(s"Expected equality type, found $tl").lift(left)
             case "<=" | "<" | ">=" | ">" =>
               if(tl == IntType || tl == FloatType)
                 if(tl == tr) Ok((te2, BoolType)) else mkErr(tl, tr, right)
@@ -77,6 +76,12 @@ object TypeChecker{
               else mkErr(BoolType, tl, left)
             case "::" => 
               unify(te2, tr, ListType(tl))
+            case "to" | "until" => 
+              if(tl == IntType || tl == RowType || tl == ColumnType)
+                if(tl == tr) Ok((te2, ListType(tl))) else mkErr(tl, tr, right)
+              else
+                FailureR(s"Expected Int, Row or Column, found "+tl.asString
+                ).lift(left)
           } // end of op match
         }
       }.lift(exp)
@@ -313,7 +318,10 @@ object TypeChecker{
               FailureR(s"Expected List, found ${t1.asString}").lift(list)
           }
 
-        case Filter(test) => ???
+        case Filter(test) => 
+          typeCheckUnify(typeEnv, test, BoolType).map{ case (te, BoolType) =>
+            checkFor(te, binders.tail, stmts)
+          }
       }
     }
 

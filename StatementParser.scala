@@ -22,6 +22,7 @@ object ExpParser{
   /** Binary operators, in increasing order of precedence.  Each is tagged with
     * L or R to indicate associativity. */
   private val operators = Array(
+    (List("to", "until"), L),
     (List("||"), R), (List("&&"), R), // 2-3 in Haskell 
     (List("==", "!=", "<", "<=", ">", ">="), L), // 4
     (List("::"), R), // 5

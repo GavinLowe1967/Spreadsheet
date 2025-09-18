@@ -19,7 +19,6 @@ class TypeEnv(
   private val nameMap: NameMap, 
   private val constraints: Constraints,
   private val typeParamMap: TypeParamMap,
-  private val frame: Frame,
   private val stack: List[Frame]
 ) extends EvaluationTypeEnv(constraints, typeParamMap){
 
@@ -28,8 +27,8 @@ class TypeEnv(
     nameMap: NameMap = nameMap, 
     constraints: Constraints = constraints,
     typeParamMap: TypeParamMap = typeParamMap,
-    frame: Frame = frame, stack: List[Frame] = stack
-  ) = new TypeEnv(nameMap, constraints, typeParamMap, frame, stack)
+    stack: List[Frame] = stack
+  ) = new TypeEnv(nameMap, constraints, typeParamMap, stack)
 
   // ========= NameMap functions
 
@@ -40,51 +39,27 @@ class TypeEnv(
   def get(name: Name): Option[TypeT] = nameMap.get(name)
 
   /** The TypeEnv formed by adding the mapping name -> t. */
-  def + (name: Name, t: TypeT) : TypeEnv = {
-    val newNameMap = nameMap.get(name) match{
-      case Some(tt) => // replace name by newName
-        val newName = frame.storeOldName(name)
-        nameMap ++ List(newName -> tt, name -> t)
-      case None => nameMap + (name -> t)
-    }
-    frame.storeNewName(name)
-    make(newNameMap)
-  }
+  def + (name: Name, t: TypeT) : TypeEnv = make(nameMap + (name -> t))
 
   /** The TypeEnv formed by adding each name -> t for (name,t) in pairs. */
-  def ++ (pairs: List[(Name, TypeT)]) : TypeEnv = {
-    var updates = pairs // the updates to make to nameMap
-    for((name, t) <- pairs){
-      nameMap.get(name) match{
-        case Some(tt) => 
-          val newName = frame.storeOldName(name); updates ::= (newName -> tt)
-        case None => {}
-      }
-      frame.storeNewName(name)
-    }
-    make(nameMap ++ updates)
-  }
+  def ++ (pairs: List[(Name, TypeT)]) : TypeEnv = make(nameMap ++ pairs)
 
   /** Remove name from the type environment. */
   def - (name: Name): TypeEnv = make(nameMap - name)
 
   /** Replace tId by t in nameMap. */
-  private def subInNameMap(nameMap: NameMap, tId: TypeID, t: TypeT) : NameMap =
+  private def subInNameMap(nameMap: NameMap, tId: TypeID, t: TypeT): NameMap =
     nameMap.map{ case (n,t1) => (n, Substitution.reMap(tId, t, t1)) }
 
   // ========= Constraints functions
 
   /** The TypeEnv formed by adding  the constraint typeID -> tc. */
-  def addTypeVarConstraint(typeID: TypeID, tc: TypeConstraint) : TypeEnv = 
+  def + (typeID: TypeID, tc: TypeConstraint): TypeEnv = 
     make(constraints = constraints + (typeID -> tc))
-
-  /** The TypeEnv formed by adding  the constraint typeID -> tc. */
-  def + (typeID: TypeID, tc: TypeConstraint) : TypeEnv = 
-    addTypeVarConstraint(typeID, tc)
 
   /** The TypeEnv formed by adding the constraint typeID -> tc for each (typeID,
     * tc) in pairs. */
-  def addConstraints(pairs: List[(TypeID, TypeConstraint)]) : TypeEnv = 
+  def addConstraints(pairs: List[(TypeID, TypeConstraint)]): TypeEnv = 
     make(constraints = constraints ++ pairs)
 
   /** Is t an equality type? */
@@ -99,15 +74,12 @@ class TypeEnv(
 
   // ========= TypeParamMap functions
 
-  def addTypeParamConstraint(n: TypeParam.TypeParamName, c: TypeParamConstraint)
-      : TypeEnv =
-    make(typeParamMap = typeParamMap + (n -> c))
-
   def + (n: TypeParam.TypeParamName, c: TypeParamConstraint): TypeEnv = 
-    addTypeParamConstraint(n, c)
+    make(typeParamMap = typeParamMap + (n -> c))
+    //addTypeParamConstraint(n, c)
 
   /** Add type parameters and associated constraints. */
-  def addTypeParams(pairs: List[FunctionType.TypeParameter]) : TypeEnv = 
+  def addTypeParams(pairs: List[FunctionType.TypeParameter]): TypeEnv = 
     make(typeParamMap = typeParamMap ++ pairs)
 
   /** Is n a defined type parameter? */
@@ -128,19 +100,15 @@ class TypeEnv(
   // ========= Scoping functions
 
   /** Record that a new scope is being entered. */
-  def newScope: TypeEnv = {
-    frame.storeTParamMap(typeParamMap)
-    make(frame = new Frame, stack = frame::stack)
-  }
+  def newScope: TypeEnv = make(stack = new Frame(nameMap,typeParamMap) :: stack)
 
   /** End the current scope.  Return the type environment to use in the outer
     * scope. */
   def endScope: TypeEnv = {
     require(stack.nonEmpty)
-    val newNameMap = frame.updateAtEndOfScope(nameMap)
-    val newFrame = stack.head; val newTParamMap = newFrame.getTParamMap
-    make(nameMap = newNameMap, typeParamMap = newTParamMap, 
-      frame = newFrame, stack = stack.tail)
+    val Frame(newNameMap, newTypeParamMap) = stack.head
+    make(nameMap = newNameMap, typeParamMap = newTypeParamMap, 
+      stack = stack.tail)
   }
 
   // ========= For evaluation
@@ -166,62 +134,14 @@ object TypeEnv{
   /** A mapping from names in the script to their types. */
   private type NameMap = HashMap[Name, TypeT] // immutable 
 
-  /** A frame, corresponding to a particular nesting of scopes. */
-  private class Frame{
-    /* When a name `n` gets overwritten by a new identifier with the same name, 
-     * it gets replaced in the NameMap by `getNewName(n)`.  The old value is
-     * restored when the current scope is exited, using `getOldName`. */  
-
-    private var newNameCounter = 0
-
-    /** A new name with which n is replaced.  Guaranteed to be different from any
-      * other name being used. */
-    private def getNewName(n: Name) = {
-      val c = newNameCounter; newNameCounter += 1; n+"$"+c
-    }
-
-    /** The old name for nn.  Spec: getOldName(getNewName(n)) = n. */
-    private def getOldName(nn: Name) = nn.takeWhile(_ != '$')
-
-    /** Names that have been declared in the current scope. */
-    private var newNames = List[Name]()
-
-    /** The temporary names that are used in place of names that have been
-      * overwritten in the current scope. */
-    private var tempNames = List[Name]()
-
-    /** Record that name is being overwritten in the current scope.  Return the
-      * new name to use in place of name. */
-    def storeOldName(name: Name): Name = {
-      val newName = getNewName(name); tempNames ::= newName; newName
-    }
-
-    /** Record that name is a new name in the current scope. */
-    def storeNewName(name: Name) = newNames ::= name
-
-    /** Update nameMap corresponding to leaving the current scope.  Replace each
-      * temporary name with the corresponding new name, and remove the new
-      * names from this scope. */
-    def updateAtEndOfScope(nameMap: NameMap): NameMap = {
-      nameMap -- newNames ++ 
-      (for(name <- tempNames) yield getOldName(name) -> nameMap(name)) -- 
-      tempNames
-    }
-
-    /** The TypeParamMap from the previous scope. */
-    private var oldTParamMap : TypeParamMap = null
-
-    def storeTParamMap(tParamMap: TypeParamMap) = oldTParamMap = tParamMap
-
-    def getTParamMap = { assert(oldTParamMap != null); oldTParamMap }
-
-  }                   // End of Frame
+  /** A stack frame, storing information about the type environment for the
+    * outer scope. */
+  case class Frame(nameMap: NameMap, typeParamMap: TypeParamMap)
 
   /** An initial TypeEnv. */
   def apply() = {
     val nameMap = new NameMap ++ BuiltInFunctions.builtInTypes
-    new TypeEnv(
-      nameMap, new Constraints, new TypeParamMap, new Frame, List[Frame]())
+    new TypeEnv(nameMap, new Constraints, new TypeParamMap, List[Frame]())
   }
 
   private val builtInNames = BuiltInFunctions.builtInTypes.map(_._1)

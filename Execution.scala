@@ -171,7 +171,13 @@ object Execution{
         eval(env2, body)
       }
       env.update(name, FunctionValue(f _)); true
+
+    case ForStatement(binders, stmts) =>
+      def he(ev: ErrorValue) = handleError(s.liftError(ev)) 
+      performFor(env, he, binders, stmts); true
+      // Note: always return true here.
   } // end of perform
+
 
   /** Execute the elements of `statements` in `env`, handling errors with
     * `handleError`.  Stop if an error occurs.
@@ -181,10 +187,33 @@ object Execution{
     handleError: ErrorValue => Unit) 
       : Boolean = {
     var ok = true; val iter = statements.iterator
-    while(ok && iter.hasNext) 
-      ok = perform(env.asInstanceOf[Environment], handleError, iter.next())
+    while(ok && iter.hasNext) ok = perform(env, handleError, iter.next())
     ok
   }
+
+  /** Execute the for loop "for(binders) stmts". */
+  private def performFor(
+    env: Environment, handleError: ErrorValue => Unit,
+    binders: List[Binder], stmts: List[Statement])
+      : Unit =
+    if(binders.isEmpty) performAll(stmts, env.clone, handleError)
+    else binders.head match{
+      case Generator(name, list) => eval(env, list) match{
+        case ListValue(vs) => // bind name to v for each v in vs
+          for(v <- vs){
+            // Note: need to clone the environment here to prevent leakage.
+            val env1 = env.clone; env1.update(name, v)
+            performFor(env1, handleError, binders.tail, stmts)
+          }
+        case err: ErrorValue => handleError(err)
+      }
+
+      case Filter(test) => eval(env, test) match{
+        case BoolValue(b) =>
+          if(b) performFor(env, handleError, binders.tail, stmts)
+        case err: ErrorValue => handleError(err)
+      }
+    }
 
   // ========= Testing hooks
 

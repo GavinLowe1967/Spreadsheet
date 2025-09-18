@@ -29,6 +29,8 @@ class Environment(
   /** Add name -> v to the environment. */
   def update(name: String, v: Value) = nameMap += (name -> v)
 
+  //def + (name: String, v: Value) = update(name, v)
+
   /** Optionally get the value associated with `name` in the environment. */
   def get(name: String): Option[Value] = nameMap.get(name)
 

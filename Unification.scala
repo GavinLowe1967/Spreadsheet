@@ -40,7 +40,7 @@ object Unification{
         // This can happen by recursing via ListType(TypeVar(_)), e.g. the
         // test "equals([],[[]])" in polyListTests.
         val c1 = typeEnv(tId); val cc = c.intersection(typeEnv, c1)
-        if(cc == c1) Ok(typeEnv) else Ok(typeEnv.addTypeVarConstraint(tId, cc))
+        if(cc == c1) Ok(typeEnv) else Ok(typeEnv + (tId,cc))
       case _ => // BaseTypes, TypeParam
         if(c.satisfiedBy(typeEnv, t)) Ok(typeEnv) else fail
     }

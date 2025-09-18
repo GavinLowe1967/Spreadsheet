@@ -77,6 +77,10 @@ object ParserTest{
     assert(p("2+-3") == BinOp(IntExp(2), "+", IntExp(-3)))
     assert(p("2+3-4") == BinOp(BinOp(IntExp(2), "+", IntExp(3)), "-", IntExp(4)))
 
+    assert(p("3 to 5") == BinOp(IntExp(3), "to", IntExp(5)))
+    assert(p("threetofive") == NameExp("threetofive"))
+    assert(p("#A until #C") == BinOp(ColumnExp("A"), "until", ColumnExp("C")))
+
     assert(pe("2+3*4") == IntValue(14)); assert(pe("2*3+4") == IntValue(10))
     assert(pe("(2+3)") == IntValue(5))
     assert(pe("(2+3)*4 == 6") == BoolValue(false))
