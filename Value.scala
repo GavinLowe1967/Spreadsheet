@@ -26,6 +26,21 @@ trait Cell extends Value{
   def getType: CellType // TypeT
 }
 
+// object Cell{
+//   /** Produce a Cell corresponding to st. */
+//   def fromString(st: String): Cell = Empty() // FIXME
+// }
+
+/** Values to which the "to" and "until" operations can be applied, to create
+  * a range. */
+trait Rangeable extends Value{
+  /** The ListValue containing elements from this up to and including other. */
+  def to(other: Rangeable): ListValue
+
+  /** The ListValue containing elements from this up to but excluding including
+    * other. */
+  def until(other: Rangeable): ListValue
+}
 // ==================================================================
 
 /** An empty cell. */
@@ -42,8 +57,16 @@ case class Empty() extends Cell{
 // ==================================================================
 
 /** An Int. */
-case class IntValue(value: Int) extends Cell{
+case class IntValue(value: Int) extends Cell with Rangeable{
   def getType = IntType
+
+  def to(other: Rangeable) = other match{
+    case IntValue(v1) => ListValue((value to v1).map(IntValue).toList)
+  }
+
+  def until(other: Rangeable) = other match{
+    case IntValue(v1) => ListValue((value until v1).map(IntValue).toList)
+  }
 
   override def forError = value.toString
 }
@@ -77,21 +100,42 @@ case class BoolValue(value: Boolean) extends Cell{
 
 // ==================================================================
 
-case class RowValue(row: Int) extends Value{
+/** A Row with value `row`, 0-based. */
+case class RowValue(row: Int) extends Value with Rangeable{
+  def to(other: Rangeable) = other match{
+    case RowValue(r1) => ListValue((row to r1).map(RowValue).toList)
+  }
+
+  def until(other: Rangeable) = other match{
+    case RowValue(r1) => ListValue((row until r1).map(RowValue).toList)
+  }
+
   override def forError = s"#$row"
 }
 
 // =======================================================
 
-case class ColumnValue(column: Int) extends Value{
+/** A Column with value `column`, where 0 represents #A, etc. */
+case class ColumnValue(column: Int) extends Value with Rangeable{
+  def to(other: Rangeable) = other match{
+    case ColumnValue(c1) => ListValue((column to c1).map(ColumnValue(_)).toList)
+  }
+
+  def until(other: Rangeable) = other match{
+    case ColumnValue(c1) => 
+      ListValue((column until c1).map(ColumnValue(_)).toList)
+  }
+
   override def forError = "#"+CellSource.colName(column)
 }
 
 object ColumnValue{
   /** Convert column to the corresponding Int representation. */
-  def asInt(column: String): Int = 
+  def asInt(column: String): Int = {
+    require(column.forall{ c => 'A' <= c && c<= 'Z' })
     if(column.length == 1) column(0)-'A' 
     else (column(0)-'A'+1)*26 + column(1)-'A'
+  }
 
   /** The name for the collumn with index c. */
   def getName(c: Int): String = {

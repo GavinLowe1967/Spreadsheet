@@ -8,8 +8,8 @@ class Model(val height: Int, val width: Int){
   /** Set the view to be `v`.  */
   def setView(v: ViewT) = view = v
 
-  /** The cells holding the content.  Note: indexing is done by (row,
-    * coordinate), following the spreadsheet convention. */
+  /** The cells holding the content.  Note: indexing is done by (column, row)
+    * coordinates, following the spreadsheet convention. */
   val cells = Array.fill[Cell](width, height)(Empty())
 
   /** Record of which cells were calculated. */
@@ -22,11 +22,16 @@ class Model(val height: Int, val width: Int){
     * loadFile. */
   private var typeEnv: TypeEnv = null
 
-  private var filename: String = null
+  private var scriptName: String = null
 
-  /** Load statements from `fname`. */
-  def loadFile(fname: String) = {
-    filename = fname; reloadFile()
+  private var sheetName: String = null
+
+  /** Load statements from files `fname`.dir and fname.csv. */
+  def loadScript(scN: String, shN: String) = {
+    scriptName = scN; sheetName = shN
+    if(sheetName != null) loadSheet()
+// TODO: check sheetName exists
+    reloadScript()
   }
 
   /** Remove comments from st. */
@@ -43,10 +48,10 @@ class Model(val height: Int, val width: Int){
     sb.toString
   }
 
-  /** Reload statements from the saved filename. */
-  def reloadFile() = {
+  /** Reload script from the saved filename. */
+  def reloadScript() = {
     clearCells(); view.clearInfo()
-    val fContents = removeComments(scala.io.Source.fromFile(filename).mkString)
+    val fContents = removeComments(scala.io.Source.fromFile(scriptName).mkString)
     StatementParser.parseStatements(fContents) match{
       case Left(ss) => 
         TypeChecker(ss) match{
@@ -71,7 +76,6 @@ class Model(val height: Int, val width: Int){
 
   /** Update cells based on statements.  Called internally. */
   private def update1() = {
-    // println("New environment")
     val env = new Environment(
       cells, calculated, height, width, typeEnv.getEvaluationTypeEnv)
     // Iterate over statements, unless an error is found.
@@ -80,6 +84,35 @@ class Model(val height: Int, val width: Int){
     view.redisplay()
   }
 
+  /** Save the current sheet.  This writes just user input values. */
+  def saveSheet() = {
+// FIXME: check sheetName != null ... java.awt.FileDialog
+    import java.io._
+    val file = new File(sheetName)
+    if (!file.exists()) file.createNewFile()
+    val bw = new BufferedWriter(new FileWriter(file.getAbsoluteFile()))
+    for(r <- 0 until height)  // Write row r
+      bw.write(
+        (0 until width).map(c =>
+          if(!calculated(c)(r)) cells(c)(r).asCell else ""
+// TODO: consider above for String values when implemented.
+        ).mkString(",") + "\n"
+      )
+    bw.close()
+  }
 
+  /** Load the sheet from `sheetName`. */
+  private def loadSheet() = {
+    val file = new java.io.File(sheetName)
+    if(file.exists){
+      val lines = scala.io.Source.fromFile(file).getLines().toArray
+      for(r <- 0 until lines.length){
+        val fields = lines(r).split(Array(','))
+// FIXME: above won't work if there are commas in Strings
+        for(c <- 0 until fields.length)
+          cells(c)(r) = ExpParser.parseFileField(fields(c))
+      }
+    }
+  }
 
 }

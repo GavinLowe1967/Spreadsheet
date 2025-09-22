@@ -21,29 +21,20 @@ class Environment(
   /** Get the value in cell (c,r). */
   def getCell(c: Int, r: Int): Cell = cells(c)(r).withCellSource(CellSource(c,r))
 
+
+  def isEmpty(c: Int, r: Int): Boolean = cells(c)(r).getType == EmptyType
+
   /** Set the value of cell(c,r) to v, and record that it was calculated. */
   def setCell(c: Int, r: Int, v: Cell) = {
+    require(isEmpty(c,r) || v.isInstanceOf[ErrorValue])
     cells(c)(r) = v; calculated(c)(r) = true
   }
 
   /** Add name -> v to the environment. */
   def update(name: String, v: Value) = nameMap += (name -> v)
 
-  //def + (name: String, v: Value) = update(name, v)
-
   /** Optionally get the value associated with `name` in the environment. */
   def get(name: String): Option[Value] = nameMap.get(name)
-
-  // /** Check that v has type t. 
-  //   * Called from CellExp.eval. */
-  // def checkType(v: Cell, t: TypeT): Reply[Unit] = {
-  //   EvaluationTypeChecker.unify(typeEnv, v.getType, t).map{ te2 =>
-  //     // Note: the new type environment is stored, for use in subsequent steps
-  //     // of the current evaluation.
-  //     typeEnv = te2; Ok(()) 
-  //   }
-  // }
-// IMPROVE
 
   /** Clone this. */
   override def clone = 

@@ -14,3 +14,14 @@ trait ViewT{
   /** Clear the information box. */
   def clearInfo(): Unit
 }
+
+/** A dummy view, for use in testing. */
+object DummyView extends ViewT{
+  def redisplay() = {}
+
+  def showSelection(text: String) = {}
+
+  def addInfo(text: String) = {}
+
+  def clearInfo() = {}
+}

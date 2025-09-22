@@ -19,14 +19,6 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
   /** Indication of which cells were calculated by directives. */
   private val calculated = model.calculated
 
-  /** The strings entered by users. */
-  // private val strings = Array.fill(height, width)("")
-
-  /** The text of the currently selected cell. */
-  // private var selectedText: String = null
-
-  // def showSelectedText() = view.showSelection(selectedText)
-
   private val spreadsheetModel = model // Avoid aliasing by Table!
 
   /** An editable text field. */

@@ -80,6 +80,13 @@ object ParserTest{
     assert(p("3 to 5") == BinOp(IntExp(3), "to", IntExp(5)))
     assert(p("threetofive") == NameExp("threetofive"))
     assert(p("#A until #C") == BinOp(ColumnExp("A"), "until", ColumnExp("C")))
+    assert(pe("3 to 5") == ListValue(List(3,4,5).map(IntValue)))
+    assert(pe("3 until 5") == ListValue(List(3,4).map(IntValue)))
+    assert(pe("#3 to #5") == ListValue(List(3,4,5).map(RowValue)))
+    assert(pe("#3 until #5") == ListValue(List(3,4).map(RowValue)))
+    assert(pe("#D to #F") == ListValue(List(3,4,5).map(ColumnValue(_))))
+    assert(pe("#D until #F") == ListValue(List(3,4).map(ColumnValue(_))))
+    assertFail(pe("3 to head([])")); assertFail(pe("head([]) until 3"))
 
     assert(pe("2+3*4") == IntValue(14)); assert(pe("2*3+4") == IntValue(10))
     assert(pe("(2+3)") == IntValue(5))
@@ -97,7 +104,7 @@ object ParserTest{
     assert(pe("2+5.7") == FloatValue(7.7F))
     assert(pe("2.8+5") == FloatValue(7.8F))
     assert(pe("2.3+5.5") == FloatValue(7.8F))
-    println(pe("4.3-2"))
+    // println(pe("4.3-2"))
     assertApprox(pe("4.3-2"), FloatValue(2.3F))
     assertApprox(pe("4-2.3"), FloatValue(1.7F))
     assertApprox(pe("4*2.3"), FloatValue(9.2F))
@@ -236,7 +243,7 @@ object ParserTest{
   }
 
   def main(args: Array[String]) = {
-    printErrors = true
+    //printErrors = true
 
     expressions; testStatements;  
 

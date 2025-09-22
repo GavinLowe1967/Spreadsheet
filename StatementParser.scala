@@ -197,6 +197,9 @@ object ExpParser{
 
   /** Parse a value input into a cell.  Called by Spreadsheet. */
   def parseUserValue(st: String): Cell = parseAll(userValue, st)
+
+  def parseFileField(st: String): Cell =
+    if(st.isEmpty) Empty() else parseAll(userValue, st)
 }
 
 // =======================================================

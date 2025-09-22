@@ -20,6 +20,7 @@ object BinOpApply{
       case "&&" => mkBoolOp((_&&_)); case "||" => mkBoolOp((_||_))
       case "==" => equalOp(true); case "!=" => equalOp(false)
       case "::" => consOp
+      case "to" => toOp; case "until" => untilOp
     }    
     f(v1)(v2)
   }
@@ -90,5 +91,15 @@ object BinOpApply{
   /** Representation of the cons (::) operator. */
   private def consOp: BinOpRep = {
     case (v: Value) => { case ListValue(vs) => ListValue(v::vs) }
+  }
+
+  /** Representation of the "to" operation. */
+  private val toOp: BinOpRep = {
+    case v1: Rangeable => { case v2: Rangeable => v1 to v2 }
+  }
+
+  /** Representation of the "until" operation. */
+  private val untilOp: BinOpRep = {
+    case v1: Rangeable => { case v2: Rangeable => v1 until v2 }
   }
 }

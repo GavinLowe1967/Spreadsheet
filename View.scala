@@ -13,18 +13,24 @@ class View(model: Model) extends MainFrame with ViewT{
 
   // ========= Buttons
 
-  private val updateButton = Button("Update"){ 
-    model.update(); redisplay()
-  }
+  // private val updateButton = Button("Update"){ 
+  //   model.update(); redisplay()
+  // }
+// TODO: do we need the above?
 
   private val reloadButton = Button("Reload"){
-    model.reloadFile(); redisplay()
+    model.reloadScript(); redisplay()
     // spreadsheet.showSelectedText();
   }
 
+  private val saveButton = Button("Save"){
+    model.saveSheet()
+  }
+
   private val buttonPanel = new BoxPanel(Orientation.Horizontal){
-    contents += updateButton
+    // contents += updateButton
     contents += reloadButton
+    contents += saveButton
   }
 
   // ========= Text boxes

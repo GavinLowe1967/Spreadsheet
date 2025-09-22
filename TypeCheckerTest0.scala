@@ -103,11 +103,10 @@ object TypeCheckerTestExpr{
     assertEq(tcp("3 to 5"), ListType(IntType))
     assertEq(tcp("#3 until #5"), ListType(RowType))
     assertEq(tcp("#C until #Z"), ListType(ColumnType))
-    // "Expected Int, found Row", etc
+    // "Expected Int, found Row", etc.
     assertFail(tcp("1 until #3")); //  println(tcp("1 until #3"));
     assertFail(tcp("#3 to 7")); assertFail(tcp("#C until 5"))
-    // "Expected Int, Row or Column, found Boolean", etc
-    //println(tcp("true until false"))
+    // "Expected Int, Row or Column, found Boolean", etc.
     assertFail(tcp("true until false")); assertFail(tcp("5.0 to 7.0"))
   }
 

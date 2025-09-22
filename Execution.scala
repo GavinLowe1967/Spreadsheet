@@ -134,13 +134,20 @@ object Execution{
         case ColumnValue(c) =>
           if(0 <= c && c < env.width) eval(env, re) match{
             case RowValue(r) =>
-              if(0 <= r && r < env.height) eval(env, expr) match{
-                case ev: ErrorValue =>
-                  val ev1 = s.liftError(ev); env.setCell(c, r, ev1)
-                  handleError(ev1)
-                // Note: ErrorValue <: Cell, so the ordering is important.
-                case v1: Cell => env.setCell(c, r, v1)
-              } // end of inner match
+              if(0 <= r && r < env.height){
+                if(env.isEmpty(c,r)) eval(env, expr) match{
+                  case ev: ErrorValue =>
+                    val ev1 = s.liftError(ev); env.setCell(c, r, ev1)
+                    handleError(ev1)
+                  // Note: ErrorValue <: Cell, so the ordering is important.
+                  case v1: Cell => env.setCell(c, r, v1)
+                } // end of inner match
+                else{
+                  val err0 = EvalError("Cell written to for second time")
+                  val err = s.liftError(err0, true)
+                  env.setCell(c, r, err); handleError(err)
+                }
+              } // end of outer if
               else handleError(EvalError("Indexing error for row: found $r"))
               // end of case RowValue(r)
 

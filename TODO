@@ -9,17 +9,18 @@ Add cell type matching, e.g.
  #B3 match{ case x: Int => ...; case st: String => ...; case Blank => ... }
 This is a new syntactic category. 
 
-2. Add "to" and "until" infixes to build lists.
+2. Add "to" and "until" infixes to build lists. -- done
 - Parsing -- done
 - Type checking -- done
-- Evaluation
+- Evaluation -- done
 
-1. Don't allow overwriting of cells.
+1. Don't allow overwriting of cells. -- done
 
-3. Support saving and loading as CSV.
+3. Support saving and loading as CSV. -- done
 
 4. Automate tests that load script and sheet, and checks results. 
 
+** head([]) seems to fail in type checker.
 
 for statements - done
 

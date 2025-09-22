@@ -2,7 +2,7 @@ CP = .:/home/gavin/Scala/lib/scala-swing_2.13-3.0.0.jar
 
 DIR = spreadsheet
 
-all: $(DIR)/ParserTest.class $(DIR)/SpreadsheetApp.class $(DIR)/TypeCheckerTest.class 
+all: $(DIR)/ParserTest.class $(DIR)/SpreadsheetApp.class $(DIR)/TypeCheckerTest.class $(DIR)/TopLevelTest.class
 
 # ===== Language
 
@@ -83,6 +83,8 @@ $(DIR)/Spreadsheet.class: $(DIR)/ViewT.class $(DIR)/Model.class
 $(DIR)/View.class: $(DIR)/Model.class $(DIR)/Spreadsheet.class $(DIR)/ViewT.class
 
 # ===== Top level
+
+$(DIR)/TopLevelTest.class: $(DIR)/Model.class
 
 $(DIR)/SpreadsheetApp.class: $(DIR)/Spreadsheet.class $(DIR)/View.class
 

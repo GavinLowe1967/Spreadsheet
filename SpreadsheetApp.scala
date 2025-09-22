@@ -14,8 +14,11 @@ object SpreadsheetApp extends SimpleSwingApplication{
 
 
   override def main(args: Array[String]) = {
-    val fname = args(0)
-    model.loadFile(fname)
+    // Expect to receive the scriptname as the first argument.  
+    val scriptName = args(0); require(scriptName.endsWith(".dir"))
+    // Optionally receive sheetname as second argument.
+    val sheetName = if(args.length > 1) args(1) else null
+    model.loadScript(scriptName, sheetName)
     view.redisplay()
 
     super.main(args) // Starts GUI
