@@ -19,7 +19,7 @@ object TopLevelTest{
       s"Expected $e found ${cells(c)(r)} in #${ColumnValue.getName(c)}$r")
 
   // Column names
-  val A = 0; val B = 1; val C = 2; val D = 3
+  val A = 0; val B = 1; val C = 2; val D = 3; val E = 4
 
   /** Values expected to be provided as inputs. */
   val expectedInputs = List[(Int,Int,Value)](
@@ -28,7 +28,7 @@ object TopLevelTest{
 
   /** List of expected values, with columns and rows. */
   val expected = List[(Int,Int,Value)](
-    (A,0,FloatValue(6.0F)), (B,0,IntValue(10)),
+    (A,0,FloatValue(6.0F)), (B,0,IntValue(10)), (E,0,StringValue("Hello")),
     (B,1,IntValue(24)), (C,1,IntValue(24)),
     (B,3,IntValue(720)), (C,3,IntValue(720)),
     (A,5,BoolValue(true)), (A,6, BoolValue(true))
@@ -69,6 +69,8 @@ object TopLevelTest{
     // Check remaining cells are Empty. 
     for(c <- 0 until Width; r <- 0 until Height; if !filled(c)(r))
       assert(cells(c)(r).getType == EmptyType)
+
+    println("All tests passed!")
   }
 
 }

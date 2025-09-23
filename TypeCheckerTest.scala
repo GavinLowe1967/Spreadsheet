@@ -29,7 +29,9 @@ object TypeCheckerTest{
     if(doAll){
       println("===exptests===")
       // printErrors = true
+      // -- TypeCheckerTest0
       TypeCheckerTestExpr.expTests()
+      // -- TypeCheckerTest1
       println("===singleDecTests===")
       singleDecTests()
       println("===scriptTests===")

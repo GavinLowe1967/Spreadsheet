@@ -16,6 +16,10 @@ object TypeCheckerTest1{
     assertFail(tcpss("val x = 2+false"))
     assertFail(tcpss("val y = 3 + 4.5"))
     tcpss("val y = 3 + 4") match{ case Ok(te) => assert(te("y") == IntType) }
+    // The following succeeds, but gives an evaluation error.
+    tcpss("val x = head([])") match{ case Ok(te) => te("x") match{
+      case TypeVar(t) => assert(te(t) == AnyTypeConstraint)
+    } }
 
     //Function declarations
     val Ok(te1) = tcpss("def f(x: Int): Int = x+1", te)
@@ -169,6 +173,8 @@ object TypeCheckerTest1{
     tcpss("val y = #B4:Float + #B5:Float; #A3 = y") match{ case Ok(te) =>
       assert(te("y") == FloatType)
     }
+    // The following fails because head([]) doesn't evaluate to a cell type.
+    assertFail(tcpss("#A1 = head([])"))
   }
 
  // ==================================================================

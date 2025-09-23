@@ -99,6 +99,10 @@ object TypeCheckerTestExpr{
     assertFail(tcp("[1, 2.3]")) 
     assertFail(tcp("[1.6, 2]")) 
 
+    tcp("head([])") match{ case Ok((te, TypeVar(t))) => 
+      assert(te(t) == AnyTypeConstraint) } 
+
+
     // "to" and "until"
     assertEq(tcp("3 to 5"), ListType(IntType))
     assertEq(tcp("#3 until #5"), ListType(RowType))

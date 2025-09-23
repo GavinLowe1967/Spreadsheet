@@ -3,27 +3,24 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Language
 ========
 
-- Look again at Unification.scala.  Are all branches tested.
 
-Add cell type matching, e.g. 
+1. Consider typechecking of head([]) -- done
+
+2. Improve CSV format for quotes and commas.  Think about Strings generally. 
+- Store as literal - done
+- To enter in script, surround with quote marks, and allow escapes -- done
+- To enter in cells, same with encolosing quotes; or arbitrary not matching 
+  number or boolean. -- done, but think about latter option.
+- To display in cells, as literal, but use different colour. -- done, add to test
+- In CSV, enclosed by quote marks, with " replaced by "" (that's the standard).
+
+- Look again at Unification.scala.  Are all branches tested?
+
+- Add cell type matching, e.g. 
  #B3 match{ case x: Int => ...; case st: String => ...; case Blank => ... }
 This is a new syntactic category. 
 
-2. Add "to" and "until" infixes to build lists. -- done
-- Parsing -- done
-- Type checking -- done
-- Evaluation -- done
-
-1. Don't allow overwriting of cells. -- done
-
-3. Support saving and loading as CSV. -- done
-
-4. Automate tests that load script and sheet, and checks results. 
-
-** head([]) seems to fail in type checker.
-
-for statements - done
-
+- Add "if" directives.
 
 Outstanding:
 -----------
@@ -128,6 +125,20 @@ Tidy up TypeCheckerTest
 
 ===================================== DONE
 
+2. Add "to" and "until" infixes to build lists. -- done
+- Parsing -- done
+- Type checking -- done
+- Evaluation -- done
+
+1. Don't allow overwriting of cells. -- done
+
+3. Support saving and loading as CSV. -- mostly done, except treatment of
+Strings.
+
+4. Automate tests that load script and sheet, and checks results. -- done, but
+could be extended.
+
+for statements - done
 
 Typechecking of "def applyToThreeF[A <: Num](f: A => A): A = f(3.0)" not
 working.  Gets to call of unify(..., FloatType, TypeParam("A")), but that

@@ -16,6 +16,7 @@ def double(y: Float): Float = 2.0*y
 #B0 = sum([1,2,3,4])
 #C0 = 1/0 // Evaluation error
 #D0 = 3; #D0 = 4.0 // Evaluation error
+val hello = "Hello"; #E0 = hello
 
 // factorials, rows 1-4
 for(r <- #1 to #4; c <- [#B, #C]; if r != #2){

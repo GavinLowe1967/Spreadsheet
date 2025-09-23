@@ -28,7 +28,7 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
 
   /** An uneditable text field containing `text`.  
     * @param calc was the value in this field calculated by a directive? */
-  class MyLabel(text: String, calc: Boolean, hasFocus: Boolean)
+  class MyLabel(text: String, calc: Boolean, colour: Color, hasFocus: Boolean)
       extends Label(text){
     // editable = false
     background = 
@@ -37,7 +37,7 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
         if(hasFocus) CalculatedWithFocusBackground else CalculatedBackground
       }
       else UserDataBackground
-    peer.setOpaque(true)
+    foreground = colour; peer.setOpaque(true)
     xAlignment = Alignment.Right
   }
 
@@ -51,10 +51,14 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
     override def rendererComponent(
       isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int)
         : Component = {
-      val text = cells(column)(row).asCell; val calc = calculated(column)(row)
+      val cell = cells(column)(row); val text = cell.asCell
+      val calc = calculated(column)(row)
+      val colour = cell match{ 
+        case _ : StringValue => StringTextColour; case _ => DefaultTextColour
+      }
       if(hasFocus) view.showSelection(text)
       if(hasFocus && !calc) new MyTextField(text)
-      else new MyLabel(text, calc, hasFocus)
+      else new MyLabel(text, calc, colour, hasFocus)
 
       // if(hasFocus) {
       //   val text = cells(column)(row).asCell
@@ -111,4 +115,6 @@ object Spreadsheet{
   val UserDataBackground = new Color(200,250,255) // light blue
   val CalculatedBackground = new Color(220,255,220) // light green
   val CalculatedWithFocusBackground = new Color(180,255,180)
+  val StringTextColour = new Color(100,100,100)
+  val DefaultTextColour = new Color(0,0,0)
 }

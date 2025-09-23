@@ -44,6 +44,10 @@ abstract class Parser[+A] extends (Input => ParseResult[A]){
     }
   }
 
+  /** The sequential composition of this and `q` (with no intervening space),
+    * returning the result of `q`. */
+  def ~~> [B](q: => Parser[B]): Parser[B] = this ~~ q > { case (x,y) => y }
+
   /** The sequential composition of this and `q`, possibly with white space
     * between. */
   def ~ [B](q: => Parser[B]): Parser[(A,B)] =
@@ -101,7 +105,7 @@ object Parser{
   def lit(st: String) = new Parser[String]{
     def apply(in: Input) =
       if(in.startsWith(st)) Success(st, in.advance(st.length))
-      else Failure(s"expected \"$st\"", in)
+      else Failure(s"Expected \"$st\"", in)
   }
 
   /** A parser that consumes the first character of its input if that character
@@ -116,6 +120,8 @@ object Parser{
       }
     }
   }
+
+  def char: Parser[Char] = spot(_ => true)
 
 
   // ===== Operations on parsers

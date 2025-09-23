@@ -21,18 +21,12 @@ object TypeChecker{
   private def newName() : Name = { nextNameIx += 1; "%"+nextNameIx } 
 
   /** Make a FailureR: expected `eType` found `fType` in `exp`. */
-  private def mkErr(eType: TypeT, fType: TypeT, exp: Exp) = {
-    val source = exp.getExtent.asString
-    FailureR(s"Expected ${eType.asString}, found "+fType.asString+
-      s"\n\tin $source")
-  }
+  private def mkErr(eType: TypeT, fType: TypeT, exp: Exp) = 
+    FailureR(s"Expected ${eType.asString}, found "+fType.asString).lift(exp,true)
 
   /** Make a FailureR: "Expected Int or Float...". */
-  private def mkIntFloatErr(fType: TypeT, exp: Exp) = {
-    val source = exp.getExtent.asString
-    FailureR(s"Expected Int or Float, found "+fType.asString+
-      s"\n\tin $source")
-  }
+  private def mkIntFloatErr(fType: TypeT, exp: Exp) = 
+    FailureR(s"Expected Int or Float, found "+fType.asString).lift(exp,true)
 
   /** Contents of the result of a successful call to typeCheck. */
   type TypeCheckRes = (TypeEnv,TypeT)
@@ -65,7 +59,7 @@ object TypeChecker{
             case "==" | "!=" => 
               if(te2.isEqType(tl))
                 unify(te2, tr, tl).map{ case (te3,_) => Ok((te3,BoolType)) }
-              else FailureR(s"Expected equality type, found $tl").lift(left)
+              else FailureR(s"Expected equality type, found $tl").lift(left,true)
             case "<=" | "<" | ">=" | ">" =>
               if(tl == IntType || tl == FloatType)
                 if(tl == tr) Ok((te2, BoolType)) else mkErr(tl, tr, right)
@@ -81,7 +75,7 @@ object TypeChecker{
                 if(tl == tr) Ok((te2, ListType(tl))) else mkErr(tl, tr, right)
               else
                 FailureR(s"Expected Int, Row or Column, found "+tl.asString
-                ).lift(left)
+                ).lift(left,true)
           } // end of op match
         }
       }.lift(exp)
@@ -219,7 +213,7 @@ object TypeChecker{
       case Directive(column, row, expr) =>
         typeCheck(typeEnv, expr).map{ case (te1, t) => 
           if(! TypeT.CellTypes.contains(t))
-            FailureR(s"Expected cell type, found ${t.asString} in ${expr}")
+            FailureR(s"Expected cell type, found ${t.asString}").lift(expr,true)
           else
             typeCheckUnify(te1, row, RowType).map{ case(te2, RowType) =>
               typeCheckUnify(te2, column, ColumnType).map{

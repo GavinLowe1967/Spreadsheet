@@ -79,6 +79,7 @@ class Input(
   def getCurrentLine: (Int, Int, String) = {
     // Find j s.t. le[0..j) <= pos < le[j..)
     // Inv le[0..i) <= pos < le[j..)
+    require(pos < lineEnds.last, s"$pos ${lineEnds.last}")
     var i = 0; var j = lineEnds.length
     while(i < j){
       val m = (i+j)/2 // i <= m < j
@@ -100,7 +101,9 @@ object Input{
       if(st(i) == '\n') le += i 
       i += 1
     }
-    le += len; le.toArray
+    // Note: we add a sentinel beyond the end of the input, to ensure all
+    // positions in the file are strictly before the last line end.
+    le += len+1; le.toArray
   }
 }
 

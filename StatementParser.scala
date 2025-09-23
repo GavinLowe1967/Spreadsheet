@@ -92,6 +92,7 @@ object ExpParser{
     * parentheses: atomic terms and parenthesised expressions. */
   private def factor: Parser[Exp] = withExtent( 
     number
+    | string
     // Name or application of named function 
     | name1 ~~ params > {
       case (n, None) => n
@@ -138,6 +139,25 @@ object ExpParser{
     posNum
   }
 
+  /** Parse an escaped character. */
+  private def escapedChar: Parser[Char] = 
+    spot(c => List('\\', '\"', '\'', 't', 'n', 'b', 'r', 'f').contains(c)
+    ) > {
+      case '\\' => '\\'; case '\"' => '\"'; case '\'' => '\''
+      case 't' => '\t' ; case 'n' => '\n'; case 'b' => '\b';
+      case 'r' => '\r'; case 'f' => '\f'
+    }
+
+  /** Parse a literal string, after the opening quotation mark. */ 
+  private def string1: Parser[String] = (
+    lit("\"") ~~> success("")
+    | lit("\\") ~~> ( escapedChar ~~ string1 > { toPair(_+:_) } )
+    | spot(c => c != '\\' && c != '\n') ~~ string1 > { toPair(_+:_) }
+  )
+
+  /** A parser for a string literal in the script. */
+  private def string: Parser[StringExp] = lit("\"") ~~> string1 > StringExp
+
   import StatementParser.{listOf,declaration,separator}
 
   /** A parser for a block expression. */
@@ -154,12 +174,6 @@ object ExpParser{
     (lit("[") ~> repSep(expr, ",")) <~ lit("]") > ListLiteral
   )
 
-  /** Parse a subexpression folling a "#" that represents either a row or
-    * column.. */
-  // private def hashTerm: Parser[Exp] = (
-  //   int > RowExp | colName > ColumnExp
-  // )
-
   /** A parser for a CellType. */
   def cellType: Parser[CellType] = (
     lit("Int") > { _ => IntType }
@@ -175,10 +189,6 @@ object ExpParser{
       { case (c,r) => (ColumnExp(c), RowExp(r)) }
   )
 
-  /** A parser for a reference to a cell with the expected type. */
-  // private def typedCell: Parser[CellExp] = 
-  //   (cell <~ lit(":")) ~ cellType > { case ((ce,re), t) => CellExp(ce, re, t) }
-
   /** Parse the name of a column: a non-empty sequence of uppercase letters.*/
   private def colName: Parser[String] = 
     spot(_.isUpper) ~~ repeat1(spot(_.isUpper)) > 
@@ -189,11 +199,14 @@ object ExpParser{
     (number <~ atEnd) > { 
       case IntExp(n) => IntValue(n); case FloatExp(x) => FloatValue(x) 
     }
-    | all > { 
-      case "true" => BoolValue(true); case "false" => BoolValue(false)
-      case v => StringValue(v)
-    }
+    | lit("true") ~> atEnd ~> success(BoolValue(true))
+    | lit("false") ~> atEnd ~> success(BoolValue(false))
+      // Note: we allow trailing spaces above
+    | lit("\"") ~~> string1 > StringValue 
+    | all > StringValue // Note: don't consider escapes here.  TODO: think about this 
   )
+
+
 
   /** Parse a value input into a cell.  Called by Spreadsheet. */
   def parseUserValue(st: String): Cell = parseAll(userValue, st)

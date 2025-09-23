@@ -26,6 +26,9 @@ object ParserTest{
   def p(st: String): Exp = {
     val e = parseAll(expr, st); checkExtent(e.getExtent, st); e
   }
+
+  def assertParseFail(st: String) = 
+    assert(parseWith(expr, st).isInstanceOf[Right[_,_]])
   
   // Parse and print the extent
   def pp(st: String) = {
@@ -72,6 +75,19 @@ object ParserTest{
     assert(pe("123.45") == FloatValue(123.45F))
     assert(pe("-456.12") == FloatValue(-456.12F))
     assert(p("foo") == NameExp("foo")); assert(p(" ( foo ) ") == NameExp("foo"))
+    // Strings
+    /* Parse `st` surrounded by quotation marks. */
+    def pw(st: String) = p("\""+st+"\"")
+    assert(pw("Hello") == StringExp("Hello"))
+    val eQ = "\\\"" // String representing an escaped quotation, `\"'
+    // The following should fail
+    assertParseFail("\"Hello") // expected """
+    // println(parseWith(expr, "\"Hello"))
+    assert(pw(s"${eQ}Hello${eQ}") == StringExp("\"Hello\""))  // \"Hello\"
+    assert(pw("Hello\\nWorld") == StringExp("Hello\nWorld"))
+    //println(parseWith(expr, "\"\\Z\""))
+    assertParseFail("\"\\Z\"") // Unexpected character Z
+    assertParseFail("\"Hello\n\"") // Expected """
 
     assert(p("2+3") == BinOp(IntExp(2), "+", IntExp(3)))
     assert(p("2+-3") == BinOp(IntExp(2), "+", IntExp(-3)))
