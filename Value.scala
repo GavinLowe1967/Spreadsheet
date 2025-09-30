@@ -9,15 +9,18 @@ trait Value{
   def withSource(s: Source) = { source = s; this }
 
   /** How this is presented in an error message. */
-  def forError: String = toString
+  def forError: String // = toString
 }
 
 // ==================================================================
 
 /** Values that can be in a cell. */
 trait Cell extends Value{
-  /** How this is presented in a cell. */
+  /** How this is presented in a cell.  Overwritten for StrngValues. */
   def asCell: String = forError
+
+  /** How this is represented in a CSV file. */
+  def asCSV: String = forError
 
   /** Add cs to this as the source, and return this. */
   def withCellSource(cs: CellSource) = { source = cs; this }
@@ -50,6 +53,8 @@ case class Empty() extends Cell{
   override def asCell = ""
 
   override def forError = "empty cell"
+
+  override def asCSV = ""
 }
 // Note: we can't use a case object here, because different Emptys will have
 // different sources.
@@ -88,6 +93,11 @@ case class StringValue(value: String) extends Cell{
   override def forError = s"\"$value\""
 
   override def asCell = value
+
+  override def asCSV = 
+    "\""+value.flatMap{ _ match{
+      case '\"' => "\"\""; case c => s"$c"
+    } }+"\""
 }
 
 // ==================================================================
@@ -176,10 +186,13 @@ case class FunctionValue(f: PartialFunction[List[Value], Value]) extends Value{
   def apply(args: List[Value]): Value = {
     assert(f.isDefinedAt(args)); f(args)
   }
+
+  def forError = toString // IMPROVE?
 }
 
 // ===========================================================  Errors
 
+/** The union of error cases. */
 trait ErrorValue extends Cell{
   def getType = null // IMPROVE? 
 
@@ -195,4 +208,12 @@ case class TypeError(msg: String) extends ErrorValue{
   * 0. */
 case class EvalError(msg: String) extends ErrorValue{
   override def forError = s"Evaluation error: $msg"
+}
+
+/** A parsing error for a value entered in a cell. */
+case class ParseError(msg: String) extends ErrorValue{
+  override def forError = s"Parse error: $msg"
+
+  override def asCSV = "" // Don't write this to CSV
+// TODO think about this
 }

@@ -94,7 +94,7 @@ class Model(val height: Int, val width: Int){
     for(r <- 0 until height)  // Write row r
       bw.write(
         (0 until width).map(c =>
-          if(!calculated(c)(r)) cells(c)(r).asCell else ""
+          if(!calculated(c)(r)) cells(c)(r).asCSV else ""
 // TODO: consider above for String values when implemented.
         ).mkString(",") + "\n"
       )
@@ -107,10 +107,8 @@ class Model(val height: Int, val width: Int){
     if(file.exists){
       val lines = scala.io.Source.fromFile(file).getLines().toArray
       for(r <- 0 until lines.length){
-        val fields = lines(r).split(Array(','))
-// FIXME: above won't work if there are commas in Strings
-        for(c <- 0 until fields.length)
-          cells(c)(r) = ExpParser.parseFileField(fields(c))
+        val fields = CSVParser(lines(r)).toArray 
+        for(c <- 0 until fields.length) cells(c)(r) = fields(c)
       }
     }
   }

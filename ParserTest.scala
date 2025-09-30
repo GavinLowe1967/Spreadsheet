@@ -60,21 +60,18 @@ object ParserTest{
 
   /** Assert that v1 and v2 are FloatValues that are approximately equal.  Pesky
     * rounding errors! */   
-  def assertApprox(v1: Value, v2: Value) = (v1,v2) match{
+  private def assertApprox(v1: Value, v2: Value) = (v1,v2) match{
     case (FloatValue(f1), FloatValue(f2)) => 
       assert(Math.abs(f1-f2) < 0.00001, s"$f1 $f2")
   }
 
-  // Note: various tests have been commented out, because the expressions
-  // would fail typechecking, and with the current definition of evaluation
-  // would throw an exception.
-
-  /** Tests of expression parsers. */
-  def expressions = {
+  /** Test of expression parsers on atomic values. */
+  private def expressions1() = {
     assert(p("123") == IntExp(123)); assert(p(" ( -123 ) ") == IntExp(-123))
     assert(pe("123.45") == FloatValue(123.45F))
     assert(pe("-456.12") == FloatValue(-456.12F))
     assert(p("foo") == NameExp("foo")); assert(p(" ( foo ) ") == NameExp("foo"))
+
     // Strings
     /* Parse `st` surrounded by quotation marks. */
     def pw(st: String) = p("\""+st+"\"")
@@ -89,6 +86,18 @@ object ParserTest{
     assertParseFail("\"\\Z\"") // Unexpected character Z
     assertParseFail("\"Hello\n\"") // Expected """
 
+    // ===== Rows, columns, cells
+    assert(pe("#23") == RowValue(23))
+    assert(pe("#Z") == ColumnValue(25)); assert(pe("#AB") == ColumnValue(27))
+    // Is the following what we want?? 
+    assert(expr("#Aa").asInstanceOf[Success[Exp]].result == ColumnExp("A"))
+    assert(expr("#a").isInstanceOf[Failure])
+    assert(p("Cell(#HW, #23): Int") == 
+      CellExp(ColumnExp("HW"), RowExp(23), IntType))
+  }
+
+  /** Tests of parsing expressions using a binary operator. */
+  private def expressions2() = {
     assert(p("2+3") == BinOp(IntExp(2), "+", IntExp(3)))
     assert(p("2+-3") == BinOp(IntExp(2), "+", IntExp(-3)))
     assert(p("2+3-4") == BinOp(BinOp(IntExp(2), "+", IntExp(3)), "-", IntExp(4)))
@@ -117,40 +126,34 @@ object ParserTest{
     assertFail(pe("2+5/0"))
 
     // Tests mixing floats and ints
-    assert(pe("2+5.7") == FloatValue(7.7F))
-    assert(pe("2.8+5") == FloatValue(7.8F))
-    assert(pe("2.3+5.5") == FloatValue(7.8F))
-    // println(pe("4.3-2"))
-    assertApprox(pe("4.3-2"), FloatValue(2.3F))
-    assertApprox(pe("4-2.3"), FloatValue(1.7F))
-    assertApprox(pe("4*2.3"), FloatValue(9.2F))
-    assertApprox(pe("4.3*2"), FloatValue(8.6F))
-    assertApprox(pe("4.3/2"), FloatValue(2.15F))
-    assertApprox(pe("7.0/2"), FloatValue(3.5F))
+    // assert(pe("2+5.7") == FloatValue(7.7F))
+    // assert(pe("2.8+5") == FloatValue(7.8F))
+    // assert(pe("2.3+5.5") == FloatValue(7.8F))
+    // assertApprox(pe("4.3-2"), FloatValue(2.3F))
+    // assertApprox(pe("4-2.3"), FloatValue(1.7F))
+    // assertApprox(pe("4*2.3"), FloatValue(9.2F))
+    // assertApprox(pe("4.3*2"), FloatValue(8.6F))
+    // assertApprox(pe("4.3/2"), FloatValue(2.15F))
+    // assertApprox(pe("7.0/2"), FloatValue(3.5F))
 
-    assert(pe("2 <= 4.5") == BoolValue(true))
-    assert(pe("2.5 >= 4") == BoolValue(false))
+    // assert(pe("2 <= 4.5") == BoolValue(true))
+    // assert(pe("2.5 >= 4") == BoolValue(false))
+    // assert(pe("2 == 4.5") == BoolValue(false))
+    // assert(pe("4.4 == 4") == BoolValue(false))
+    // assert(pe("4.0 == 4") == BoolValue(true))
+    // assert(pe("4.0 != 4") == BoolValue(false))
+  }
 
-    assert(pe("2 == 4.5") == BoolValue(false))
-    assert(pe("4.4 == 4") == BoolValue(false))
-    assert(pe("4.0 == 4") == BoolValue(true))
-    assert(pe("4.0 != 4") == BoolValue(false))
+  // Note: various tests have been commented out, because the expressions
+  // would fail typechecking, and with the current definition of evaluation
+  // would throw an exception.
 
-    // ===== Rows, columns, cells
-    assert(pe("#23") == RowValue(23))
-    assert(pe("#Z") == ColumnValue(25)); assert(pe("#AB") == ColumnValue(27))
-    // Is the following what we want?? 
-    assert(expr("#Aa").asInstanceOf[Success[Exp]].result == ColumnExp("A"))
-    assert(expr("#a").isInstanceOf[Failure])
-    assert(p("Cell(#HW, #23): Int") == 
-      CellExp(ColumnExp("HW"), RowExp(23), IntType))
-
+  /** Tests of parsing blocks, if statements, and list expressions. */
+  private def expressions3() = {
     // ===== Blocks
     assert(pe("{ val x = 3; x+1 }") == IntValue(4))
     assert(pe("{ val x = 3\n x+1 }") == IntValue(4))
     assert(pe("{ 4*5 }") == IntValue(20))
-
-    // ===== Functions
 
     // ===== if statements
     assert(pe("if(2+2 == 4) 3 else 4+2") == IntValue(3))
@@ -165,36 +168,37 @@ object ParserTest{
     assert(pe("[4/4, 2+0, 6-3]") == 
       ListValue(IntValue(1), IntValue(2), IntValue(3)))
     assertFail(pe("[4/2, 3/0]"))
-
     assert(pe("head([1,2,3])") == IntValue(1))
     assertFail(pe("head([])"))
-
     assert(pe("tail([1,2,3])") == ListValue(IntValue(2), IntValue(3)))
     assertFail(pe("tail([])"))
-
     assert(pe("[1,2] == [3,4]") == BoolValue(false))
     assert(pe("1 :: 2 :: []") == ListValue(IntValue(1), IntValue(2)))
     assert(pe("[1,2] != tail([3,1,2])") == BoolValue(false))
     assert(pe("[1,2] == tail([3,1,2])") == BoolValue(true))
     assert(pe("tail([1]) == []") == BoolValue(true))
     assert(pe("[] == tail([1])") == BoolValue(true))
-    // assert(pe("tail([1]) == tail([false])").isInstanceOf[TypeError])
+  }
 
+  /** Tests of expression parsers. */
+  def expressions() = {
+    expressions1() // atomic values
+    expressions2() // binary operators
+    expressions3() // blocks, if statements, list expressions.
     println("Expression tests done")
   }
+
+  // ============================================
 
   import StatementParser.{statement,statements}
 
   /** Parse st as a statement, and check its extent. */
-  def ps(st: String): Statement = {
+  private def ps(st: String): Statement = {
     val res = parseAll(statement, st); checkExtent(res.getExtent, st); res
   }
-  /** Parse st as a directive, and check its extent. */
-  // def pd(st: String): Statement = {
-  //   val res = parseAll(directive, st); checkExtent(res.getExtent, st); res
-  // }
 
-  def testStatements = {
+  /** Tests on value declarartions and cell writes. */
+  private def statements1() = {
     val vDec = "val three = 1+2"
     val vDecR = ValueDeclaration("three", BinOp(IntExp(1), "+", IntExp(2)))
     assert(ps(vDec) == vDecR)
@@ -217,7 +221,10 @@ object ParserTest{
       List(dir1R, dir2R, vDecR) )
     assert(parseAll(statements, s"$vDec;$dir1;$dir2") ==
       List(vDecR, dir1R, dir2R))
+  }
 
+  /** Tests on function declarations. */
+  private def functions() = {
     assert(ps("def square(n: Int): Int = n*n") ==
       FunctionDeclaration("square", List(), List(("n",IntType)), IntType,
         BinOp(NameExp("n"), "*", NameExp("n")) ))
@@ -237,32 +244,6 @@ object ParserTest{
       FunctionDeclaration("id", List(("A",AnyTypeConstraint)),
         List(("x",TypeParam("A"))), TypeParam("A"), NameExp("x")) )
 
-    // "for" statements
-    assert(ps("for (if true){ #A1 = 3 }") == ForStatement(
-      List(Filter(BoolExp(true))), 
-      List(Directive(ColumnExp("A"), RowExp(1), IntExp(3))) ))
-    assert(ps("for (x<-xs)  #A1 = x ") == ForStatement(
-      List(Generator("x", NameExp("xs"))),
-      List(Directive(ColumnExp("A"), RowExp(1), NameExp("x"))) ))
-    //println(ps("for (r <- [#A,#B]; if r != #C) Cell(r,3) = 5"))
-    ps("for (r <- [#A,#B]; if r != #C){ val f = 5; Cell(r,3) = f }") match{ 
-      case ForStatement(bs,sts) =>
-        assert(bs.length == 2 && sts.length == 2)
-        assert(bs(0) ==
-          Generator("r", ListLiteral(List(ColumnExp("A"), ColumnExp("B")))) )
-        assert(bs(1) == Filter(BinOp(NameExp("r"), "!=", ColumnExp("C"))))
-        assert(sts(0) == ValueDeclaration("f", IntExp(5)))
-        assert(sts(1) == Directive(NameExp("r"), IntExp(3), NameExp("f")))
-    }
-
-    println("Statement tests done")
-  }
-
-  def main(args: Array[String]) = {
-    //printErrors = true
-
-    expressions; testStatements;  
-
     assert(ps("def apply[A, B](f: A => B, x: A) : B = f(x)") == 
       FunctionDeclaration("apply", 
         List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint) ),
@@ -279,13 +260,70 @@ object ParserTest{
 
     assertFail(pe("{ def f(x: Int): Int = 5/x; f(0) }"))
     assertFail(pe("{ def f(x: Int): Int = 5/x; f(1/0) }"))
-
-    println("Done")
   }
 
+  /** Tests on "for" statements. */
+  private def forStatements() = {
+    assert(ps("for (if true){ #A1 = 3 }") == ForStatement(
+      List(Filter(BoolExp(true))), 
+      List(Directive(ColumnExp("A"), RowExp(1), IntExp(3))) ))
+    assert(ps("for (x<-xs)  #A1 = x ") == ForStatement(
+      List(Generator("x", NameExp("xs"))),
+      List(Directive(ColumnExp("A"), RowExp(1), NameExp("x"))) ))
+    //println(ps("for (r <- [#A,#B]; if r != #C) Cell(r,3) = 5"))
+    ps("for (r <- [#A,#B]; if r != #C){ val f = 5; Cell(r,3) = f }") match{ 
+      case ForStatement(bs,sts) =>
+        assert(bs.length == 2 && sts.length == 2)
+        assert(bs(0) ==
+          Generator("r", ListLiteral(List(ColumnExp("A"), ColumnExp("B")))) )
+        assert(bs(1) == Filter(BinOp(NameExp("r"), "!=", ColumnExp("C"))))
+        assert(sts(0) == ValueDeclaration("f", IntExp(5)))
+        assert(sts(1) == Directive(NameExp("r"), IntExp(3), NameExp("f")))
+    }
+  }
 
+  /** Tests on parsing of statements. */
+  def testStatements() = {
+    statements1() // value declarations and cell writes.
+    functions() // function declarations.
+    forStatements() // for statements 
+    println("Statement tests done")
+  }
 
+  /** Tests on parsing CSV. */
+  def csv() = {
+    assert(CSVParser("3,4.5,,false,\"Hello, world\",\"\"\"Hello\",") == 
+      List(
+        IntValue(3), FloatValue(4.5F), Empty(), BoolValue(false),
+        StringValue("Hello, world"), StringValue("\"Hello"), Empty()
+      )
+    )
+    assert(CSVParser.line("3 three").isInstanceOf[Failure])
+    println("CSV tests done")
+  }
 
+  /** Tests on parsing cells. */
+  def cellTests() = {
+    assert(CellParser("3") == IntValue(3))
+    assert(CellParser("-3.5") == FloatValue(-3.5F))
+    assert(CellParser("true") == BoolValue(true))
+    assert(CellParser("false") == BoolValue(false))
+    assert(CellParser("Hello, world") == StringValue("Hello, world"))
+    assert(CellParser("\"Hello\"") == StringValue("Hello"))
+    assert(CellParser("\"3\"") == StringValue("3"))
 
+    assert(CellParser("\\Z") == StringValue("\\Z"))
+    assert(CellParser("\"Hello").isInstanceOf[ParseError])
+    assert(CellParser("\"\\Z\"").isInstanceOf[ParseError]) // .isInstanceOf[Failure])
 
+    println("Cell tests done")
+  }
+
+// TODO: tests on cells.  Consider badly formed strings. e.g. " \Z "
+
+  def main(args: Array[String]) = {
+    //printErrors = true
+    expressions(); testStatements();  csv(); cellTests()
+    println("Done")
+  }
 }

@@ -113,7 +113,7 @@ case class CellExp(column: Exp, row: Exp, theType: CellType) extends Exp{
   //   * which case the corresponding TypeEnv will have a constraint upon it. */
   // var theType: TypeT = null
 
-  def setType(t: TypeT) = ??? //  theType = t
+  //def setType(t: TypeT) = ??? //  theType = t
 
   override def toString = s"Cell($column, $row): $theType"
 }
@@ -131,6 +131,15 @@ case class ListLiteral(elems: List[Exp]) extends Exp
 
 /** The application of a function represented by `f` to `args`. */
 case class FunctionApp(f: Exp, args: List[Exp]) extends Exp
+
+/** A pattern of the form "case <name>: <theType> => body". */
+case class MatchBranch(name: NameExp.Name, theType: CellType, body: Exp)
+
+/** An expression of the form "Cell(<column>, <row>) match{ <branches> }". */
+case class CellMatchExp(column: Exp, row: Exp, branches: List[MatchBranch]) 
+    extends Exp
+
+
 
 // ========= Note =========
 // Statement.scala contains another subclass, BlockExp.

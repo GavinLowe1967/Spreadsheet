@@ -48,6 +48,10 @@ abstract class Parser[+A] extends (Input => ParseResult[A]){
     * returning the result of `q`. */
   def ~~> [B](q: => Parser[B]): Parser[B] = this ~~ q > { case (x,y) => y }
 
+  /** The sequential composition of this and `q` (with no intervening space),
+    * returning the result of this. */
+  def <~~ [B](q: => Parser[B]): Parser[A] = this ~~ q > { case (x,y) => x }
+
   /** The sequential composition of this and `q`, possibly with white space
     * between. */
   def ~ [B](q: => Parser[B]): Parser[(A,B)] =

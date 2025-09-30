@@ -4,23 +4,21 @@ Language
 ========
 
 
-1. Consider typechecking of head([]) -- done
 
-2. Improve CSV format for quotes and commas.  Think about Strings generally. 
-- Store as literal - done
-- To enter in script, surround with quote marks, and allow escapes -- done
-- To enter in cells, same with encolosing quotes; or arbitrary not matching 
-  number or boolean. -- done, but think about latter option.
-- To display in cells, as literal, but use different colour. -- done, add to test
-- In CSV, enclosed by quote marks, with " replaced by "" (that's the standard).
+4. Improve treatment of Strings:
+- Allow non-quoted strings in CSV
+- Think about escaped characters in non-quoted string cells.
+
+
+3. Add double-write error, giving all places where written.
 
 - Look again at Unification.scala.  Are all branches tested?
 
-- Add cell type matching, e.g. 
+1. Add cell type matching, e.g. 
  #B3 match{ case x: Int => ...; case st: String => ...; case Blank => ... }
 This is a new syntactic category. 
 
-- Add "if" directives.
+2. Add "if" directives.
 
 Outstanding:
 -----------
@@ -124,6 +122,17 @@ Tidy up TypeCheckerTest
 
 
 ===================================== DONE
+
+Consider typechecking of head([]) -- done
+
+Strings:
+- Store as literal - done
+- To enter in script, surround with quote marks, and allow escapes -- done
+- To enter in cells, same with enclosing quotes; or arbitrary not matching 
+  number or boolean. -- done, but think about latter option.
+- To display in cells, as literal, but use different colour. -- done, add to test
+- In CSV, enclosed by quote marks, with " replaced by "" (that's the standard).
+- Refactor StatementParser.scala: more number  and string1 into base class? -- done
 
 2. Add "to" and "until" infixes to build lists. -- done
 - Parsing -- done

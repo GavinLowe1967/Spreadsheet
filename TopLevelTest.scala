@@ -23,7 +23,8 @@ object TopLevelTest{
 
   /** Values expected to be provided as inputs. */
   val expectedInputs = List[(Int,Int,Value)](
-    (A,1,IntValue(4)), (A,2,IntValue(5)), (A,3,IntValue(6))
+    (A,1,IntValue(4)), (A,2,IntValue(5)), (A,3,IntValue(6)), 
+    (A,7,StringValue("3")), (A,8,StringValue("\"Hello\""))
   )
 
   /** List of expected values, with columns and rows. */

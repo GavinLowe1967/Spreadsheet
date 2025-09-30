@@ -90,7 +90,7 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
             val vString = v.toString
             cells(column)(row) = 
               if(vString.isEmpty) Empty() 
-              else ExpParser.parseUserValue(vString)
+              else CellParser(vString)
             spreadsheetModel.update()
           }
         }
@@ -111,10 +111,11 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
 // =======================================================
 
 object Spreadsheet{
-  val EmptyBackground = new Color(250,250,250)
-  val UserDataBackground = new Color(200,250,255) // light blue
-  val CalculatedBackground = new Color(220,255,220) // light green
-  val CalculatedWithFocusBackground = new Color(180,255,180)
-  val StringTextColour = new Color(100,100,100)
-  val DefaultTextColour = new Color(0,0,0)
+  val EmptyBackground = new Color(250,250,250) // off-white
+  val UserDataBackground = new Color(0.0F, 0.0F, 1.0F, 0.18F) // light blue
+  val CalculatedBackground = new Color(0.0F, 1.0F, 0.0F, 0.18F) // light green
+  val CalculatedWithFocusBackground = 
+    new Color(0.0F, 1.0F, 0.0F, 0.4F) // darker green
+  val StringTextColour = new Color(100,100,100) // grey
+  val DefaultTextColour = new Color(0,0,0) // black
 }
