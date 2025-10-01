@@ -17,6 +17,12 @@ Language
 1. Add cell type matching, e.g. 
  #B3 match{ case x: Int => ...; case st: String => ...; case Blank => ... }
 This is a new syntactic category. 
+- Define syntax -- done
+TODO: add extent
+- Parsing -- done
+- Typechecking -- done
+- Evaluation
+- Add more patterns, e.g. "_" or "_: Int" as wildcard?
 
 2. Add "if" directives.
 

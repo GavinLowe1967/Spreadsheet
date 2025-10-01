@@ -58,7 +58,9 @@ $(DIR)/TypeChecker.class: $(DIR)/Unification.class $(DIR)/Substitution.class	\
 
 $(DIR)/Parser.class: $(DIR)/Input.class
 
-$(DIR)/StatementParser.class: $(DIR)/Parser.class $(DIR)/Statement.class	\
+$(DIR)/Parser0.class: $(DIR)/Parser.class $(DIR)/Exp.class
+
+$(DIR)/StatementParser.class: $(DIR)/Parser0.class $(DIR)/Statement.class	\
   $(DIR)/TypeConstraint.class $(DIR)/FunctionValue.class
 
 $(DIR)/ParserTest.class: $(DIR)/StatementParser.class $(DIR)/Execution.class

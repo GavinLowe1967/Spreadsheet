@@ -14,14 +14,6 @@ object Execution{
           e.liftError(TypeError(
             s"Expected $theType, found $vType in cell #$cName$r"))
         }
-        // assert(cell.theType != null); val v = env.getCell(c, r)
-        // // Note: the call to env.getCell sets the extent. 
-        // env.checkType(v, cell.theType) match{
-        //   case Ok(()) => v;
-        //   case FailureR(msg) =>
-        //     val cName = ColumnValue.getName(c)
-        //     e.liftError(TypeError(msg+s" in cell (#$cName,#$r)" ))
-        // }
       }
       val cc = eval(env, column)
       e.lift({ case ColumnValue(c) =>

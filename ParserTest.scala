@@ -94,6 +94,22 @@ object ParserTest{
     assert(expr("#a").isInstanceOf[Failure])
     assert(p("Cell(#HW, #23): Int") == 
       CellExp(ColumnExp("HW"), RowExp(23), IntType))
+
+    val matchExp = 
+      "#A3 match{ case n: Int => 3; case x:Float=>4;\n "+
+        "case st: String => 5; case b : Boolean => 6;\n "+
+        "case Empty => 7 }"
+    //println(p(matchExp))
+    assert(p(matchExp) == CellMatchExp(
+      ColumnExp("A"), RowExp(3), List(
+        MatchBranch(TypedPattern("n", IntType), IntExp(3)),
+        MatchBranch(TypedPattern("x", FloatType), IntExp(4)),
+        MatchBranch(TypedPattern("st", StringType), IntExp(5)),
+        MatchBranch(TypedPattern("b", BoolType), IntExp(6)),
+        MatchBranch(EmptyPattern, IntExp(7))
+      ) 
+    ) )
+
   }
 
   /** Tests of parsing expressions using a binary operator. */

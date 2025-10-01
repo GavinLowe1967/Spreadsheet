@@ -132,10 +132,22 @@ case class ListLiteral(elems: List[Exp]) extends Exp
 /** The application of a function represented by `f` to `args`. */
 case class FunctionApp(f: Exp, args: List[Exp]) extends Exp
 
-/** A pattern of the form "case <name>: <theType> => body". */
-case class MatchBranch(name: NameExp.Name, theType: CellType, body: Exp)
+// =======================================================
+// cell match expressions
 
-/** An expression of the form "Cell(<column>, <row>) match{ <branches> }". */
+/** A pattern in a cell match expression. */
+trait Pattern
+
+/** A pattern "name: theType". */
+case class TypedPattern(name: NameExp.Name, theType: CellType) extends Pattern
+
+/** A pattern "Empty". */
+case object EmptyPattern extends Pattern
+
+/** A pattern of the form "case pattern => body". */
+case class MatchBranch(pattern: Pattern, body: Exp) extends HasExtent
+
+/** An expression of the form "Cell(column, row) match{ branches }". */
 case class CellMatchExp(column: Exp, row: Exp, branches: List[MatchBranch]) 
     extends Exp
 

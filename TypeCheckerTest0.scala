@@ -102,7 +102,6 @@ object TypeCheckerTestExpr{
     tcp("head([])") match{ case Ok((te, TypeVar(t))) => 
       assert(te(t) == AnyTypeConstraint) } 
 
-
     // "to" and "until"
     assertEq(tcp("3 to 5"), ListType(IntType))
     assertEq(tcp("#3 until #5"), ListType(RowType))
@@ -112,6 +111,31 @@ object TypeCheckerTestExpr{
     assertFail(tcp("#3 to 7")); assertFail(tcp("#C until 5"))
     // "Expected Int, Row or Column, found Boolean", etc.
     assertFail(tcp("true until false")); assertFail(tcp("5.0 to 7.0"))
+  }
+
+  /**Tests on cell match expressions. */
+  private def cellMatchTests() = {
+    // printErrors = true
+    val e1 = "#A1 match { case n: Int => n+1; case x: Float => 3; "+
+      "case b: Boolean => if(b) 3 else 4; case Empty => 5 }"
+    assertEq(tcp(e1), IntType)
+    assertEq(tcp("Cell(#A, #1) match{ case n: Int => [3]; case Empty => [] }"), 
+      ListType(IntType))
+    assertEq(tcp("#A1 match{ case n: Int => []; case Empty => [3] }"), 
+      ListType(IntType))
+    tcp("#A1 match{ case Empty => [] }") match{ 
+      case Ok((te, ListType(TypeVar(t)))) =>
+        assert(te(t) == AnyTypeConstraint) }
+
+    // "Expected Row, found Int"
+    assertFail(tcp("Cell(#A,3) match{ case Empty => 4 }"))
+    // "Expected Int or Float, found Boolean"
+    assertFail(tcp("#A1 match{ case b: Boolean => b+1 }"))
+    // "Empty list of branches for cell match expression"
+    assertFail(tcp("#A1 match { }"))
+    // "Expected Int, found String"
+    assertFail(tcp("#A1 match{ case n: Int => n+1; case Empty => \"empty\" }"))
+    // printErrors = false
   }
 
   /** Tests on basic expressions. */
@@ -138,6 +162,8 @@ object TypeCheckerTestExpr{
     assertFail(tcp("if(2) 4 else 5"))
     assertFail(tcp("if(2 == 3) 4 else false"))
     assertFail(tcp("if(2 == 3) 2+true else 4"))
+
+    cellMatchTests()
 
     // Lists
     listTests()

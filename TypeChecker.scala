@@ -79,11 +79,18 @@ object TypeChecker{
           } // end of op match
         }
       }.lift(exp)
-    // Cell expressions
+    // Typed cell expressions
     case ce @ CellExp(column, row, theType) =>
       typeCheckUnify(typeEnv, column, ColumnType).map{ case (te1, ColumnType) => 
         typeCheckUnify(te1, row, RowType).map{ case (te2, RowType) =>
           Ok(te2, theType)
+        }
+      }.lift(exp)
+    // Cell match expressions
+    case CellMatchExp(column, row, branches) => 
+      typeCheckUnify(typeEnv, column, ColumnType).map{ case (te1, ColumnType) => 
+        typeCheckUnify(te1, row, RowType).map{ case (te2, RowType) =>
+          typeCheckBranches(te2, branches)
         }
       }.lift(exp)
     // Conditionals
@@ -114,7 +121,8 @@ object TypeChecker{
           else{
             // Create fresh type variables to replace tParams in domain and range
             val (te2, domain1, range1) = 
-              subTypeParams(te1, tParams, domain, range)
+              subTypeParams(te1.newScope, tParams, domain, range)
+              // subTypeParams(te1, tParams, domain, range)
             // Generate a new name, and bind it to range1 in the environment;
             // then unify the types of args with domain1, so the new name gets
             // updated to the appropriate return type.
@@ -122,7 +130,8 @@ object TypeChecker{
             // println(s"tParams = $tParams; domain1 = $domain1")
             val name = newName(); val te3 = te2 + (name, range1)
             typeCheckListUnify(te3, args, domain1).map{ te4 => 
-              Ok((te4-name, te4(name)))  // extract type of name
+              Ok((te4.endScope, te4(name)))  // extract type of name
+              // Ok((te4-name, te4(name)))  // extract type of name
             }
           } 
         case _ => FailureR("Non-function applied as function")
@@ -157,23 +166,50 @@ object TypeChecker{
   // Note: this traverses the list from left to right, which makes for more
   // natural error messages when type checking fails.
 
-  /** Type check each element of es, unifying its type with the corresponding
-    * element of ts. 
-    * Pre: es.length == ts.length.
-    * Used to check actual parameters es of a function application against the
-    * expected types ts.  */
-  private 
-  def typeCheckListUnify(typeEnv: TypeEnv, es: List[Exp], ts: List[TypeT])
-      : Reply[TypeEnv] = 
-    if(es.isEmpty){ assert(ts.isEmpty); Ok(typeEnv) }
-    else typeCheck(typeEnv, es.head).map{ case (te1,t1) => 
-      // If t1 is a FunctionType, instantiate type parameters
-      val (te2,t2) = mkInstance(te1,t1) 
-      // Unify with formal parameter type in ts, and recurse.
-      unify(te2, t2, ts.head).lift(es.head, true).map{ case (te3, _) => 
-        typeCheckListUnify(te3, es.tail, ts.tail)
+  // ===== Cell match expressions
+
+// TODO: check for repeated patterns
+  /** Typecheck the branches of a cell match expression. */
+  private def typeCheckBranches(typeEnv: TypeEnv, branches: List[MatchBranch])
+      : Reply[TypeCheckRes] =
+    if(branches.isEmpty) 
+      FailureR("Empty list of branches for cell match expression")
+    else{
+      val b1 = branches.head
+      typeCheckBranch(typeEnv, b1).mapOrLift(b1, { case(te1,t1) =>
+        typeCheckUnifyBranches(te1, branches.tail, t1)        
+      })
+    }
+
+  /** Typecheck a single branch of a cell match expression. */
+  private def typeCheckBranch(typeEnv: TypeEnv, branch: MatchBranch)
+      : Reply[TypeCheckRes] = {
+    val MatchBranch(pat, body) = branch
+    pat match{
+      case TypedPattern(name, t) => 
+        // Check body in new scope, with name -> t
+        typeCheck(typeEnv.newScope+(name,t), body).map{ case (te1, t1) =>
+          Ok((te1.endScope, t1))
+        }
+      case EmptyPattern => typeCheck(typeEnv, body)
+    }
+  }
+
+  /** Typecheck branches, and unify with t. */
+  private def typeCheckUnifyBranches(
+    typeEnv: TypeEnv, branches: List[MatchBranch], t: TypeT)
+      : Reply[TypeCheckRes] =
+    if(branches.isEmpty) Ok((typeEnv, t))
+    else{
+      val b1 = branches.head
+      typeCheckBranch(typeEnv, b1).map{ case (te1,t1) =>
+        unify(te1, t1, t).mapOrLift(b1.body, { case (te2, t2) =>
+          typeCheckUnifyBranches(te2, branches.tail, t2)
+        }).lift(b1)
       }
     }
+
+  // ===== Type checking function applications
 
   /** Replace each type parameter in tParams with a fresh type variable,
     * substituting in domain and range, and adding suitable constraints to
@@ -192,6 +228,24 @@ object TypeChecker{
     val (domain1,range1) = Substitution.remapBy(updates, domain, range)
     (typeEnv.addConstraints(constraints), domain1, range1)
   }
+
+  /** Type check each element of es, unifying its type with the corresponding
+    * element of ts. 
+    * Pre: es.length == ts.length.
+    * Used to check actual parameters es of a function application against the
+    * expected types ts.  */
+  private 
+  def typeCheckListUnify(typeEnv: TypeEnv, es: List[Exp], ts: List[TypeT])
+      : Reply[TypeEnv] = 
+    if(es.isEmpty){ assert(ts.isEmpty); Ok(typeEnv) }
+    else typeCheck(typeEnv, es.head).map{ case (te1,t1) => 
+      // If t1 is a FunctionType, instantiate type parameters
+      val (te2,t2) = mkInstance(te1,t1) 
+      // Unify with formal parameter type in ts, and recurse.
+      unify(te2, t2, ts.head).lift(es.head, true).map{ case (te3, _) => 
+        typeCheckListUnify(te3, es.tail, ts.tail)
+      }
+    }
 
   /** If t is a FunctionType, make an instance of it, replacing each type
     * parameter by a fresh type variable, and add suitable constraints to

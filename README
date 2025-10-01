@@ -1,0 +1,88 @@
+Types
+=====
+
+TypeT.scala: basic types
+
+TypeConstraint.scala: constraints on types (includes TypeEnv0).
+
+FunctionType.scala: types of functions.
+
+EvaluationTypeEnv.scala: a type environment used during evaluation.
+
+Values
+======
+
+Input.scala: input to the parser, either from the script or a cell.
+
+Value.scala: values of expressions.
+
+BuiltInFunctions.scala: definitions of the built-in functions.
+
+Syntax
+======
+
+HasExtent.scala: trait giving the string from which the result of a parse is
+produced.
+
+Exp.scala: abstract syntax for expressions in the script.
+
+Statement.scala: abstract syntax for statements in the script.
+
+Parsing
+=======
+
+Parser.scala: general parsing combinators.
+
+Parser0.scala: base class of various parsers; parsers for cells and CSV files.
+
+StatementParser.scala: parsing of statements and expressions (ExpParser). 
+
+ParserTest.scala: test of parser.
+
+Type checking
+=============
+
+Reply.scala: the result of a typecheck (Ok or Failure).  
+
+Substitution.scala: substitution in types.
+
+TypeEnv.scala: a type environment for type checking.
+
+Unification.scala: unification of types. 
+
+TypeChecker.scala: the type checker.
+
+TypeCheckerTest*.scala: tests.
+
+Evaluation and execution
+========================
+
+EvaluationTypeChecker.scala -- why do we need this???  Checking a cell has
+expected type, I think.
+
+Environment.scala: environment used during evaluation. 
+
+BinOpApply.scala: evaluation of binary operators. 
+
+Execution.scala: main execution engine. 
+
+TopLevelTest.scala: tests on the Model.
+
+Model
+=====
+
+ViewT.scala: The View, as seen by the model.
+
+Model.scala: the model. 
+
+View
+====
+
+Spreadsheet.scala: the panel displaying the spreadsheet.
+
+View.scala: the view.
+
+Top level
+=========
+
+SpreadsheetApp.scala: the main application.
