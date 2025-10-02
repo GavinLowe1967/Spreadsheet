@@ -52,7 +52,16 @@ object TypeChecker{
       typeCheck(typeEnv, left).map{ case (te1, tl) =>
         typeCheck(te1, right).map{ case (te2, tr) =>
           op match{
-            case "+" | "-" | "*" | "/" =>
+            case "+" | "-" =>
+              if(tl == IntType || tl == FloatType){
+                if(tl == tr) Ok((te2, tl)) else mkErr(tl, tr, right)
+              }
+              else if(tl == RowType || tl == ColumnType){
+                if(tr == IntType) Ok((te2, tl)) else mkErr(IntType, tr, right)
+              }
+              else FailureR(s"Expected Int, Float, Row or Column, found "+
+                tl.asString).lift(exp,true)
+            case "*" | "/" =>
               if(tl == IntType || tl == FloatType)
                 if(tl == tr) Ok((te2, tl)) else mkErr(tl, tr, right)
               else mkIntFloatErr(tl, left)

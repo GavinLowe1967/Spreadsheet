@@ -163,6 +163,11 @@ object TypeCheckerTestExpr{
     assertFail(tcp("if(2 == 3) 4 else false"))
     assertFail(tcp("if(2 == 3) 2+true else 4"))
 
+    // Row and column arithmetic
+    assertEq(tcp("#A+3"), ColumnType); assertEq(tcp("#F - 3"), ColumnType)
+    assertEq(tcp("#5+3"), RowType); assertEq(tcp("#5 - 3"), RowType)
+
+    // Cell match expressions
     cellMatchTests()
 
     // Lists

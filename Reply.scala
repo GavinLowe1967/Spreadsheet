@@ -36,6 +36,6 @@ case class FailureR(err: String) extends Reply[Nothing]{
   def lift(exp: HasExtent, lineNum: Boolean = false) = {
     val extent = exp.getExtent
     val lnString = if(lineNum) " at line "+extent.lineNumber else ""
-    FailureR(err+lnString+"\n\tin "+extent.asString)
+    FailureR(err+lnString+"\nin "+extent.asString)
   }
 }

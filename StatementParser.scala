@@ -92,15 +92,15 @@ object ExpParser extends Parser0{
     * parentheses: atomic terms and parenthesised expressions. */
   private def factor: Parser[Exp] = withExtent( 
     number
-    | string > StringExp
+    | string > StringExp 
+      // Cell expressions, with a type
+    | cellExp
     // Name or application of named function 
     | name1 ~~ params > {
       case (n, None) => n
       case (n, Some(ps)) => FunctionApp(n, ps)
     }
-    // TODO: allow more general definitions of the function. 
-      // Cell expressions, with a type
-    | cellExp
+    // TODO: allow more general definitions of the function.
       // Row and column literals
     | lit("#") ~~ (int > RowExp | colName > ColumnExp) > { _._2 }  
     | inParens(expr) // Note: sets extent to include parentheses.

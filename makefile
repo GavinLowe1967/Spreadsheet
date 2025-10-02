@@ -37,6 +37,7 @@ $(DIR)/EvaluationTypeChecker.class: $(DIR)/EvaluationTypeEnv.class	\
 
 $(DIR)/Environment.class:  $(DIR)/BuiltInFunctions.class $(DIR)/EvaluationTypeEnv.class
 # $(DIR)/EvaluationTypeChecker.class	\
+
 $(DIR)/BinOpApply.class: $(DIR)/Value.class
 
 $(DIR)/Execution.class: $(DIR)/BinOpApply.class $(DIR)/Statement.class $(DIR)/Environment.class

@@ -37,8 +37,8 @@ class Model(val height: Int, val width: Int){
   /** Remove comments from st. */
   private def removeComments(st: String): String = {
     var i = 0; val sb = new StringBuilder; val len = st.length
-    while(i+1 < len){
-      if(st(i) == '/' && st(i+1) == '/'){
+    while(i < len){
+      if(st(i) == '/' && i+1 < len && st(i+1) == '/'){
         // advance to end of line
         i += 2; while(i < len && st(i) != '\n') i += 1
       }
@@ -52,6 +52,7 @@ class Model(val height: Int, val width: Int){
   def reloadScript() = {
     clearCells(); view.clearInfo()
     val fContents = removeComments(scala.io.Source.fromFile(scriptName).mkString)
+    // println(fContents+"END")
     StatementParser.parseStatements(fContents) match{
       case Left(ss) => 
         TypeChecker(ss) match{

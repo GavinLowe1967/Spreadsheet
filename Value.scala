@@ -34,9 +34,17 @@ trait Cell extends Value{
 //   def fromString(st: String): Cell = Empty() // FIXME
 // }
 
+
+/** Types with + and - operators. */
+trait Arith extends Value{
+  def +(other: Arith): Value
+
+  def -(other: Arith): Value
+}
+
 /** Values to which the "to" and "until" operations can be applied, to create
   * a range. */
-trait Rangeable extends Value{
+trait Rangeable extends Arith{
   /** The ListValue containing elements from this up to and including other. */
   def to(other: Rangeable): ListValue
 
@@ -44,6 +52,7 @@ trait Rangeable extends Value{
     * other. */
   def until(other: Rangeable): ListValue
 }
+
 // ==================================================================
 
 /** An empty cell. */
@@ -73,13 +82,29 @@ case class IntValue(value: Int) extends Cell with Rangeable{
     case IntValue(v1) => ListValue((value until v1).map(IntValue).toList)
   }
 
+  def +(other: Arith) = other match{
+    case IntValue(v1) => IntValue(value+v1)
+  }
+
+  def -(other: Arith) = other match{
+    case IntValue(v1) => IntValue(value-v1)
+  }
+
   override def forError = value.toString
 }
 
 // ==================================================================
 
 /** A Float. */
-case class FloatValue(value: Float) extends Cell{
+case class FloatValue(value: Float) extends Cell with Arith{
+  def +(other: Arith) = other match{
+    case FloatValue(v1) => FloatValue(value+v1)
+  }
+
+  def -(other: Arith) = other match{
+    case FloatValue(v1) => FloatValue(value-v1)
+  }
+
   def getType = FloatType
 
   override def forError = value.toString
@@ -112,6 +137,17 @@ case class BoolValue(value: Boolean) extends Cell{
 
 /** A Row with value `row`, 0-based. */
 case class RowValue(row: Int) extends Value with Rangeable{
+  require(row >= 0)
+
+  def +(other: Arith) = other match{
+    case IntValue(v) => RowValue(row+v)
+  }
+
+  def -(other: Arith) = other match{
+    case IntValue(v) => 
+      if(row >= v) RowValue(row-v) else EvalError("Negative row: "+(row-v))
+  }
+
   def to(other: Rangeable) = other match{
     case RowValue(r1) => ListValue((row to r1).map(RowValue).toList)
   }
@@ -127,6 +163,18 @@ case class RowValue(row: Int) extends Value with Rangeable{
 
 /** A Column with value `column`, where 0 represents #A, etc. */
 case class ColumnValue(column: Int) extends Value with Rangeable{
+  require(column >= 0)
+
+  def +(other: Arith) = other match{
+    case IntValue(v) => ColumnValue(column+v)
+  }
+
+  def -(other: Arith) = other match{
+    case IntValue(v) => 
+      if(column >= v) ColumnValue(column-v) 
+      else EvalError("Negative column: "+(column-v))
+  }
+
   def to(other: Rangeable) = other match{
     case ColumnValue(c1) => ListValue((column to c1).map(ColumnValue(_)).toList)
   }

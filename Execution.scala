@@ -3,25 +3,65 @@ package spreadsheet
 /** Object responsible for evaluating expressions and executing statements. */
 object Execution{
   /** Evaluate `e` in environment `env`, adding the extent from `e`. */
-  private def eval(env: Environment, e: Exp): Value = e match{
-    case  cell @ CellExp(column: Exp, row: Exp, theType: CellType) =>
-      /* Read from cell(c,r). */
-      def doRead(c: Int, r: Int): Value = {
-        val v = env.getCell(c,r); val vType = v.getType
-        if(vType == theType) v 
-        else{
-          val cName = ColumnValue.getName(c)
-          e.liftError(TypeError(
-            s"Expected $theType, found $vType in cell #$cName$r"))
-        }
-      }
-      val cc = eval(env, column)
-      e.lift({ case ColumnValue(c) =>
-        val rr = eval(env, row); e.lift({ case RowValue(r) => doRead(c,r) }, rr)
-      }, cc)
+  private def eval(env: Environment, e: Exp): Value = {
+    /* If column and row evaluate to a ColumnValue and RowValue, respectively,
+     * apply comp to the cell's contents and the cell's name; otherwise give
+     * an error. */
+    def applyToCell(column: Exp, row: Exp, comp: (Cell,String) => Value)
+        : Value = 
+      e.lift( { 
+        case ColumnValue(c) =>
+          e.lift( { 
+            case RowValue(r) =>
+              comp(env.getCell(c,r), "#"+ColumnValue.getName(c)+r) },
+            eval(env, row)
+          ) },
+        eval(env, column)
+      ) // end of applyToCell
 
-    case _ => eval0(env, e).withSource(e.getExtent)
+    e match{
+      case CellExp(column, row, theType) =>
+        // Check v has type theType
+        def checkType(v: Cell, name: String) = {
+          val vType = v.getType
+          if(vType == theType) v
+          else e.liftError(TypeError(
+            s"Expected ${theType.asString}, found ${vType.asString} in cell "+
+              name), true)
+        }
+        applyToCell(column, row, checkType)
+
+      case CellMatchExp(column, row, branches) =>
+        // Try to match v against branches
+        def doMatch(v: Cell, name: String) = {
+          val vType = v.getType
+          val bs = branches.filter(_.pattern.matches(vType))
+          if(bs.isEmpty) 
+            e.liftError(TypeError(
+              s"Cannot match ${vType.asString} in cell $name"), true)
+          else eval(env, bs.head.body)
+        }
+        applyToCell(column, row, doMatch)
+
+      case _ => eval0(env, e).withSource(e.getExtent)
+    }
   }
+
+        /* Read from cell(c,r). */
+        // def doRead(c: Int, r: Int): Value = {
+        //   val v = env.getCell(c,r); val vType = v.getType
+        //   if(vType == theType) v
+        //   else{
+        //     val cName = ColumnValue.getName(c)
+        //     e.liftError(TypeError(
+        //       s"Expected $theType, found $vType in cell #$cName$r"))
+        //   }
+        // }
+
+        // val cc = eval(env, column)
+        // e.lift({ case ColumnValue(c) =>
+        //   val rr = eval(env, row); e.lift({ case RowValue(r) => doRead(c,r) }, rr)
+        // }, cc)
 
   /** Evaluate `e` in environment `env`. */
   private def eval0(env: Environment, e: Exp): Value = e match{

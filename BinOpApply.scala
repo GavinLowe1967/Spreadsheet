@@ -7,7 +7,7 @@ object BinOpApply{
   def apply(v1: Value, op: String, v2: => Value): Value = {
     // The representation of op as a BinOpRep
     val f : BinOpRep = op match{
-      case "+" => mkBinNumOp((_+_), (_+_)); case "-" => mkBinNumOp((_-_), (_-_))
+      case "+" => mkArith((_+_)); case "-" => mkArith((_-_))
       case "*" => mkBinNumOp((_*_), (_*_))
       case "/" => 
         def err = EvalError("Division by zero")
@@ -57,6 +57,11 @@ object BinOpApply{
       : BinOpRep =
     mkBinOp({case (n1,n2) => IntValue(fi(n1,n2))},
             {case (x1,x2) => FloatValue(ff(x1,x2))} )
+
+  /** Functions over Arith. */
+  private def mkArith(f: (Arith,Arith) => Value): BinOpRep = {
+    case a1: Arith => { case a2: Arith => f(a1,a2) }
+  }
 
   /** (Num, Num) -> Bool functions. */
   private def mkBinRelOp(fi: (Int,Int) => Boolean, ff: (Float,Float) => Boolean)

@@ -136,13 +136,23 @@ case class FunctionApp(f: Exp, args: List[Exp]) extends Exp
 // cell match expressions
 
 /** A pattern in a cell match expression. */
-trait Pattern
+trait Pattern{
+  //val theType: CellType
+
+  /** Does this pattern match type t? */
+  def matches(t: TypeT): Boolean // = t == theType
+}
 
 /** A pattern "name: theType". */
-case class TypedPattern(name: NameExp.Name, theType: CellType) extends Pattern
+case class TypedPattern(name: NameExp.Name, theType: CellType) extends Pattern{
+  def matches(t: TypeT) = t == theType
+}
 
 /** A pattern "Empty". */
-case object EmptyPattern extends Pattern
+case object EmptyPattern extends Pattern{
+  //val theType = EmptyType
+  def matches(t: TypeT) = t == EmptyType
+}
 
 /** A pattern of the form "case pattern => body". */
 case class MatchBranch(pattern: Pattern, body: Exp) extends HasExtent

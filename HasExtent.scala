@@ -10,7 +10,7 @@ trait HasExtent{
   /** Set the Extent representing the string from which this was produced. */
   def setExtent(e: Extent) = extent = e  
 
-  protected val tab = "     "
+  protected val tab = "" // Amount of space at start of lines.
 
   /** Lift an error value, by tagging on the extent of this. 
     * @param lineNum if true, include line number. */

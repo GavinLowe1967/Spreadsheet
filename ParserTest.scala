@@ -110,6 +110,12 @@ object ParserTest{
       ) 
     ) )
 
+    assert(p("Cell(c, r) match{ case Empty => 7; case n: Int => 0 }") == 
+      CellMatchExp(
+        NameExp("c"), NameExp("r"), 
+        List(MatchBranch(EmptyPattern,IntExp(7)), 
+          MatchBranch(TypedPattern("n",IntType),IntExp(0)) 
+        )))
   }
 
   /** Tests of parsing expressions using a binary operator. */
@@ -128,6 +134,10 @@ object ParserTest{
     assert(pe("#D to #F") == ListValue(List(3,4,5).map(ColumnValue(_))))
     assert(pe("#D until #F") == ListValue(List(3,4).map(ColumnValue(_))))
     assertFail(pe("3 to head([])")); assertFail(pe("head([]) until 3"))
+    // Row and column arithmetic
+    assert(pe("#D+3") == pe("#G")); assert(pe("#4+2") == pe("#6"))
+    assert(pe("#D-2") == pe("#B")); assert(pe("#7-3") == pe("#4"))
+    assertFail(pe("#B-4")); assertFail(pe("#3-4"))
 
     assert(pe("2+3*4") == IntValue(14)); assert(pe("2*3+4") == IntValue(10))
     assert(pe("(2+3)") == IntValue(5))
@@ -178,6 +188,7 @@ object ParserTest{
     assert(pe("7 * (if(2+2 == 4) 3 else 4+2)") == IntValue(21))
     assert(pe("7 * (if(2+2 == 5) 3 else 4+2)") == IntValue(42))
     assertFail(pe("if(2/0 == 4) 3 else 4"))
+    //println(p("if(r == end) 0 else Cell(c,r):Int + sum(c, r+1, end)"))
 
     // ===== List expressions
     assert(pe("[]") == ListValue(/*AnyType,*/ List()))
@@ -237,6 +248,13 @@ object ParserTest{
       List(dir1R, dir2R, vDecR) )
     assert(parseAll(statements, s"$vDec;$dir1;$dir2") ==
       List(vDecR, dir1R, dir2R))
+
+    println(parseAll(statements, "Cell(In, firstEmpty+1) = \"Total:\"\n"+
+      "Cell(Out, firstEmpty+1) = sumCol(Out, #0, firstEmpty)"))
+    println(StatementParser.parseStatements( "Cell(In, firstEmpty+1) = \"Total:\"\n"+
+      "Cell(Out, firstEmpty+1) = sumCol(Out, #0, firstEmpty)"))
+
+    //println(ps("Cell(#A, firstEmpty+1) = sumCol(#B,#0)"))
   }
 
   /** Tests on function declarations. */

@@ -211,6 +211,7 @@ object Parser{
   def toLineEnd: Parser[String] = {
     // def ws(c: Char) = c == ' ' || c == '\t'
     // repeat1(spot(ws)) ~~ lit("\n") > { case (cs,st) => cs.mkString+st } 
+    // consumeWhiteNoNL ~~ (lit("\n") | atEnd ~> success("\n")) > toPair(_+_)
     consumeWhiteNoNL ~~ lit("\n") > toPair(_+_)
   }
 
@@ -246,12 +247,13 @@ object Parser{
     lit("-") ~~ posInt > { case(_,n) => -n} | posInt
   }
 
-  /** A parser for a Scala-style identifier: (a-z)(a-zA-Z0-9)*. */
+  /** A parser for a Scala-style identifier: (a-zA-Z)(a-zA-Z0-9)*. */
   val name: Parser[String] =
-    spot(_.isLower) ~~ repeat1(spot(_.isLetterOrDigit)) > 
+    spot(_.isLetter) ~~ repeat1(spot(_.isLetterOrDigit)) > 
       toPair(_::_) > (_.mkString) 
 
-  /** A parser for a name starting with an upper-case letter. */
+  /** A parser for a name starting with an upper-case letter.  Used for names of
+    * types. */
   val upperName: Parser[String] = 
     spot(_.isUpper) ~~ repeat1(spot(_.isLetterOrDigit)) > 
       toPair(_::_) > (_.mkString) 
