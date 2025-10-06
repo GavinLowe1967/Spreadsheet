@@ -2,8 +2,13 @@ package spreadsheet
 
 /** The result of a Parser. */
 sealed abstract class ParseResult[+T]{
-  /** Get the result associated with this.  Pre: this is a `Success`. */
-  def get: T
+  /** Can this be backtracked? */
+  var backtrackable = true
+
+  /** This parser with backtrackable information conjuncted with that of p. */
+  def withBacktrack[A](p: ParseResult[A]) = { 
+    backtrackable &&= p.backtrackable; this 
+  }
 }
 
 /** A successful parse, giving `result`, with remaining input `rest`. */
@@ -14,11 +19,22 @@ case class Success[T](result: T, rest: Input) extends ParseResult[T]{
 
 /** An unsuccessful parse on `in`, explained by `msg`. */ 
 case class Failure(msg: String, in: Input) extends ParseResult[Nothing]{
-  def get = ???
+  import Failure.lastFailure
+
+  lastFailure match{
+    case Some(f) => if(in >= f.in) lastFailure = Some(this)
+    case None => lastFailure = Some(this)
+  }
 
   /** Whichever of this and other that is most advanced. */
   def max(other: Failure) = 
     if(this.in >= other.in) this else other
+}
+
+object Failure{
+  var lastFailure: Option[Failure] = None
+
+  def reset = lastFailure = None
 }
 
 // ==================================================================
@@ -36,11 +52,26 @@ abstract class Parser[+A] extends (Input => ParseResult[A]){
   /** The sequential composition of this and `q` (with no intervening space). */
   def ~~ [B](q: => Parser[B]) = new Parser[(A,B)]{
     def apply(in: Input) = p(in) match{
-      case Success(r1, in1) => q(in1) match{
-        case Success(r2, rest) => Success((r1,r2), rest)
-        case Failure(msg, in2) => Failure(msg, in2)
-      }
-      case Failure(msg, in2) => Failure(msg, in2)
+      case s1 @ Success(r1, in1) => 
+        val p2 = q(in1)
+        (p2 match{
+          case Success(r2, rest) => Success((r1,r2), rest)
+          case Failure(msg, in2) => Failure(msg, in2)
+        }).withBacktrack(s1).withBacktrack(p2)
+      case f: Failure => f
+    }
+  }
+
+  def ~~! [B](q: => Parser[B]) = new Parser[(A,B)]{
+    def apply(in: Input) = p(in) match{
+      case s1 @ Success(r1, in1) => 
+        val p2 = q(in1)
+        val res = p2 match{
+          case Success(r2, rest) => Success((r1,r2), rest)
+          case Failure(msg, in2) => Failure(msg, in2)
+        } 
+        res.backtrackable = false; res
+      case f: Failure => f
     }
   }
 
@@ -58,6 +89,9 @@ abstract class Parser[+A] extends (Input => ParseResult[A]){
     this ~~ (Parser.consumeWhite ~~ q) > { case (l, (_,r)) => (l,r) }
     // (this ~~ Parser.consumeWhite) ~~ q > { case ((l,_),r) => (l,r) }
 
+  def ~! [B](q: => Parser[B]): Parser[(A,B)] =
+    this ~~! (Parser.consumeWhite ~~ q) > { case (l, (_,r)) => (l,r) }
+
   /** Sequential composition of this and `q`, possibly with white space between,
     * returning the result of this. */
   def <~ [B](q: => Parser[B]): Parser[A] = this ~ q > { case (x,y) => x }
@@ -70,18 +104,29 @@ abstract class Parser[+A] extends (Input => ParseResult[A]){
   def | [B >: A] (q: Parser[B]) = new Parser[B]{
     def apply(in: Input) = p(in) match{
       case s1: Success[A] => s1
-      case failure1 @ Failure(msg1, in1) => q(in) match{
-        case s2: Success[B] => s2
-        case failure2 @ Failure(msg2, in2) => failure1.max(failure2)
-      }
+      case f1: Failure => 
+        if(f1.backtrackable) q(in) match{
+          case s2: Success[B] => s2
+          case f2 @ Failure(msg2, in2) => f2 // f1.max(f2)
+        }
+        else f1
     }
   }
 
   /** Parser that applies `f` to the result of this. */
   def > [B] (f: A => B) = new Parser[B]{
     def apply(in: Input) = p(in) match{
-      case Success(r1, in1) => Success(f(r1), in1)
-      case Failure(msg, in2) => Failure(msg, in2)
+      case s @ Success(r1, in1) => Success(f(r1), in1).withBacktrack(s)
+      case f @ Failure(msg, in2) => Failure(msg, in2).withBacktrack(f)
+    }
+  }
+
+  /** Parser that checks result of this satisfies f. */
+  def ? (f: A => Boolean) = new Parser[A]{
+    def apply(in: Input) = p(in) match{
+      case s @ Success(r1, in1) => 
+        if(f(r1)) s else Failure(s"Unexpected token", in1)
+      case f: Failure => f
     }
   }
 
@@ -174,15 +219,21 @@ object Parser{
 
   /** Parse `input` using `p`.  If successful, return `Left` applied to the
     * result; otherwise return `Right` applied to an error message. */
-  def parseWith[A](p: Parser[A], input: String): Either[A, String] = 
+  def parseWith[A](p: Parser[A], input: String): Either[A, String] = {
+    Failure.reset
     p(new Input(input).dropWhite) match{
       case Success(result, rest) =>
         if(rest.dropWhite.isEmpty) Left(result)
         else Right(s"Parser error: extra lost: \"$rest\"")
-      case Failure(msg, in) => 
+      // case Failure(msg, in) => 
+      //   val (lineNum, colNum, currLine) = in.getCurrentLine
+      //   Right(s"$msg at line $lineNum: \n$currLine\n${" "*colNum}^")
+      case f: Failure => 
+        val Some(Failure(msg, in)) = Failure.lastFailure
         val (lineNum, colNum, currLine) = in.getCurrentLine
         Right(s"$msg at line $lineNum: \n$currLine\n${" "*colNum}^")
     }
+  }
 
   /** Parse `input` using `p`, allowing initial and trailing white space.
     * Expect all the input to be consumed, and return the result. */
@@ -234,18 +285,19 @@ object Parser{
     }
   }
 
-  /** A parser for an Int. */
-  val int: Parser[Int] = {
-    /* Convert `d::ds` to an Int. */
-    def mkInt(d: Char, ds: List[Char]): Int = {
-      var ds1 = ds; var x = d-'0'
-      while(ds1.nonEmpty){ x = 10*x+(ds1.head-'0'); ds1 = ds1.tail }
-      x
-    }
-    // Parser for positive ints
-    val posInt = spot(_.isDigit) ~~ repeat1(spot(_.isDigit)) > toPair(mkInt) 
-    lit("-") ~~ posInt > { case(_,n) => -n} | posInt
+
+  /** Convert `d::ds` to an Int. */
+  private def mkInt(d: Char, ds: List[Char]): Int = {
+    var ds1 = ds; var x = d-'0'
+    while(ds1.nonEmpty){ x = 10*x+(ds1.head-'0'); ds1 = ds1.tail }
+    x
   }
+
+  /** Parser for a positive Int. */
+  val posInt = spot(_.isDigit) ~~ repeat1(spot(_.isDigit)) > toPair(mkInt)
+
+  /** A parser for an Int. */
+  val int: Parser[Int] = lit("-") ~~ posInt > { case(_,n) => -n} | posInt
 
   /** A parser for a Scala-style identifier: (a-zA-Z)(a-zA-Z0-9)*. */
   val name: Parser[String] =
@@ -286,7 +338,7 @@ object Parser{
     assert(int("one").isInstanceOf[Failure])   // println(int(new Input("one")))
 
     assert(parseAll(name, " fooBar5 ") == "fooBar5")
-    assert(name("foo!Bar").get == "foo") //   println(name("foo!Bar"))
+    assert(name("foo!Bar").asInstanceOf[Success[String]].get == "foo") 
     assert(name("FooBar").isInstanceOf[Failure])  // 
     println(name("foo bar"))
     // println(name0("foo bar"))

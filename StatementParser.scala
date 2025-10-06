@@ -88,6 +88,13 @@ object ExpParser extends Parser0{
     }
   )
 
+  /** Test that ne does not represent a reserved word. */
+  private def notReserved(ne: Exp): Boolean = ne match {
+    case NameExp(name) => name != "Cell"
+// FIXME: and more
+    case _ => true
+  }
+
   /** A parser for expressions that use no infix operators outside of
     * parentheses: atomic terms and parenthesised expressions. */
   private def factor: Parser[Exp] = withExtent( 
@@ -96,7 +103,7 @@ object ExpParser extends Parser0{
       // Cell expressions, with a type
     | cellExp
     // Name or application of named function 
-    | name1 ~~ params > {
+    | (name1 ? notReserved) ~~ params > {
       case (n, None) => n
       case (n, Some(ps)) => FunctionApp(n, ps)
     }
@@ -106,6 +113,7 @@ object ExpParser extends Parser0{
     | inParens(expr) // Note: sets extent to include parentheses.
     | list
     | block
+    | failure("YYY")
   )
 
   import StatementParser.{listOf,declaration,separator}
@@ -128,16 +136,20 @@ object ExpParser extends Parser0{
 
   /** A parser for either a CellExp or a CellMatchExp. */
   private def cellExp: Parser[Exp] = 
-    cell ~ cellRHS > { case ((ce,re), rhs) => rhs match{
+    cell ~! cellRHS > { case ((ce,re), rhs) => rhs match{
       case Left(t) => CellExp(ce, re, t) 
       case Right(bs) => CellMatchExp(ce, re, bs)
     } }
+  // Note: don't allow backtracking above, or "#A1" gets passed as "#A" with
+  // the extra lost,
+
     // cell ~ (lit(":") ~> cellType) > { case ((ce,re), t) => CellExp(ce, re, t) }
 
   /** A parser for the latter part of a CellExp or a CellMatchExp. */
   private def cellRHS: Parser[Either[CellType, List[MatchBranch]]] = (
     lit(":") ~> cellType > { t => Left(t) }
     | cellMatch > { bs => Right(bs) }
+    | failure("Expected \":\" or \"match\"")
   )
 
   /** A parser for a CellType. */
@@ -169,8 +181,10 @@ object ExpParser extends Parser0{
 
   /** A parser for an expression such as "Cell(B,3)" of "#B3". */
   def cell: Parser[(Exp,Exp)] = (
-    lit("Cell") ~> inParens((expr <~ lit(",")) ~ expr) 
-    | lit("#") ~> colName ~ int > 
+    lit("Cell") ~! inParens((expr <~ lit(",")) ~ expr) > { case (x,y) => y }
+    // Don't allow backtracking, or this could be parsed as a function
+    // application.
+    | lit("#") ~> colName ~~ posInt > 
       { case (c,r) => (ColumnExp(c), RowExp(r)) }
   )
 

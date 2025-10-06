@@ -4,14 +4,11 @@ Language
 ========
 
 
-
 4. Improve treatment of Strings:
 - Allow non-quoted strings in CSV
 - Think about escaped characters in non-quoted string cells.
 
-3. Add double-write error, giving all places where written.
-
-- Look again at Unification.scala.  Are all branches tested?
+5. Add double-write error, giving all places where written.
 
 1. Add cell type matching, e.g. 
  #B3 match{ case x: Int => ...; case st: String => ...; case Blank => ... }
@@ -22,11 +19,31 @@ This is a new syntactic category.
 - Evaluation -- done
 ** Add more patterns, e.g. "_" or "_: Int" as wildcard?
 
-2. Add "if" directives.
+4. Add "if" directives.
 
--- Improve parser errors when types omitted on cells
+3. Remove typing of cells in some places, where the typechecker can deduce the
+type.
+- Initially allocate type variable to the type.
+- Potentially unify that type subsequently.
+- At the end of evaluation of the enclosing expression (the call to typeCheck 
+  from typeCheckStmt), check that the type has 
+  been decided.
+- Augment type environment with list of those cell reads awating types. 
+
+2. Improve parser errors, e.g. when types omitted on cells.  Implement ~! 
+- Add backtrackable field to ParseResult
+- Take conjunction in ~, etc.
+- Implement in |
+- Implement ~!
+
+
 -- Deal with missing newline at end of file. -- done
--- allow assertions
+
+-- allow assertions, errors.
+
+- order relations on rows, columns
+
+- Look again at Unification.scala.  Are all branches tested?
 
 Catch stack overflows.
 

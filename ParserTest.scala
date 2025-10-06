@@ -27,8 +27,14 @@ object ParserTest{
     val e = parseAll(expr, st); checkExtent(e.getExtent, st); e
   }
 
+  var printParseErrors = false
+
   def assertParseFail(st: String) = 
-    assert(parseWith(expr, st).isInstanceOf[Right[_,_]])
+    parseWith(expr, st) match{
+      case Right(err) => if(printParseErrors) println(err)
+      case l: Left[_,_] => println(s"Expected parse error, found $l"); sys.exit()
+    }
+  //  assert(parseWith(expr, st).isInstanceOf[Right[_,_]])
   
   // Parse and print the extent
   def pp(st: String) = {
@@ -90,10 +96,17 @@ object ParserTest{
     assert(pe("#23") == RowValue(23))
     assert(pe("#Z") == ColumnValue(25)); assert(pe("#AB") == ColumnValue(27))
     // Is the following what we want?? 
+    //assert(pe("#Aa") == ColumnValue(0))
+    Failure.reset 
     assert(expr("#Aa").asInstanceOf[Success[Exp]].result == ColumnExp("A"))
+    Failure.reset
     assert(expr("#a").isInstanceOf[Failure])
     assert(p("Cell(#HW, #23): Int") == 
       CellExp(ColumnExp("HW"), RowExp(23), IntType))
+    // Following all give Expected ":" or "match"
+    assertParseFail("1+Cell(#A,#2)"); assertParseFail("Cell(#B,#2)") 
+    assertParseFail("Cell(#C,#2)+4"); assertParseFail("#D2+1)")
+    assertParseFail("f(#E3)")
 
     val matchExp = 
       "#A3 match{ case n: Int => 3; case x:Float=>4;\n "+
@@ -249,12 +262,10 @@ object ParserTest{
     assert(parseAll(statements, s"$vDec;$dir1;$dir2") ==
       List(vDecR, dir1R, dir2R))
 
-    println(parseAll(statements, "Cell(In, firstEmpty+1) = \"Total:\"\n"+
-      "Cell(Out, firstEmpty+1) = sumCol(Out, #0, firstEmpty)"))
-    println(StatementParser.parseStatements( "Cell(In, firstEmpty+1) = \"Total:\"\n"+
-      "Cell(Out, firstEmpty+1) = sumCol(Out, #0, firstEmpty)"))
+    // println(parseAll(statements, "Cell(In, firstEmpty+1) = \"Total:\"\n"+
+    //   "Cell(Out, firstEmpty+1) = sumCol(Out, #0, firstEmpty)"))
 
-    //println(ps("Cell(#A, firstEmpty+1) = sumCol(#B,#0)"))
+    //println(parseWith(statements,"#B1 = 1+#A1"))
   }
 
   /** Tests on function declarations. */
@@ -332,6 +343,7 @@ object ParserTest{
         StringValue("Hello, world"), StringValue("\"Hello"), Empty()
       )
     )
+    Failure.reset
     assert(CSVParser.line("3 three").isInstanceOf[Failure])
     println("CSV tests done")
   }
@@ -356,7 +368,8 @@ object ParserTest{
 // TODO: tests on cells.  Consider badly formed strings. e.g. " \Z "
 
   def main(args: Array[String]) = {
-    //printErrors = true
+    // printErrors = true
+    //printParseErrors = true
     expressions(); testStatements();  csv(); cellTests()
     println("Done")
   }
