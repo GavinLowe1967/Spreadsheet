@@ -158,13 +158,22 @@ object TypeCheckerTest1{
       assert(te("f") == FunctionType(List(), List(), IntType))
       assert(te("y") == IntType)
     }
+
+    // Untyped cell expressions
+//printErrors = true
+    tcpss("def f(x: Int): Int = x+1; val x = f(#A1)") match{ case Ok(te) =>
+      assert(te("x") == IntType) }
+    assertFail(tcpss("def f[A](x: A): A = x; val x = f(#A1)"))
+    tcpss("val x = if(#C3) 2.5 else 3.5") match{ case Ok(te) => 
+      assert(te("x") == FloatType) }
+//printErrors = false
   }
 
   // ==================================================================
 
   /** Tests writing to cells. */
   def cellWriteTests() = {
-    tcpss("#A3 = 5") match{ case Ok(_) => {} }
+    assertOk(tcpss("#A3 = 5")) // match{ case Ok(_) => {} }
     assertFail(tcpss("def f(y: Int): Int = 3; #A3 = f"))
     assertFail(tcpss("#A3 = true+5"))
     tcpss("val y = #B4: Float; #A3 = y") match{ case Ok(te) =>
@@ -175,6 +184,42 @@ object TypeCheckerTest1{
     }
     // The following fails because head([]) doesn't evaluate to a cell type.
     assertFail(tcpss("#A1 = head([])"))
+
+//printErrors = true
+    assertOk(tcpss("def f(x: Int): Int = x+1; #A2 = f(#A1)"))
+    assertFail(tcpss("def id[A](x: A): A = x; #A2 = id(#A1)"))
+    assertFail(tcpss("def id[A](x: A): A = x; val y = id(#A1)"))
+    assertOk(tcpss("Cell(if(#A1) #B else #C, #1) = 3"))
+    assertOk(tcpss("def f(x: Int): Int = #A5"))
+    assertOk(tcpss("def id[A](x: A): A = x; def f(x: Int): Int = id(#A1)"))
+    // Attempts to find error from closing in FunctionDeclaration case.  All
+    // of these give errors earlier in the typechecking.
+    assertFail(tcpss(
+      "def id[A](x: A): A = x; def f(x: Int): Int = { val x = id(#A1); 3}"))
+    assertFail(tcpss("def f(x: Int): Int = if(#A3 == 2) 1 else 2"))
+    assertFail(tcpss("def f[A](x: Int): A = #A3"))
+    assertFail(tcpss("def f(x: Int): Boolean = (#A2 == #A3)")) 
+    assertFail(tcpss(
+      "def id[A](x: A): A = x; def f(x: Int): Boolean = id(#A3) == #A4"))
+    // Following test shows why closing in type checking of a
+    // FunctionDeclaration is necessary: it captures that the type of #A1 is
+    // unknown.
+    assertFail(tcpss(
+      "def f[A,B](x: A, y: B): A = x; def g(x: Int): Int = f(x, #A1)"))
+
+    // "for" statements
+    assertFail(tcpss("for(x <- [#A2]) #B2 = 0"))
+    assertOk(tcpss("def id[A](x: A): A = x; for(if id(#A3)) #B3 = 1"))
+    assertFail(tcpss("for(if #A1 == #A2) #B4 = 1"))
+    assertOk(tcpss("for(if #A1) val x = 3"))
+    // The following two tests show why the closing is necessary in the case
+    // of a Filter to get the error in the right place.
+    assertFail(tcpss(
+      "def f[A,B](x: A, y: B): A = x; for(if f(true, #A1)) #A3 = 2"))
+    assertFail(tcpss(
+      "def f[A,B](x: A, y: B): A = x; for(if f(true, #A1)) val x = 2+3.4"))
+    assertFail(tcpss("def f[A,B](x: A, y: B): A = x; for(if f(true, #A1)){ }"))
+printErrors = false
   }
 
  // ==================================================================

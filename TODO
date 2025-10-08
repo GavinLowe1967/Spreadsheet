@@ -3,39 +3,29 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Language
 ========
 
-
 4. Improve treatment of Strings:
 - Allow non-quoted strings in CSV
 - Think about escaped characters in non-quoted string cells.
 
 5. Add double-write error, giving all places where written.
 
-1. Add cell type matching, e.g. 
- #B3 match{ case x: Int => ...; case st: String => ...; case Blank => ... }
-This is a new syntactic category. 
-- Define syntax -- done
-- Parsing -- done
-- Typechecking -- done
-- Evaluation -- done
-** Add more patterns, e.g. "_" or "_: Int" as wildcard?
+** Add more patterns for cell match expressions, e.g. "_" or "_: Int" as
+   wildcard?
 
 4. Add "if" directives.
 
-3. Remove typing of cells in some places, where the typechecker can deduce the
-type.
-- Initially allocate type variable to the type.
-- Potentially unify that type subsequently.
-- At the end of evaluation of the enclosing expression (the call to typeCheck 
-  from typeCheckStmt), check that the type has 
-  been decided.
-- Augment type environment with list of those cell reads awating types. 
 
-2. Improve parser errors, e.g. when types omitted on cells.  Implement ~! 
-- Add backtrackable field to ParseResult
-- Take conjunction in ~, etc.
-- Implement in |
-- Implement ~!
+1. Tidy up typechecking of cell expressions -- common code
+* Check Frames in typechecker -- store untypedCell info? 
 
+* Consider the case of "[] == [3]" and "[] = [f]" for f a function.  cf TypeEnv.isEqType, case TypeVar
+
+
+3. Tidy up this file!
+
+- Allow empty blocks, "for(x <- [2]){ }"; "def f[A,B](x: A, y: B): A = x; for(if f(true, #A1)){ }" (TypeCheckerTest1, l. 218) -- done TODO: test at top level
+
+-- Tidy up ExpParser. -- done
 
 -- Deal with missing newline at end of file. -- done
 
@@ -149,6 +139,32 @@ Tidy up TypeCheckerTest
 
 
 ===================================== DONE
+
+1. Remove typing of cells in some places, where the typechecker can deduce the
+type.
+- Initially allocate type variable to the type. -- done
+- Potentially unify that type subsequently. -- done
+- At the end of evaluation of the enclosing expression (the call to typeCheck 
+  from typeCheckStmt), check that the type has  been decided.
+- Augment type environment with list of those cell reads awaiting types. -- done
+- Update Execution to handle this construct
+
+2. Improve parser errors, e.g. when types omitted on cells.  Implement ~! -- done
+- Add backtrackable field to ParseResult
+- Take conjunction in ~, etc.
+- Implement in |
+- Implement ~!
+
+2. Parse error with
+def sumCol(c: Column, r: Row, end: Row): Int = 
+  if(r == end) 0 else sumCol(c, r+1, end) + Cell(c,r) -- ok with parentheses.
+1. Add cell type matching, e.g. 
+ #B3 match{ case x: Int => ...; case st: String => ...; case Blank => ... }
+This is a new syntactic category. 
+- Define syntax -- done
+- Parsing -- done
+- Typechecking -- done
+- Evaluation -- done
 
 Consider typechecking of head([]) -- done
 

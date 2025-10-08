@@ -37,6 +37,10 @@ Parser0.scala: base class of various parsers; parsers for cells and CSV files.
 
 StatementParser.scala: parsing of statements and expressions (ExpParser). 
 
+ExpParserTest.scala: test of parsing expressions.
+ 
+StatementParserTest.scala: test of parsing statements
+
 ParserTest.scala: test of parser.
 
 Type checking

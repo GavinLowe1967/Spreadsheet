@@ -5,7 +5,8 @@ def fact(n: Int) : Int = if(n <= 1) 1 else n*fact(n-1)
 
 // The sum in column c of rows [r..end).
 def sumCol(c: Column, r: Row, end: Row): Int = 
-  if(r == end) 0 else Cell(c,r):Int + sumCol(c, r+1, end)
+  if(r == end) 0 else sumCol(c, r+1, end) + Cell(c,r)
+  //Need type with if(r == end) 0 else Cell(c,r):Int + sumCol(c, r+1, end)
 
 // Row for the first empty cell in column c from row r.
 def firstEmptyInCol(c: Column, r: Row): Row =
@@ -15,8 +16,11 @@ def firstEmptyInCol(c: Column, r: Row): Row =
 val firstEmpty = firstEmptyInCol(In, #0)
 
 // Write factorials of entries in In into Out.
-for(r <- #0 until firstEmpty) Cell(Out,r) = fact(Cell(In,r):Int)
+for(r <- #0 until firstEmpty) Cell(Out,r) = fact(Cell(In,r))
 
 // Write the total.
 Cell(In, firstEmpty+1) = "Total:"
 Cell(Out, firstEmpty+1) = sumCol(Out, #0, firstEmpty)
+
+// #D3 = #C3 match{ case Empty => "empty"; case n: Int => "Int" }
+

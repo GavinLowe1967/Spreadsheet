@@ -13,7 +13,6 @@ sealed abstract class ParseResult[+T]{
 
 /** A successful parse, giving `result`, with remaining input `rest`. */
 case class Success[T](result: T, rest: Input) extends ParseResult[T]{
-// TODO: add a field representing the start of this expression in the input
   def get = result
 }
 
@@ -47,7 +46,9 @@ abstract class Parser[+A] extends (Input => ParseResult[A]){
   def apply(in: Input): ParseResult[A]
 
   /** Apply this to `st`. */
-  def apply(st: String): ParseResult[A] = apply(new Input(st))
+  def apply(st: String): ParseResult[A] = { 
+    Failure.reset; apply(new Input(st).dropWhite)
+  }
 
   /** The sequential composition of this and `q` (with no intervening space). */
   def ~~ [B](q: => Parser[B]) = new Parser[(A,B)]{
@@ -62,6 +63,8 @@ abstract class Parser[+A] extends (Input => ParseResult[A]){
     }
   }
 
+  /** The sequential composition of this and `q` (with no intervening space),
+    * not allowing subsequent backtracking. */
   def ~~! [B](q: => Parser[B]) = new Parser[(A,B)]{
     def apply(in: Input) = p(in) match{
       case s1 @ Success(r1, in1) => 
@@ -74,7 +77,7 @@ abstract class Parser[+A] extends (Input => ParseResult[A]){
       case f: Failure => f
     }
   }
-
+ 
   /** The sequential composition of this and `q` (with no intervening space),
     * returning the result of `q`. */
   def ~~> [B](q: => Parser[B]): Parser[B] = this ~~ q > { case (x,y) => y }
@@ -86,9 +89,10 @@ abstract class Parser[+A] extends (Input => ParseResult[A]){
   /** The sequential composition of this and `q`, possibly with white space
     * between. */
   def ~ [B](q: => Parser[B]): Parser[(A,B)] =
-    this ~~ (Parser.consumeWhite ~~ q) > { case (l, (_,r)) => (l,r) }
-    // (this ~~ Parser.consumeWhite) ~~ q > { case ((l,_),r) => (l,r) }
+    this ~~ (Parser.consumeWhite ~~> q) 
 
+  /** The sequential composition of this and q, possibly with white space
+    * between, allowing no backtracking. */
   def ~! [B](q: => Parser[B]): Parser[(A,B)] =
     this ~~! (Parser.consumeWhite ~~ q) > { case (l, (_,r)) => (l,r) }
 
@@ -172,7 +176,6 @@ object Parser{
 
   def char: Parser[Char] = spot(_ => true)
 
-
   // ===== Operations on parsers
 
   /** Adapt function `f` over two arguments to operate on a pair. */
@@ -205,7 +208,9 @@ object Parser{
   def repSepNonEmpty[A](p: Parser[A], sep: String): Parser[List[A]] =
     (p ~ (lit(sep) ~> repSep(p, sep) | success(List())) ) > toPair(_ :: _)
 
-  /** A parser that optionally applies `p`. */
+  /** A parser that optionally applies `p`. 
+    * Note: when sequencing this, use ~~ or similar on the left to avoid 
+    * unintentionally consuming white space. */
   def opt[A](p: => Parser[A]): Parser[Option[A]] = 
     (p > (x => Some(x))) | success(None)
 
@@ -220,14 +225,10 @@ object Parser{
   /** Parse `input` using `p`.  If successful, return `Left` applied to the
     * result; otherwise return `Right` applied to an error message. */
   def parseWith[A](p: Parser[A], input: String): Either[A, String] = {
-    Failure.reset
-    p(new Input(input).dropWhite) match{
+    p(input) match{ 
       case Success(result, rest) =>
         if(rest.dropWhite.isEmpty) Left(result)
         else Right(s"Parser error: extra lost: \"$rest\"")
-      // case Failure(msg, in) => 
-      //   val (lineNum, colNum, currLine) = in.getCurrentLine
-      //   Right(s"$msg at line $lineNum: \n$currLine\n${" "*colNum}^")
       case f: Failure => 
         val Some(Failure(msg, in)) = Failure.lastFailure
         val (lineNum, colNum, currLine) = in.getCurrentLine
@@ -242,13 +243,6 @@ object Parser{
       case Left(result) => result
       case Right(msg) => println(msg); sys.exit()
     }
-    // p(new Input(input).dropWhite) match{
-    //   case Success(result, rest) =>
-    //     if(rest.dropWhite.isEmpty) result
-    //     else{ println(s"Parser error: extra lost: \"$rest\""); sys.exit() }
-    //   case Failure(msg, _) => println(msg); sys.exit()
-    // }
-
 
   // ========= Specific parsers
 
@@ -259,18 +253,13 @@ object Parser{
   }
 
   /** Parser that consumes white space up to the end of the line. */
-  def toLineEnd: Parser[String] = {
-    // def ws(c: Char) = c == ' ' || c == '\t'
-    // repeat1(spot(ws)) ~~ lit("\n") > { case (cs,st) => cs.mkString+st } 
-    // consumeWhiteNoNL ~~ (lit("\n") | atEnd ~> success("\n")) > toPair(_+_)
+  def toLineEnd: Parser[String] = 
     consumeWhiteNoNL ~~ lit("\n") > toPair(_+_)
-  }
 
   /** A parser that consumes all white space at the start of its input. */
   val consumeWhite = new Parser[Unit]{
     def apply(in: Input) = Success((), in.dropWhite)
   }
-
 
   /** A parser that succeeds if at the end of the input. */
   def atEnd = new Parser[Unit]{
@@ -284,7 +273,6 @@ object Parser{
       val st = in.toString; Success(st, in.advance(st.length))
     }
   }
-
 
   /** Convert `d::ds` to an Int. */
   private def mkInt(d: Char, ds: List[Char]): Int = {
@@ -310,25 +298,14 @@ object Parser{
     spot(_.isUpper) ~~ repeat1(spot(_.isLetterOrDigit)) > 
       toPair(_::_) > (_.mkString) 
 
-  // val name0 =
-  //   spot(_.isLower) ~~ repeat1(spot(_.isLetterOrDigit)) 
-  // =====
-
   /** Some tests. */
   def main(args: Array[String]) = {
     // Generic tests on combinators
     val p = lit("Hello") ~~ (lit(" world") | lit(" all")) > toPair(_+_)
     assert(parseAll(p, "Hello world") == "Hello world")
 
-    // val p1 = ws("Hello") ~ (ws("world") | ws("all")) > 
-    //   { case (s1,s2) => s1+"#"+s2 }
-    // assert(parseAll(p1, " \n Hello \t  world  ") == "Hello#world")
-    // println(p1(new Input(" \n Hello \t  world  ")))
-
     val p2 = lit("Hello") ~ (lit("world") | lit("all")) > 
       { case (s1,s2) => s1+"#"+s2 }
-    //println("2"+p2(new Input("Hello \t \n  world  ")))
-    //println(parseAll(p2, "  Hello \t \n  world  ")+"$")
     assert(parseAll(p2, "  Hello \t \n  world  ") == "Hello#world")
 
     // Tests on int
@@ -341,7 +318,6 @@ object Parser{
     assert(name("foo!Bar").asInstanceOf[Success[String]].get == "foo") 
     assert(name("FooBar").isInstanceOf[Failure])  // 
     println(name("foo bar"))
-    // println(name0("foo bar"))
 
     println("Done")
   }

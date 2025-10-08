@@ -9,14 +9,10 @@ case class FunctionType(
   def asString = 
     domain.map(_.asString).mkString("(", ",", ")")+" => "+range.asString
 
-  def typeVars = domain.flatMap(_.typeVars) ++ range.typeVars
-
   def typeParams = {
     assert(params.isEmpty)    // IMPROVE ???
     domain.flatMap(_.typeParams) ++ range.typeParams
   }
-
-  // def isEqType(env: TypeEnv) = false
 
 }
 

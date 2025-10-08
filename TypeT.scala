@@ -7,9 +7,6 @@ import TypeParam.TypeParamName
 trait TypeT{
   def asString: String
 
-  /** The type variables included in this type. */
-  def typeVars: List[TypeID]
-
   /** The type parameters included in this type. */
   def typeParams: List[TypeParamName]
 }
@@ -28,7 +25,6 @@ object TypeT{
   * parameters of a function when the function is applied. */
 case class TypeVar(tv: TypeID) extends TypeT{
   def asString = s"t$tv"                   
-  def typeVars = List(tv)
   def typeParams = List()
 }
 
@@ -44,12 +40,17 @@ object TypeVar{
   def getNext(): TypeID = { next += 1; next-1 }
 }
 
+/** The type for an untyped cell expression. */
+case class CellTypeVar(tv: TypeID) extends TypeT{
+  def asString = s"t$tv"                   
+  def typeParams = List()
+}
+
 // ==================================================================
 
 /** A type parameter, named in the script. */
 case class TypeParam(name: String) extends TypeT{
   def asString = name 
-  def typeVars = List()
   def typeParams = List(name)
 }
 
@@ -64,7 +65,6 @@ trait EqType extends TypeT
 
 /** Marker trait for base types, i.e. atomic. */
 trait BaseType extends TypeT{
-  def typeVars = List()
   def typeParams = List()
 }
 
@@ -105,8 +105,7 @@ case object EmptyType extends CellType{
 
 /** The type of lists with underlying type `underlying`. */
 case class ListType(underlying: TypeT) extends TypeT{
-  def asString = { val u = underlying.asString; s"List[$u]" }
-  def typeVars = underlying.typeVars
+  def asString = { val u = underlying.asString; s"List**[$u]" }
   def typeParams = underlying.typeParams
 }
 

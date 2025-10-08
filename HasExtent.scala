@@ -23,4 +23,5 @@ trait HasExtent{
       case EvalError(msg) => EvalError(extend(msg))
     } 
   }
+
 }

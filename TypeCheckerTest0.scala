@@ -30,7 +30,7 @@ object TypeCheckerTest0{
   
   /* Parse and typecheck expression given by st. */
   def tcp(st: String, env: TypeEnv = newEnv) = {
-    val e = parseAll(expr, st); val res = typeCheck(env, e)
+    val e = parseAll(expr, st); val res = typeCheckAndClose(env, e)
     maybePrintError(res); res
   }
     
@@ -68,6 +68,38 @@ import TypeT._
 
 /** Tests on expressions. */
 object TypeCheckerTestExpr{
+  /** Basic tests. */
+  private def basicTests() = {
+    assertEq(tcp("#A3 : Boolean"), BoolType)
+    assertInt(tcp("#A3: Int"))
+    assertInt(tcp("2")); assertInt(tcp("2+3"))
+    assertEq(tcp("4.5 + 2.4"), FloatType)
+    assertFail(tcp("4.5 + 2"));  assertFail(tcp("4 + 2.4")) 
+    assertFail(tcp("2+f+5"))
+    assertFail(tcp("2+false+5")); assertFail(tcp("true+4"))
+    assertEq(tcp("2 == 3"), BoolType); assertEq(tcp("2 <= 3"), BoolType)
+    assertFail(tcp("true == 3")); assertFail(tcp("2 != false"))
+    assertFail(tcp("true <= 3")); assertFail(tcp("2 <= false"))
+    assertFail(tcp("2 && false")); assertFail(tcp("true || 4.0"))
+    // println(tcp("true || false"))
+    assertEq(tcp("true || false"), BoolType)
+    // assertFail(tc(BinOp(StringExp("X"), "!=", StringExp("Y"))))
+    //                                            TODO: need parser for Strings
+
+    // "if" expressions
+    assertEq(tcp("if(2 == 3) 4.6 else 5.2"), FloatType)
+    assertFail(tcp("if(2 == 3) 4 else 5.2"))
+    assertFail(tcp("if(2 == 3) 4.6 else 5"))
+    assertInt(tcp("if(2 == 3) 4 else 5"))
+    assertFail(tcp("if(2) 4 else 5"))
+    assertFail(tcp("if(2 == 3) 4 else false"))
+    assertFail(tcp("if(2 == 3) 2+true else 4"))
+
+    // Row and column arithmetic
+    assertEq(tcp("#A+3"), ColumnType); assertEq(tcp("#F - 3"), ColumnType)
+    assertEq(tcp("#5+3"), RowType); assertEq(tcp("#5 - 3"), RowType)
+  }
+
   /** Tests involving lists. */
   private def listTests() = {
     assertFail(tcp("[true, 4]"))
@@ -106,6 +138,7 @@ object TypeCheckerTestExpr{
     assertEq(tcp("3 to 5"), ListType(IntType))
     assertEq(tcp("#3 until #5"), ListType(RowType))
     assertEq(tcp("#C until #Z"), ListType(ColumnType))
+    assertFail(tcp("3.4 to 7.4"))
     // "Expected Int, found Row", etc.
     assertFail(tcp("1 until #3")); //  println(tcp("1 until #3"));
     assertFail(tcp("#3 to 7")); assertFail(tcp("#C until 5"))
@@ -138,41 +171,36 @@ object TypeCheckerTestExpr{
     // printErrors = false
   }
 
-  /** Tests on basic expressions. */
+  def untypedCellTests() = {
+//printErrors = true
+    println("untypedCellTests")
+    assertEq(tcp("{ def f(x: Int): Int = x+1; f(#A1:Int) }"), IntType) 
+    assertEq(tcp("{ def f(x: Int): Int = x+1; f(#A1) }"), IntType) 
+    // "Couldn't find type(s) for cell expression(s)" 
+    assertFail(tcp("{ def f[A](x: A): A = x; f(#A1) }")) 
+    assertFail(tcp("{ def f[A](x: A): A = x; f(Cell(#B,#2)) }")) 
+    assertFail(tcp("{ def f[A,B](x: A, y: B): A = x; f(#A1,#B2) }"))
+    assertFail(tcp("{ def f[A](x: A, y: Int): A = x; f(#A1,#B2) }"))
+    assertEq(tcp("{ def f[A](x: A): A = x; def g(x: Int): Int = x; g(f(#A3)) }"),
+      IntType)
+    assertEq(tcp("{ def f[A](x: A): A = x; def g(x: Int): Int = x; f(g(#A3)) }"),
+      IntType)
+    assertEq(tcp("if(#D1) 2 else 3"), IntType)
+    assertEq(tcp("if(2+2==4) 3 else #E5"), IntType)
+    assertFail(tcp("if(2+2==4) #E3 else 2"))
+    assertFail(tcp("#A3 + 3"))
+    assertEq(tcp("3 + #Q3"), IntType)
+    assertFail(tcp("#V4 == 5"))
+    assertFail(tcp("Cell(if(#A3 == 2) #B else #C, #2)"))
+printErrors = false
+  }
+
+  /** Tests on expressions. */
   def expTests() = {
-    assertEq(tcp("#A3 : Boolean"), BoolType)
-    assertInt(tcp("#A3: Int"))
-    assertInt(tcp("2")); assertInt(tcp("2+3"))
-    assertEq(tcp("4.5 + 2.4"), FloatType)
-    assertFail(tcp("4.5 + 2"));  assertFail(tcp("4 + 2.4")) 
-    assertFail(tcp("2+f+5"))
-    assertFail(tcp("2+false+5")); assertFail(tcp("true+4"))
-    assertEq(tcp("2 == 3"), BoolType); assertEq(tcp("2 <= 3"), BoolType)
-    assertFail(tcp("true == 3")); assertFail(tcp("2 != false"))
-    assertFail(tcp("true <= 3")); assertFail(tcp("2 <= false"))
-    assertFail(tcp("2 && false")); assertEq(tcp("true || false"), BoolType)
-    // assertFail(tc(BinOp(StringExp("X"), "!=", StringExp("Y"))))
-    //                                            TODO: need parser for Strings
-
-    // "if" expressions
-    assertEq(tcp("if(2 == 3) 4.6 else 5.2"), FloatType)
-    assertFail(tcp("if(2 == 3) 4 else 5.2"))
-    assertFail(tcp("if(2 == 3) 4.6 else 5"))
-    assertInt(tcp("if(2 == 3) 4 else 5"))
-    assertFail(tcp("if(2) 4 else 5"))
-    assertFail(tcp("if(2 == 3) 4 else false"))
-    assertFail(tcp("if(2 == 3) 2+true else 4"))
-
-    // Row and column arithmetic
-    assertEq(tcp("#A+3"), ColumnType); assertEq(tcp("#F - 3"), ColumnType)
-    assertEq(tcp("#5+3"), RowType); assertEq(tcp("#5 - 3"), RowType)
-
-    // Cell match expressions
-    cellMatchTests()
-
-    // Lists
-    listTests()
-
+    basicTests() // Basic expressions
+    listTests()  // Lists
+    cellMatchTests() // Cell match expressions
+    untypedCellTests() // tests on untyped cell reads.
     // Repeated names 
     assertFail(tcpss("val x = 4; val x = 5"))
     assertFail(tcpss("val x = 4; def x(): Int = 5"))

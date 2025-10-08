@@ -37,7 +37,7 @@ class EvaluationTypeEnv(
     case TypeParam(tp) => typeParamMap(tp) match{
       case AnyTypeConstraint => tp; case c => s"$tp <: "+c.asString
     }
-    case ListType(underlying) => s"List(${showType(underlying)})"
+    case ListType(underlying) => s"List[${showType(underlying)}]"
     case _ => t.asString
   }
 }

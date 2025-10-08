@@ -96,6 +96,9 @@ object Unification{
         // Note: if the recursive call fails, the error message talks about
         // ListType(tt1) and ListType(tt2).
 
+      case (ct @ CellTypeVar(tv), t: CellType) => 
+        // println(s"$tv $t"); 
+        Ok((typeEnv + (ct,t), t))
 
       case (_, TypeParam(tp)) =>  fail
 

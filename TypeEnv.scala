@@ -12,13 +12,16 @@ import TypeEnv._
   * @param nameMap A mapping from names in the script to their types.
   * @param constraints A mapping from type identifiers to constraints.
   * @param typeParamMap A mapping from TypeParamName to TypeConstraint
-  * @param frame The Frame corresponding to the current scope. 
+  * @param untypedCells The UntypedCellExps for which we are seeking the type.
+  * param cellTypeVarTypes map showing types for some UntypecCellExps.
   * @param stack The frames for outer scopes. 
   * Note: type environments are treated immutably. */
 class TypeEnv(
   private val nameMap: NameMap, 
   private val constraints: Constraints,
   private val typeParamMap: TypeParamMap,
+  private val untypedCells: List[UntypedCellExp],
+  private val cellTypeVarTypes: Map[CellTypeVar, CellType], 
   private val stack: List[Frame]
 ) extends EvaluationTypeEnv(constraints, typeParamMap){
 
@@ -27,8 +30,11 @@ class TypeEnv(
     nameMap: NameMap = nameMap, 
     constraints: Constraints = constraints,
     typeParamMap: TypeParamMap = typeParamMap,
+    untypedCells: List[UntypedCellExp] = untypedCells,
+    cellTypeVarTypes: Map[CellTypeVar, CellType] = cellTypeVarTypes,
     stack: List[Frame] = stack
-  ) = new TypeEnv(nameMap, constraints, typeParamMap, stack)
+  ) = new TypeEnv(
+    nameMap, constraints, typeParamMap, untypedCells, cellTypeVarTypes, stack)
 
   // ========= NameMap functions
 
@@ -64,16 +70,18 @@ class TypeEnv(
 
   /** Is t an equality type? */
   def isEqType(t: TypeT): Boolean = t match{
-    case TypeVar(tv) => true // ???, FIXME
+    case TypeVar(tv) => true // ???, FIXME.  Arises from "[] == [3]"
     case TypeParam(name) =>
       constraintForTypeParam(name).implies(EqTypeConstraint)
     case _: EqType => true
+    case _: CellTypeVar => ??? // true
     case ListType(underlying) => isEqType(underlying)
     case FunctionType(_,_,_) => false
   }
 
   // ========= TypeParamMap functions
 
+  /** Extend the TypeParamMap with n -> c. */
   def + (n: TypeParam.TypeParamName, c: TypeParamConstraint): TypeEnv = 
     make(typeParamMap = typeParamMap + (n -> c))
     //addTypeParamConstraint(n, c)
@@ -84,6 +92,28 @@ class TypeEnv(
 
   /** Is n a defined type parameter? */
   def hasTypeParam(n: TypeParamName) = typeParamMap.contains(n)
+
+  // ========= UntypedCellExp functions
+
+  /** Add cell to the untyped cells. */
+  def + (cell: UntypedCellExp): TypeEnv = 
+    make(untypedCells = cell::untypedCells)
+
+  /** Add tv -> ct to cellTypeVarTypes. */
+  def + (tv: CellTypeVar, ct: CellType) = {
+    assert(!cellTypeVarTypes.contains(tv))
+    make(cellTypeVarTypes = cellTypeVarTypes + (tv -> ct))
+  }
+
+  /** Where the type of an UntypedCellExp has been found, store that in the
+    * UntypecCellExp; return those for which no type has been found. */
+  def getUntypedCells: List[UntypedCellExp] = {
+    var result = List[UntypedCellExp]()
+    for(cell <- untypedCells) cellTypeVarTypes.get(cell.getTypeVar) match{
+      case Some(t) => cell.setType(t); case None => result ::= cell
+    }
+    result
+  }
 
   // ========= update functions
 
@@ -124,7 +154,8 @@ class TypeEnv(
 
   override def toString = 
     s"TypeEnv(nameMap = $showNameMap,\nconstraints = $constraints,\n"+
-      s"typeParamMap = $typeParamMap)"
+      s"typeParamMap = $typeParamMap,\nuntypedCells = $untypedCells,\n"+
+      s"cellTypeVarTypes = $cellTypeVarTypes)"
 }
 
 // ==================================================================
@@ -141,7 +172,8 @@ object TypeEnv{
   /** An initial TypeEnv. */
   def apply() = {
     val nameMap = new NameMap ++ BuiltInFunctions.builtInTypes
-    new TypeEnv(nameMap, new Constraints, new TypeParamMap, List[Frame]())
+    new TypeEnv(nameMap, new Constraints, new TypeParamMap, 
+      List[UntypedCellExp](), Map[CellTypeVar, CellType](), List[Frame]())
   }
 
   private val builtInNames = BuiltInFunctions.builtInTypes.map(_._1)

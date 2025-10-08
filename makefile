@@ -64,8 +64,11 @@ $(DIR)/Parser0.class: $(DIR)/Parser.class $(DIR)/Exp.class
 $(DIR)/StatementParser.class: $(DIR)/Parser0.class $(DIR)/Statement.class	\
   $(DIR)/TypeConstraint.class $(DIR)/FunctionValue.class
 
-$(DIR)/ParserTest.class: $(DIR)/StatementParser.class $(DIR)/Execution.class
+$(DIR)/ExpParserTest.class:  $(DIR)/StatementParser.class $(DIR)/Execution.class
 
+$(DIR)/StatementParserTest.class: $(DIR)/ExpParserTest.class
+
+$(DIR)/ParserTest.class: $(DIR)/StatementParserTest.class 
 
 $(DIR)/TypeCheckerTest0.class: $(DIR)/TypeChecker.class	\
   $(DIR)/StatementParser.class

@@ -2,17 +2,6 @@ package spreadsheet
 
 /** Representation of an expression. */
 trait Exp extends HasExtent{
-  /** Make an error message, saying that `found` was found when `expected` was
-    * expected`. */
-  private def mkErr(expected: String, found: Value): String = {
-    val source = found.source; assert(source != null, s"No source for $found")
-    s"Expected $expected, found ${found.forError} in "+
-    (source match{
-      case cs: CellSource => cs.asString       // don't include quotes here
-      case ex: Extent => s"\"${ex.asString}\"" // but do here
-    }) +
-    s"\n${tab}in \"${extent.asString}\""
-  }
 
   /** Handle value v, which is expected to be an ErrorValue: lift it by tagging
     * on the extent of this. */
@@ -26,6 +15,11 @@ trait Exp extends HasExtent{
   def lift(f: PartialFunction[Value, Value], v: Value) : Value = 
     if(f.isDefinedAt(v)) f(v) else handleError(v)
 
+  /** If v is an error, lift it by tagging it with the extent of this. */
+  def liftValue(v: Value, lineNum: Boolean = false): Value = v match{
+    case err: ErrorValue => liftError(err, lineNum)
+    case _ => v
+  }
 }
 
 // ==================================================================
@@ -108,15 +102,53 @@ case class ColumnExp(column: String) extends Exp{
   * (column,row), matching standard spreadsheet usage.  `theType` gives the
   * expected type of the value in the cell. */
 case class CellExp(column: Exp, row: Exp, theType: CellType) extends Exp{
-
-  /** The type associated with this read of a cell.  It might be a TypeVar, in
-  //   * which case the corresponding TypeEnv will have a constraint upon it. */
-  // var theType: TypeT = null
-
-  //def setType(t: TypeT) = ??? //  theType = t
-
   override def toString = s"Cell($column, $row): $theType"
 }
+
+/** An untyped cell expression. */
+case class UntypedCellExp(column: Exp, row: Exp) extends Exp{
+  /** The type of this cell.  Set by the typechecker. */
+  private var theType: Option[CellType] = None
+  def setType(t: CellType) = { 
+    assert(theType == None || theType == Some(t), 
+      s"Type of $this set for second time; $theType $t")
+    theType = Some(t) 
+  }
+  def getType: CellType = theType.get
+
+  /** The CellTypeVar used to represent the type of this cell during type
+    * checking. */
+  private var typeVar: Option[CellTypeVar] = None
+  def setTypeVar(ctv: CellTypeVar) = { 
+    assert(typeVar == None); typeVar = Some(ctv) 
+  }
+  def getTypeVar = typeVar.get
+}
+
+// =================================================== cell match expressions
+
+/** A pattern in a cell match expression. */
+trait Pattern{
+  /** Does this pattern match type t? */
+  def matches(t: TypeT): Boolean 
+}
+
+/** A pattern "name: theType". */
+case class TypedPattern(name: NameExp.Name, theType: CellType) extends Pattern{
+  def matches(t: TypeT) = t == theType
+}
+
+/** A pattern "Empty". */
+case object EmptyPattern extends Pattern{
+  def matches(t: TypeT) = t == EmptyType
+}
+
+/** A pattern of the form "case pattern => body". */
+case class MatchBranch(pattern: Pattern, body: Exp) extends HasExtent
+
+/** An expression of the form "Cell(column, row) match{ branches }". */
+case class CellMatchExp(column: Exp, row: Exp, branches: List[MatchBranch]) 
+    extends Exp
 
 // ==================================================================
 
@@ -131,36 +163,6 @@ case class ListLiteral(elems: List[Exp]) extends Exp
 
 /** The application of a function represented by `f` to `args`. */
 case class FunctionApp(f: Exp, args: List[Exp]) extends Exp
-
-// =======================================================
-// cell match expressions
-
-/** A pattern in a cell match expression. */
-trait Pattern{
-  //val theType: CellType
-
-  /** Does this pattern match type t? */
-  def matches(t: TypeT): Boolean // = t == theType
-}
-
-/** A pattern "name: theType". */
-case class TypedPattern(name: NameExp.Name, theType: CellType) extends Pattern{
-  def matches(t: TypeT) = t == theType
-}
-
-/** A pattern "Empty". */
-case object EmptyPattern extends Pattern{
-  //val theType = EmptyType
-  def matches(t: TypeT) = t == EmptyType
-}
-
-/** A pattern of the form "case pattern => body". */
-case class MatchBranch(pattern: Pattern, body: Exp) extends HasExtent
-
-/** An expression of the form "Cell(column, row) match{ branches }". */
-case class CellMatchExp(column: Exp, row: Exp, branches: List[MatchBranch]) 
-    extends Exp
-
 
 
 // ========= Note =========

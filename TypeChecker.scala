@@ -24,12 +24,40 @@ object TypeChecker{
   private def mkErr(eType: TypeT, fType: TypeT, exp: Exp) = 
     FailureR(s"Expected ${eType.asString}, found "+fType.asString).lift(exp,true)
 
-  /** Make a FailureR: "Expected Int or Float...". */
-  private def mkIntFloatErr(fType: TypeT, exp: Exp) = 
-    FailureR(s"Expected Int or Float, found "+fType.asString).lift(exp,true)
+  // /** Make a FailureR: "Expected Int or Float...". */
+  // private def mkIntFloatErr(fType: TypeT, exp: Exp) = 
+  //   FailureR(s"Expected Int or Float, found "+fType.asString).lift(exp,true)
+
+  private def mkDisjunction(ts: List[TypeT]): String = ts match{
+    case List() => ??? // Can't happen
+    case List(t) => t.asString
+    case List(t1, t2) => t1.asString+" or "+t2.asString
+    case t::ts1 => t.asString+", "+mkDisjunction(ts1)
+  }
 
   /** Contents of the result of a successful call to typeCheck. */
   type TypeCheckRes = (TypeEnv,TypeT)
+
+  /** Map giving all types for infix operators, except for equality,
+    * inequality and (::). */
+  private val binopTypes: Map[String, List[(TypeT,TypeT,TypeT)]] = {
+    val numeric = // numeric operators
+      List((IntType,IntType,IntType), (FloatType,FloatType,FloatType))
+    val arith =  // + and -
+      numeric ++ List((RowType,IntType,RowType), (ColumnType,IntType,ColumnType))
+    val order = // order relations
+      List((IntType,IntType,BoolType), (FloatType,FloatType,BoolType))
+    val bool = List((BoolType,BoolType,BoolType))
+    val enumT = // enumerable types
+      for(t <- List(IntType,RowType,ColumnType)) yield (t,t,ListType(t))
+    Map(
+      "+" -> arith, "-" -> arith,
+      "*" -> numeric, "/" -> numeric,
+      "<" -> order, "<=" -> order, ">" -> order, ">=" -> order,
+      "&&" -> bool, "||" -> bool,
+      "to" -> enumT, "until" -> enumT
+    )
+  }
 
   /** Typecheck expression `exp` in type environment `typeEnv`.
     * @return a Reply, if successful, the updated type environment and the 
@@ -49,7 +77,43 @@ object TypeChecker{
     case ColumnExp(column) => Ok((typeEnv, ColumnType))
     // Binary operators  
     case BinOp(left, op, right) =>
-      typeCheck(typeEnv, left).map{ case (te1, tl) =>
+      typeCheck(typeEnv, left).map{ case (te1, tl) => 
+        op match{
+          case "==" | "!=" =>
+            // Check tl is a concrete equality type
+            close(te1,tl).map{ _ =>
+              if(te1.isEqType(tl))
+                typeCheckUnify(te1, right, tl).map{ case (te2, tr) =>
+                  // if(tl != tr) println(s"$exp $tl $tr") "[] == [3]"
+                  Ok((te2,BoolType))
+                }.lift(right,true)
+                else 
+                  FailureR(s"Expected equality type, found $tl").lift(left,true)
+            }
+          case "::" =>
+            typeCheckUnify(te1, right, ListType(tl))
+          case _ => // Overloaded operator
+            val ts = binopTypes(op)
+            if(ts.length == 1){ // Unify tl with expected type
+              val (etl,etr,rt) = ts.head
+              unify(te1, tl, etl).map{ case (te2, `etl`) =>
+                typeCheckUnify(te2, right, etr).map{ case (te3, `etr`) =>
+                  Ok((te3, rt)) }
+              }
+            }
+            else // tl should match a first field of a member of ts 
+              close(te1,tl).map{ _ => ts.filter(_._1 == tl) match{
+                case List((`tl`,etr,rt)) =>
+                  typeCheckUnify(te1, right, etr).map{ case (te2, `etr`) =>
+                    Ok((te2, rt)) }
+                case List() =>
+                  FailureR("Expected "+mkDisjunction(ts.map(_._1))+
+                    ", found "+tl.asString).lift(left)
+                case _ => ??? // can't happen
+              }}
+        } // end of "op match"
+      }.lift(exp)
+/*
         typeCheck(te1, right).map{ case (te2, tr) =>
           op match{
             case "+" | "-" =>
@@ -88,11 +152,20 @@ object TypeChecker{
           } // end of op match
         }
       }.lift(exp)
+ */
     // Typed cell expressions
     case ce @ CellExp(column, row, theType) =>
       typeCheckUnify(typeEnv, column, ColumnType).map{ case (te1, ColumnType) => 
         typeCheckUnify(te1, row, RowType).map{ case (te2, RowType) =>
           Ok(te2, theType)
+        }
+      }.lift(exp)
+    // Untyped cell expressions
+    case cell @ UntypedCellExp(column, row) =>   
+      typeCheckUnify(typeEnv, column, ColumnType).map{ case (te1, ColumnType) => 
+        typeCheckUnify(te1, row, RowType).map{ case (te2, RowType) =>
+          val ct = CellTypeVar(nextTypeID()); cell.setTypeVar(ct)
+          Ok(te2+cell, ct)
         }
       }.lift(exp)
     // Cell match expressions
@@ -106,7 +179,7 @@ object TypeChecker{
     case IfExp(test, thenClause, elseClause) =>
       typeCheckUnify(typeEnv, test, BoolType).map{ case (te1, bt) =>
         assert(bt == BoolType)
-        typeCheck(te1, thenClause).map{ case (te2,t1) =>
+        typeCheckAndClose(te1, thenClause).map{ case (te2,t1) =>
           typeCheckUnify(te2, elseClause, t1)
         }
       }.lift(exp)
@@ -150,8 +223,8 @@ object TypeChecker{
       // Create a new scope for this block, but return to the outer scope at
       // the end.
       typeCheckStmtList(typeEnv.newScope, stmts).map{ te1 => 
-        typeCheck(te1, e).map{ case (te2, te) => Ok((te2.endScope, te)) }
-      }
+        typeCheckAndClose(te1, e).map{ case (te2, te) => Ok((te2.endScope, te)) }
+      }.lift(exp)
   }
 
   /** Typecheck exp, and unify with eType. */
@@ -160,6 +233,32 @@ object TypeChecker{
     typeCheck(typeEnv, exp).map{ case (te1,t) =>
       unify(te1, t, eType).lift(exp, true) // add line number here
     }
+ 
+  /** Check that all UntypedCellExps have been given a concrete type. */
+  private def close(typeEnv: TypeEnv, t: TypeT): Reply[(TypeEnv, TypeT)] = {
+    val untypedCells = typeEnv.getUntypedCells
+    if(untypedCells.isEmpty) Ok(typeEnv, t)
+    else{
+      val s = if(untypedCells.length > 1) "s" else ""
+      FailureR(
+        s"Couldn't find type$s for cell expression$s "+
+          untypedCells.map(_.getExtent.asString).mkString(", ")
+      )
+    }
+  }
+
+  /** Typecheck exp in typeEnv, and ensure all UntypedCellExps have been given a
+    * concrete type. */
+  private def typeCheckAndClose(typeEnv: TypeEnv, exp: Exp)
+      : Reply[(TypeEnv, TypeT)] = 
+    typeCheck(typeEnv, exp).map{ case (te1, t) => close(te1, t).lift(exp,true) }
+
+
+  private def typeCheckUnifyAndClose(typeEnv: TypeEnv, exp: Exp, eType: TypeT)
+      : Reply[(TypeEnv, TypeT)] =
+    typeCheck(typeEnv, exp).map{ case (te1,t1) =>
+      unify(te1, t1, eType).map{ case (te2,t2) => close(te2, t2) }
+    }.lift(exp, true) // add line number here
 
   /** Typecheck exps, unifying all their types with t.  Return an appropriate
     * ListType if successful.  Used in typechecking a ListLiteral, so ensure
@@ -274,19 +373,19 @@ object TypeChecker{
   def typeCheckStmt(typeEnv: TypeEnv, stmt: Statement): Reply[TypeEnv] = 
     stmt match{
       case Directive(column, row, expr) =>
-        typeCheck(typeEnv, expr).map{ case (te1, t) => 
+        typeCheckAndClose(typeEnv, expr).map{ case (te1, t) => 
           if(! TypeT.CellTypes.contains(t))
             FailureR(s"Expected cell type, found ${t.asString}").lift(expr,true)
           else
-            typeCheckUnify(te1, row, RowType).map{ case(te2, RowType) =>
-              typeCheckUnify(te2, column, ColumnType).map{
+            typeCheckUnifyAndClose(te1, row, RowType).map{ case(te2, RowType) =>
+              typeCheckUnifyAndClose(te2, column, ColumnType).map{
                 case(te3, ColumnType) => Ok(te3)
               }
             }
         }.lift(stmt)
 
       case ValueDeclaration(name, exp) => 
-        typeCheck(typeEnv, exp).mapOrLift(stmt, { case (te1, t) => 
+        typeCheckAndClose(typeEnv, exp).mapOrLift(stmt, { case (te1, t) => 
           Ok(te1 + (name, t))
         })
 
@@ -310,7 +409,7 @@ object TypeChecker{
                 FailureR(s"Unknown type(s): "+invalidTParams.mkString(", "))
               else
                 // Typecheck body, and make sure return type matches rt
-                typeCheckUnify(te1, body, rt).map{ case (te3, tt) =>
+                typeCheckUnifyAndClose(te1, body, rt).map{ case (te3, tt) =>
                   Ok(te3.endScope) // back to the old scope
                 }
 // FIXME: if any of tparams gets bound to a TypeVar, update in typeEnv(name)
@@ -368,16 +467,15 @@ object TypeChecker{
       binders.head match{
         case Generator(name, list) => 
           // list should be a ListType
-          typeCheck(typeEnv, list).map{ 
+          typeCheckAndClose(typeEnv, list).map{ 
             case (te1, ListType(t)) => 
               checkFor(te1+(name,t), binders.tail, stmts) // bind name
             case (_, t1) => 
               FailureR(s"Expected List, found ${t1.asString}").lift(list)
           }
-
         case Filter(test) => 
-          typeCheckUnify(typeEnv, test, BoolType).map{ case (te, BoolType) =>
-            checkFor(te, binders.tail, stmts)
+          typeCheckUnifyAndClose(typeEnv, test, BoolType).map{ 
+            case (te, BoolType) => checkFor(te, binders.tail, stmts)
           }
       }
     }
@@ -397,6 +495,7 @@ object TypeChecker{
   object TestHooks{
     val typeCheck = outer.typeCheck _
     val typeCheckStmtList = outer.typeCheckStmtList _
+    val typeCheckAndClose = outer.typeCheckAndClose _
   }
 
 }
