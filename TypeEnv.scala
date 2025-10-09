@@ -110,10 +110,16 @@ class TypeEnv(
   def getUntypedCells: List[UntypedCellExp] = {
     var result = List[UntypedCellExp]()
     for(cell <- untypedCells) cellTypeVarTypes.get(cell.getTypeVar) match{
-      case Some(t) => cell.setType(t); case None => result ::= cell
+      case Some(t) => cell.setType(t); 
+      case None => result ::= cell
     }
     result
   }
+
+  /** Remove information about untyped cells from this.  Pre: getUntypedCells
+    * would return List(). */
+  def removeUntypedCells: TypeEnv =
+    make(untypedCells = List(), cellTypeVarTypes = Map())
 
   // ========= update functions
 
@@ -131,6 +137,10 @@ class TypeEnv(
 
   /** Record that a new scope is being entered. */
   def newScope: TypeEnv = make(stack = new Frame(nameMap,typeParamMap) :: stack)
+  // Note: no need to store information about untypedCells here, because that
+  // information should be empty when we leave a scope.  We should preserve
+  // constraints when we leave a scope, though: we might have learnt something
+  // new from the inner scope.
 
   /** End the current scope.  Return the type environment to use in the outer
     * scope. */

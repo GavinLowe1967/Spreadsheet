@@ -30,6 +30,7 @@ object TopLevelTest{
   /** List of expected values, with columns and rows. */
   val expected = List[(Int,Int,Value)](
     (A,0,FloatValue(6.0F)), (B,0,IntValue(10)), (E,0,StringValue("Hello")),
+    (E,1,IntValue(7)), (E,2,IntValue(4)),
     (B,1,IntValue(24)), (C,1,IntValue(24)),
     (B,3,IntValue(720)), (C,3,IntValue(720)),
     (A,5,BoolValue(true)), (A,6, BoolValue(true))
@@ -69,7 +70,8 @@ object TopLevelTest{
     }
     // Check remaining cells are Empty. 
     for(c <- 0 until Width; r <- 0 until Height; if !filled(c)(r))
-      assert(cells(c)(r).getType == EmptyType)
+      assert(cells(c)(r).getType == EmptyType, 
+        s"Found ${cells(c)(r)} in #$c#$r, expected empty cell.")
 
     println("All tests passed!")
   }

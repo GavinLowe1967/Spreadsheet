@@ -3,31 +3,28 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Language
 ========
 
-4. Improve treatment of Strings:
+
+1. Tidy up this file!
+
+2. Allow empty blocks, "for(x <- [2]){ }"; "def f[A,B](x: A, y: B): A = x; for(if f(true, #A1)){ }" (TypeCheckerTest1, l. 218) -- done 
+
+3. Add untyped cell reads in TopLevelTest -- done
+
+4. Check Frames in typechecker -- store untypedCell no. -- done
+
+5. Consider the case of "[] == [3]" and "[] = [f]" for f a function.  cf TypeEnv.isEqType, case TypeVar
+
+6. Add double-write error, giving all places where written.
+
+7. Add more patterns for cell match expressions, e.g. "_" or "_: Int" as
+   wildcard?
+
+8. Improve treatment of Strings:
 - Allow non-quoted strings in CSV
 - Think about escaped characters in non-quoted string cells.
 
-5. Add double-write error, giving all places where written.
+9. Add "if" directives.
 
-** Add more patterns for cell match expressions, e.g. "_" or "_: Int" as
-   wildcard?
-
-4. Add "if" directives.
-
-
-1. Tidy up typechecking of cell expressions -- common code
-* Check Frames in typechecker -- store untypedCell info? 
-
-* Consider the case of "[] == [3]" and "[] = [f]" for f a function.  cf TypeEnv.isEqType, case TypeVar
-
-
-3. Tidy up this file!
-
-- Allow empty blocks, "for(x <- [2]){ }"; "def f[A,B](x: A, y: B): A = x; for(if f(true, #A1)){ }" (TypeCheckerTest1, l. 218) -- done TODO: test at top level
-
--- Tidy up ExpParser. -- done
-
--- Deal with missing newline at end of file. -- done
 
 -- allow assertions, errors.
 
@@ -139,6 +136,12 @@ Tidy up TypeCheckerTest
 
 
 ===================================== DONE
+
+
+1. Tidy up typechecking of cell expressions -- common code -- done
+-- Tidy up ExpParser. -- done
+
+-- Deal with missing newline at end of file. -- done
 
 1. Remove typing of cells in some places, where the typechecker can deduce the
 type.

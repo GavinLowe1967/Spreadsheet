@@ -22,5 +22,4 @@ for(r <- #0 until firstEmpty) Cell(Out,r) = fact(Cell(In,r))
 Cell(In, firstEmpty+1) = "Total:"
 Cell(Out, firstEmpty+1) = sumCol(Out, #0, firstEmpty)
 
-// #D3 = #C3 match{ case Empty => "empty"; case n: Int => "Int" }
 

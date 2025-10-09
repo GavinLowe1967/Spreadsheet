@@ -17,10 +17,12 @@ def double(y: Float): Float = 2.0*y
 #C0 = 1/0 // Evaluation error
 #D0 = 3; #D0 = 4.0 // Evaluation error
 val hello = "Hello"; #E0 = hello
+#E1 = 3+#A1 // untyped cell read.
+#E2 = if(false) 3 else #A1 // Untyped cell read.
 
 // factorials, rows 1-4
 for(r <- #1 to #4; c <- [#B, #C]; if r != #2){
-  Cell(c, r) = fact(Cell(#A,r): Int)
+  Cell(c, r) = fact(Cell(#A,r))
 }
 
 // This test checks the inner declaration of flag doesn't leak. 
@@ -28,3 +30,6 @@ val flag = true
 for(r <- #5 to #6; if r == #6 || flag){ 
   Cell(#A, r) = flag; val flag = false 
 }  
+
+// Test of empty blocks.
+for(x <- #0 until #10){ }
