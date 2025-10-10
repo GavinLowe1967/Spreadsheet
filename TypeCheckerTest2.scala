@@ -45,8 +45,21 @@ object TypeCheckerTest2{
     tcpss(idS+"val y = id(3)") match{ case Ok(te) => assert(te("y") == IntType) }
 
     assertFail(tcpss("def id[A,B](x: A) : B = x\n"))
-    // Arguably the following should pass: it does in Scala
-    assertFail(tcpss("def mkEmpty[A](x: A): List[A] = []"))
+
+    tcpss("def mkEmpty[A](x: A): List[A] = []") match{ case Ok(te) =>
+      assert(te("mkEmpty") == FunctionType(
+        List(("A",AnyTypeConstraint)), List(TypeParam("A")),
+        ListType(TypeParam("A"))
+      ))}
+    tcpss("def f[A <: Eq](x: A): Boolean = [x] == []") match{  case Ok(te) => 
+      assert(te("f") == FunctionType(
+        List(("A",EqTypeConstraint)), List(TypeParam("A")), BoolType
+      ))}
+    tcpss("def f[A <: Eq](x: A): Boolean = [] == [x]") match{  case Ok(te) => 
+      assert(te("f") == FunctionType(
+        List(("A",EqTypeConstraint)), List(TypeParam("A")), BoolType
+      ))}
+
     tcpss("def mkSingle[A](x: A): List[A] = [x]") match{ case Ok(te) => 
       assert(te("mkSingle") == FunctionType(
         List(("A",AnyTypeConstraint)), 

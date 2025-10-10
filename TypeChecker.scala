@@ -71,13 +71,24 @@ object TypeChecker{
         case "==" | "!=" =>
           // Check tl is a concrete equality type
           close(te1,tl).map{ case (te2,`tl`) =>
+            te2.mkEqType(tl).map{ te3 => 
+              typeCheckUnify(te3, right, tl).map{ case (te4, tr) =>
+                // te4.mkEqType(tr).map{ te5 => Ok((te5,BoolType)) }
+                // Note, in the case of "[] == [f]" for f not an equality type, 
+                // unification fails.
+                Ok((te4,BoolType))
+              }.lift(right,true)
+            }
+          }
+/*            
             if(te2.isEqType(tl))
               typeCheckUnify(te2, right, tl).map{ case (te3, tr) =>
                 Ok((te3,BoolType))
               }.lift(right,true)
             else
               FailureR(s"Expected equality type, found $tl").lift(left,true)
-          }
+ */
+          
         case "::" =>
           typeCheckUnify(te1, right, ListType(tl))
         case _ => // Overloaded operator

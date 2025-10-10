@@ -14,6 +14,7 @@ object Unification{
   private def replaceInTypeEnv(
     typeEnv: TypeEnv, tId: TypeID, t: TypeT, fail: => FailureR)
       : Reply[(TypeEnv, TypeT)] = {
+    if(verbose) println(s"replaceInTypeEnv($tId, $t)")
     assert(!t.isInstanceOf[TypeVar])
     updateEnvToSatisfy(typeEnv, t, typeEnv(tId), fail).map{ te => 
       Ok(te.replace(tId, t), t)
@@ -40,8 +41,12 @@ object Unification{
         // This can happen by recursing via ListType(TypeVar(_)), e.g. the
         // test "equals([],[[]])" in polyListTests.
         val c1 = typeEnv(tId); val cc = c.intersection(typeEnv, c1)
+        //println(s"c1 = $c1 cc = $cc")
         if(cc == c1) Ok(typeEnv) else Ok(typeEnv + (tId,cc))
-      case _ => // BaseTypes, TypeParam
+      // case TypeParam(tp) => 
+      //   if(c.satisfiedBy(typeEnv, t)) updateEnvToSatisfy(typeEnv,  Ok(typeEnv) 
+      //   else fail
+      case _ => // BaseTypes, TypeParams
         if(c.satisfiedBy(typeEnv, t)) Ok(typeEnv) else fail
     }
   }
@@ -75,7 +80,7 @@ object Unification{
             Ok(typeEnv.replace(tId2, t1) + (tId1, cc), t1)
         }
 
-      case (TypeVar(tId1), TypeParam(tp)) => fail
+      //case (TypeVar(tId1), TypeParam(tp)) => println("***"); fail
         // The above happens in cases like "def mkEmpty[A](x: A): List[A] =
         // []", which leads to an attempt to unify ListType(TypeVar(tId1))
         // against ListType(TypeParam("A")), which recurses here.

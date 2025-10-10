@@ -126,6 +126,21 @@ object TypeCheckerTestExpr{
     assertFail(tcp("[1,2] == 3"))
     assertEq(tcp("[] == [3]"), BoolType)
     assertEq(tcp("[3] == []"), BoolType)
+    // "Expected equality type, found (Int) => Int"
+    assertFail(tcp("{def f(x:Int): Int = x; [f] == []}"))
+    // "Expected List[equality type], found List[(Int) => Int]"
+    assertFail(tcp("{def f(x:Int): Int = x; [] == [f]}"))
+    // "Expected List[Int], found List[(Int) => Int]"
+    assertFail(tcp(
+      "{def f(x:Int): Int = x; val xs = []; xs == [3] && xs == [f]}"))
+    // "Expected equality type, found (Int) => Int"
+    assertFail(tcp(
+      "{def f(x:Int): Int = x; val xs = []; xs == [3] && [f] == xs}"))
+    assertFail(tcp(
+      "{def f(x:Int): Int = x; val xs = []; [3] == xs && xs == [f]}"))
+    assertFail(tcp(
+      "{def f(x:Int): Int = x; val xs = []; [3] == xs && [f] == xs}"))
+    assertEq(tcp("{def f[A <: Eq](x: A): Boolean = [] == [x]; f(3)}"), BoolType)
 
     // Mixing floats and ints
     assertFail(tcp("[1, 2.3]")) 

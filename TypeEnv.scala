@@ -18,8 +18,8 @@ import TypeEnv._
   * Note: type environments are treated immutably. */
 class TypeEnv(
   private val nameMap: NameMap, 
-  private val constraints: Constraints,
-  private val typeParamMap: TypeParamMap,
+  private val constraints: Constraints, // = HashMap[TypeID, TypeConstraint]
+  private val typeParamMap: TypeParamMap, // HashMap[TypeParamName, TypeParamConstraint]
   private val untypedCells: List[UntypedCellExp],
   private val cellTypeVarTypes: Map[CellTypeVar, CellType], 
   private val stack: List[Frame]
@@ -68,6 +68,7 @@ class TypeEnv(
   def addConstraints(pairs: List[(TypeID, TypeConstraint)]): TypeEnv = 
     make(constraints = constraints ++ pairs)
 
+/*
   /** Is t an equality type? */
   def isEqType(t: TypeT): Boolean = t match{
     case TypeVar(tv) => true // ???, FIXME.  Arises from "[] == [3]"
@@ -77,6 +78,27 @@ class TypeEnv(
     case _: CellTypeVar => ??? // true
     case ListType(underlying) => isEqType(underlying)
     case FunctionType(_,_,_) => false
+  }
+ */
+  /** Try to extend this so that t is an equality type. */
+  def mkEqType(t: TypeT): Reply[TypeEnv] = {
+    def fail = FailureR(s"Expected equality type, found ${t.asString}")
+    t match{
+      case TypeVar(tv) => 
+        apply(tv) match{
+          case EqTypeConstraint => Ok(this)
+          case AnyTypeConstraint => Ok(this+(tv,EqTypeConstraint))
+          case SingletonTypeConstraint(t1) => println(t1); ??? 
+            // I think mkEqType(t1), but I can't find a test for this.
+        }
+      case TypeParam(name) =>
+        if(constraintForTypeParam(name).implies(EqTypeConstraint)) Ok(this)
+        else fail
+      case _: EqType => Ok(this)
+      case _: CellTypeVar => sys.error(s"Shouldn't happen: mkEqType($t)")
+      case ListType(underlying) => mkEqType(underlying)
+      case ft: FunctionType => fail
+    }
   }
 
   // ========= TypeParamMap functions

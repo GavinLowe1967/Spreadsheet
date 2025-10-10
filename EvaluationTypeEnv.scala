@@ -10,8 +10,9 @@ import TypeParam.TypeParamName // Names of type parameters (Strings)
   * @param constraints a mapping giving constraints on type variables.
   * @param typeParamMap a mapping giving constraints on type parameters.  */
 class EvaluationTypeEnv(
-  private val constraints: Constraints,
-  private val typeParamMap: TypeParamMap
+  private val constraints: Constraints, // = HashMap[TypeID, TypeConstraint]
+  private val typeParamMap: TypeParamMap 
+                              // = HashMap[TypeParamName, TypeParamConstraint]
 ) extends TypeEnv0{
 
   // ========= Constraints functions
@@ -45,7 +46,7 @@ class EvaluationTypeEnv(
 // ==================================================================
 
 object EvaluationTypeEnv{
-  /** A mapping from type identifiers to MemberOf(ts) constraints. */
+  /** A mapping from type identifiers to constraints. */
   type Constraints = HashMap[TypeID, TypeConstraint]
 
   /** Mapping giving the type constraints on type parameters currently in

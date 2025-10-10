@@ -12,7 +12,10 @@ Language
 
 4. Check Frames in typechecker -- store untypedCell no. -- done
 
-5. Consider the case of "[] == [3]" and "[] = [f]" for f a function.  cf TypeEnv.isEqType, case TypeVar
+5. Consider the case of "[] == [3]" and "[] = [f]" for f a function.  cf TypeEnv.isEqType, case TypeVar -- done
+
+-- Change isEqType to return Reply[TypeEnv], in the case of TypeVar(tv),
+   updating to map tv to EqTypeConstraint.  Handle in TypeChecker.typeCheckBinOp
 
 6. Add double-write error, giving all places where written.
 
