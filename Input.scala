@@ -111,9 +111,8 @@ object Input{
 
 /** The source of an Exp or Value. */
 trait Source{
+  /** The way this is displayed. */
   def asString: String
-
-  def until(other: Source): Source
 }
 
 // =======================================================
@@ -132,40 +131,32 @@ class Extent(
     assert(e.text eq text); new Extent(text, start, e.end, lineNumber)
   }
 
-  /** The extension of this with other. */
-  def until(other: Source) = CompoundSource(this, other)
-
   override def toString = s"Extent($asString)"
 
   override def equals(other: Any) = other match{
     case e: Extent => text == e.text && start == e.start && end == e.end
   }
-
 }
 
 // =======================================================
 
 /** A source corresponding to cell(column, row). */
 case class CellSource(column: Int, row: Int) extends Source{
-
   def asString = { val cName = CellSource.colName(column); s"#$cName$row" }
-
-  def until(other: Source) = CompoundSource(this, other)
 }
 
 object CellSource{
   /** String name for column c. */
   def colName(c: Int): String = {
-    require(0 <= c && c < 26); (c+'A').toChar.toString
+    def toChar(n: Int) = (n+'A').toChar
+    if(c < 26) toChar(c).toString else List(toChar(c/26),toChar(c%26)).mkString
+    //require(0 <= c && c < 26); (c+'A').toChar.toString
   }
-  // Note: I'm not sure if this is the best place for this function. 
 }
 
-// =======================================================
-
-/** A compound source. */
-case class CompoundSource(s1: Source, s2: Source) extends Source{
-  def asString = s1.asString + s2.asString
-
-  def until(other: Source) = CompoundSource(this, other)
+/** A source corresponding to a write to cell(column, row) by Directive dir. */
+case class CellWriteSource(column: Int, row: Int, dir: Directive) extends Source{
+  def asString = { 
+    val cName = CellSource.colName(column); s"#$cName$row from $dir" 
+  }
 }

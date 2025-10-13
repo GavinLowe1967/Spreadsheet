@@ -19,7 +19,7 @@ object TopLevelTest{
       s"Expected $e found ${cells(c)(r)} in #${ColumnValue.getName(c)}$r")
 
   // Column names
-  val A = 0; val B = 1; val C = 2; val D = 3; val E = 4
+  val A = 0; val B = 1; val C = 2; val D = 3; val E = 4; val F = 5
 
   /** Values expected to be provided as inputs. */
   val expectedInputs = List[(Int,Int,Value)](
@@ -29,11 +29,13 @@ object TopLevelTest{
 
   /** List of expected values, with columns and rows. */
   val expected = List[(Int,Int,Value)](
-    (A,0,FloatValue(6.0F)), (B,0,IntValue(10)), (E,0,StringValue("Hello")),
-    (E,1,IntValue(7)), (E,2,IntValue(4)),
+    (F,0,FloatValue(6.0F)), (B,0,IntValue(10)), (E,0,StringValue("Hello")),
+    // Factorials, rows 1-4 
     (B,1,IntValue(24)), (C,1,IntValue(24)),
     (B,3,IntValue(720)), (C,3,IntValue(720)),
-    (A,5,BoolValue(true)), (A,6, BoolValue(true))
+    // More in row 6
+    (B,6,IntValue(7)), (C,6,IntValue(4)), (D,6,IntValue(4)),
+    (B,7,BoolValue(true)), (B,8, BoolValue(true))
   )
 
   /** Lit of cells where type errors are expected. */

@@ -20,10 +20,9 @@ object Execution{
         : Value = 
       e.lift( { 
         case ColumnValue(c) =>
-          e.lift( { 
-            case RowValue(r) =>
-              comp(env.getCell(c,r), "#"+ColumnValue.getName(c)+r)
-          },
+          e.lift( 
+            {case RowValue(r) =>
+              comp(env.getCell(c,r), "#"+ColumnValue.getName(c)+r)},
             eval(env, row)
           ) },
         eval(env, column)
@@ -155,7 +154,7 @@ object Execution{
   private def perform(
     env: Environment, handleError: ErrorValue => Unit, s: Statement)
       : Boolean = s match{
-    case Directive(ce, re, expr) => 
+    case d @ Directive(ce, re, expr) => 
       eval(env, ce) match{
         case ColumnValue(c) =>
           if(0 <= c && c < env.width) eval(env, re) match{
@@ -163,10 +162,13 @@ object Execution{
               if(0 <= r && r < env.height){
                 if(env.isEmpty(c,r)) eval(env, expr) match{
                   case ev: ErrorValue =>
-                    val ev1 = s.liftError(ev); env.setCell(c, r, ev1)
+                    val ev1 = s.liftError(ev)
+                    env.setCell(c, r, ev1.withCellSource(c,r))
                     handleError(ev1)
                   // Note: ErrorValue <: Cell, so the ordering is important.
-                  case v1: Cell => env.setCell(c, r, v1)
+                  case v1: Cell => 
+                    env.setCell(c, r, v1.withCellWriteSource(c,r,d))
+// IMPROVE: add s
                 } // end of inner match
                 else{
                   val err0 = EvalError("Cell written to for second time")

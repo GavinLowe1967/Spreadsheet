@@ -11,24 +11,33 @@ def double(y: Float): Float = 2.0*y
 
 // =======================================================
 
+// Inputs in column A
+
 // Simple tests in row 0
-#A0 = apply(double, 3.0) 
+#F0 = apply(double, 3.0) 
 #B0 = sum([1,2,3,4])
 #C0 = 1/0 // Evaluation error
 #D0 = 3; #D0 = 4.0 // Evaluation error
 val hello = "Hello"; #E0 = hello
-#E1 = 3+#A1 // untyped cell read.
-#E2 = if(false) 3 else #A1 // Untyped cell read.
 
 // factorials, rows 1-4
 for(r <- #1 to #4; c <- [#B, #C]; if r != #2){
   Cell(c, r) = fact(Cell(#A,r))
 }
 
+// More in row 6
+#B6 = 3+#A1 // untyped cell read.
+#C6 = if(false) 3 else #A1 // Untyped cell read.
+// Test of scoping
+val y = 3
+def f(x: Int): Int = x+y
+def g(z: Int): Int = { val y = 10; f(z) }
+#D6 = g(1) // should be 4
+
 // This test checks the inner declaration of flag doesn't leak. 
 val flag = true
-for(r <- #5 to #6; if r == #6 || flag){ 
-  Cell(#A, r) = flag; val flag = false 
+for(r <- #7 to #8; if r == #6 || flag){ 
+  Cell(#B, r) = flag; val flag = false 
 }  
 
 // Test of empty blocks.

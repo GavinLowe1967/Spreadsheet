@@ -51,6 +51,20 @@ object TypeCheckerTest2{
         List(("A",AnyTypeConstraint)), List(TypeParam("A")),
         ListType(TypeParam("A"))
       ))}
+    tcpss("def mkEmpty[A](): List[A] = []; val xs = mkEmpty()") match{
+      case Ok(te) =>
+        assert(te("mkEmpty") == FunctionType(
+          List(("A",AnyTypeConstraint)), List(), ListType(TypeParam("A"))
+        ))
+        te("xs") match{ 
+          case ListType(TypeVar(tv)) => assert(te(tv) == AnyTypeConstraint) }
+    }
+    tcpss("def mkEmpty[A <: Eq](): List[A] = []; val xs = mkEmpty()") match{
+      case Ok(te) =>
+        te("xs") match{ 
+          case ListType(TypeVar(tv)) => assert(te(tv) == EqTypeConstraint) }
+    }
+
     tcpss("def f[A <: Eq](x: A): Boolean = [x] == []") match{  case Ok(te) => 
       assert(te("f") == FunctionType(
         List(("A",EqTypeConstraint)), List(TypeParam("A")), BoolType

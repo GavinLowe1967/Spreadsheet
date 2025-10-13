@@ -8,7 +8,8 @@ trait Value{
   /** Add source to this, and return this. */
   def withSource(s: Source) = { source = s; this }
 
-  /** How this is presented in an error message. */
+  /** How this is presented in an error message, and when in a cell that is
+    * selected. */
   def forError: String // = toString
 }
 
@@ -16,23 +17,31 @@ trait Value{
 
 /** Values that can be in a cell. */
 trait Cell extends Value{
-  /** How this is presented in a cell.  Overwritten for StrngValues. */
+  /** How this is presented in a cell.  Overwritten for StringValues. */
   def asCell: String = forError
+
+  /** Text to display when this cell is selected. */ 
+  def forSelection = source match{
+    case CellWriteSource(_,_,d) =>
+      val e = d.getExtent
+      forError+s"\nFrom cell write at line ${e.lineNumber}:\n"+e.asString
+    case _ => forError
+  }
 
   /** How this is represented in a CSV file. */
   def asCSV: String = forError
 
   /** Add cs to this as the source, and return this. */
-  def withCellSource(cs: CellSource) = { source = cs; this }
+  private def withCSource(cs: Source): Cell = { source = cs; this }
+
+  def withCellSource(c: Int, r: Int): Cell = withCSource(CellSource(c,r))
+
+  def withCellWriteSource(c: Int, r: Int, d: Directive) = 
+    withCSource(CellWriteSource(c, r, d))
 
   /** The type of this value.  Set in subclasses. */
   def getType: CellType // TypeT
 }
-
-// object Cell{
-//   /** Produce a Cell corresponding to st. */
-//   def fromString(st: String): Cell = Empty() // FIXME
-// }
 
 
 /** Types with + and - operators. */
@@ -196,10 +205,7 @@ object ColumnValue{
   }
 
   /** The name for the collumn with index c. */
-  def getName(c: Int): String = {
-    def toChar(n: Int) = (n+'A').toChar
-    if(c < 26) toChar(c).toString else List(toChar(c/26),toChar(c%26)).mkString
-  }
+  def getName(c: Int): String = CellSource.colName(c)
 }
 
 // =======================================================

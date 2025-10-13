@@ -11,7 +11,9 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
   import Spreadsheet._
 
   val height = model.height
-  val width = model.width
+  val width = model.width 
+
+  preferredSize = new Dimension(800,500)
 
   /** The cells, holding Values. */
   private val cells = model.cells
@@ -23,7 +25,7 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
 
   /** An editable text field. */
   class MyTextField(text: String) extends TextField(text){
-    background = UserDataBackground; // peer.setOpaque = true
+    background = UserDataBackground
   }
 
   /** An uneditable text field containing `text`.  
@@ -56,24 +58,9 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
       val colour = cell match{ 
         case _ : StringValue => StringTextColour; case _ => DefaultTextColour
       }
-      if(hasFocus) view.showSelection(text)
+      if(hasFocus) view.showSelection(cell.forSelection)
       if(hasFocus && !calc) new MyTextField(text)
       else new MyLabel(text, calc, colour, hasFocus)
-
-      // if(hasFocus) {
-      //   val text = cells(column)(row).asCell
-      //   view.showSelection(text) // ****
-      //   if(calculated(column)(row)) new MyLabel(text, true, true)
-      //   else new MyTextField(text)
-      // }
-      // else /* if(calculated(column)(row)) */ {
-      //   val v = cells(column)(row); assert(v != null)
-      //   new MyLabel(v.asCell, calculated(column)(row), hasFocus)
-      // }
-      // else{
-      //   val st = strings(column)(row); assert(st != null)
-      //   new MyLabel(st, false)
-      // }
     } // end of rendererComponent
 
     /** String to represent the entry in (row, column). */
@@ -90,13 +77,12 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
             val vString = v.toString
             cells(column)(row) = 
               if(vString.isEmpty) Empty() 
-              else CellParser(vString)
+              else CellParser(vString).withCellSource(column,row)
             spreadsheetModel.update()
           }
         }
       case e => println(e)
     }
-
   }
 
   /** The headers for the rows. */

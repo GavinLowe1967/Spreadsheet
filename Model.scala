@@ -96,7 +96,6 @@ class Model(val height: Int, val width: Int){
       bw.write(
         (0 until width).map(c =>
           if(!calculated(c)(r)) cells(c)(r).asCSV else ""
-// TODO: consider above for String values when implemented.
         ).mkString(",") + "\n"
       )
     bw.close()
@@ -109,7 +108,8 @@ class Model(val height: Int, val width: Int){
       val lines = scala.io.Source.fromFile(file).getLines().toArray
       for(r <- 0 until lines.length){
         val fields = CSVParser(lines(r)).toArray 
-        for(c <- 0 until fields.length) cells(c)(r) = fields(c)
+        for(c <- 0 until fields.length) 
+          cells(c)(r) = fields(c).withCellSource(c,r)
       }
     }
   }

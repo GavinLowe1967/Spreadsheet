@@ -19,9 +19,9 @@ class Environment(
   private val nameMap: HashMap[String, Value] = Environment.initNameMap
 ){
   /** Get the value in cell (c,r). */
-  def getCell(c: Int, r: Int): Cell = cells(c)(r).withCellSource(CellSource(c,r))
+  def getCell(c: Int, r: Int): Cell = cells(c)(r)//.withCellSource(CellSource(c,r))
 
-
+  /** Is cell (c,r) empty? */
   def isEmpty(c: Int, r: Int): Boolean = cells(c)(r).getType == EmptyType
 
   /** Set the value of cell(c,r) to v, and record that it was calculated. */
