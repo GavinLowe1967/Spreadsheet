@@ -9,6 +9,9 @@ object TypeChecker{
   import FunctionType.TypeParameter // (TypeParamName, TypeParamConstraint)
   import Unification.unify
 
+  /** Contents of the result of a successful call to typeCheck. */
+  type TypeCheckRes = (TypeEnv,TypeT)
+
   /** The next type identifier to use. */
   private var next = 0
 
@@ -19,6 +22,8 @@ object TypeChecker{
 
   /** Get a new Name. */
   private def newName() : Name = { nextNameIx += 1; "%"+nextNameIx } 
+
+  // Helper functions
 
   /** Make a FailureR: expected `eType` found `fType` in `exp`. */
   private def mkErr(eType: TypeT, fType: TypeT, exp: Exp) = 
@@ -32,8 +37,13 @@ object TypeChecker{
     case t::ts1 => t.asString+", "+mkDisjunction(ts1)
   }
 
-  /** Contents of the result of a successful call to typeCheck. */
-  type TypeCheckRes = (TypeEnv,TypeT)
+  /** Find a repeated value in xs, if there is one. */
+  private def findRepetition[A](xs: List[A]): Option[A] = 
+    if(xs.isEmpty) None
+    else if(xs.tail.contains(xs.head)) Some(xs.head)
+    else findRepetition(xs.tail)
+
+  // Cell reads
 
   /** Check `column` and `row` produce a ColumnType and RowType respectively; if
     * so, apply `f` to the resulting TypeEnv. */ 
@@ -43,6 +53,8 @@ object TypeChecker{
     typeCheckUnify(typeEnv, column, ColumnType).map{ case (te1, ColumnType) =>
       typeCheckUnify(te1, row, RowType).map{ case (te2, RowType) => f(te2) }
     }
+
+  // ========= Binary operators
 
   /** Map giving all types for infix operators, except for equality,
     * inequality and (::). */
@@ -73,22 +85,12 @@ object TypeChecker{
           close(te1,tl).map{ case (te2,`tl`) =>
             te2.mkEqType(tl).map{ te3 => 
               typeCheckUnify(te3, right, tl).map{ case (te4, tr) =>
-                // te4.mkEqType(tr).map{ te5 => Ok((te5,BoolType)) }
                 // Note, in the case of "[] == [f]" for f not an equality type, 
                 // unification fails.
                 Ok((te4,BoolType))
               }.lift(right,true)
             }
           }
-/*            
-            if(te2.isEqType(tl))
-              typeCheckUnify(te2, right, tl).map{ case (te3, tr) =>
-                Ok((te3,BoolType))
-              }.lift(right,true)
-            else
-              FailureR(s"Expected equality type, found $tl").lift(left,true)
- */
-          
         case "::" =>
           typeCheckUnify(te1, right, ListType(tl))
         case _ => // Overloaded operator
@@ -135,33 +137,17 @@ object TypeChecker{
     // Typed cell expressions
     case ce @ CellExp(column, row, theType) =>
       checkCellRead(typeEnv, column, row, te => Ok(te, theType)).lift(exp)
-      // typeCheckUnify(typeEnv, column, ColumnType).map{ case (te1, ColumnType) => 
-      //   typeCheckUnify(te1, row, RowType).map{ case (te2, RowType) =>
-      //     Ok(te2, theType)
-      //   }
-      // }.lift(exp)
     // Untyped cell expressions
     case cell @ UntypedCellExp(column, row) =>   
       def setType(te: TypeEnv) = {
         val ct = CellTypeVar(nextTypeID()); cell.setTypeVar(ct); Ok(te+cell, ct)
       }
       checkCellRead(typeEnv, column, row, setType).lift(exp)
-      // typeCheckUnify(typeEnv, column, ColumnType).map{ case (te1, ColumnType) => 
-      //   typeCheckUnify(te1, row, RowType).map{ case (te2, RowType) =>
-      //     val ct = CellTypeVar(nextTypeID()); cell.setTypeVar(ct)
-      //     Ok(te2+cell, ct)
-      //   }
-      // }.lift(exp)
     // Cell match expressions
     case CellMatchExp(column, row, branches) => 
       checkCellRead(
         typeEnv, column, row, te => typeCheckBranches(te, branches)
       ).lift(exp)
-      // typeCheckUnify(typeEnv, column, ColumnType).map{ case (te1, ColumnType) => 
-      //   typeCheckUnify(te1, row, RowType).map{ case (te2, RowType) =>
-      //     typeCheckBranches(te2, branches)
-      //   }
-      // }.lift(exp)
     // Conditionals
     case IfExp(test, thenClause, elseClause) =>
       typeCheckUnify(typeEnv, test, BoolType).map{ case (te1, bt) =>
@@ -195,12 +181,9 @@ object TypeChecker{
             // Generate a new name, and bind it to range1 in the environment;
             // then unify the types of args with domain1, so the new name gets
             // updated to the appropriate return type.
-            // println(FunctionApp(f,args)); 
-            // println(s"tParams = $tParams; domain1 = $domain1")
             val name = newName(); val te3 = te2 + (name, range1)
             typeCheckListUnify(te3, args, domain1).map{ te4 => 
               Ok((te4.endScope, te4(name)))  // extract type of name
-              // Ok((te4-name, te4(name)))  // extract type of name
             }
           } 
         case _ => FailureR("Non-function applied as function")
@@ -213,6 +196,8 @@ object TypeChecker{
         typeCheckAndClose(te1, e).map{ case (te2, te) => Ok((te2.endScope, te)) }
       }.lift(exp)
   } // end of typeCheck
+
+  // ========= Unification, and closing.
 
   /** Typecheck exp, and unify with eType. */
   private def typeCheckUnify(typeEnv: TypeEnv, exp: Exp, eType: TypeT)
@@ -248,6 +233,8 @@ object TypeChecker{
       unify(te1, t1, eType).map{ case (te2,t2) => close(te2, t2) }
     }.lift(exp, true) // add line number here
 
+  // Lists
+
   /** Typecheck exps, unifying all their types with t.  Return an appropriate
     * ListType if successful.  Used in typechecking a ListLiteral, so ensure
     * all elements have the same type. */
@@ -267,27 +254,25 @@ object TypeChecker{
 // TODO: check for repeated patterns
   /** Typecheck the branches of a cell match expression. */
   private def typeCheckBranches(typeEnv: TypeEnv, branches: List[MatchBranch])
-      : Reply[TypeCheckRes] =
-    if(branches.isEmpty) 
-      FailureR("Empty list of branches for cell match expression")
-    else{
-      val b1 = branches.head
-      typeCheckBranch(typeEnv, b1).mapOrLift(b1, { case(te1,t1) =>
-        typeCheckUnifyBranches(te1, branches.tail, t1)        
-      })
-    }
+      : Reply[TypeCheckRes] = {
+    assert(branches.nonEmpty) // caught by parser
+    val b1 = branches.head
+    typeCheckBranch(typeEnv, b1).mapOrLift(b1, { case(te1,t1) =>
+      typeCheckUnifyBranches(te1, branches.tail, t1)
+    })
+  }
 
   /** Typecheck a single branch of a cell match expression. */
   private def typeCheckBranch(typeEnv: TypeEnv, branch: MatchBranch)
       : Reply[TypeCheckRes] = {
     val MatchBranch(pat, body) = branch
     pat match{
-      case TypedPattern(name, t) => 
+      case TypedPattern(Some(name), t) => 
         // Check body in new scope, with name -> t
         typeCheck(typeEnv.newScope+(name,t), body).map{ case (te1, t1) =>
           Ok((te1.endScope, t1))
         }
-      case EmptyPattern => typeCheck(typeEnv, body)
+      case _ => typeCheck(typeEnv, body)
     }
   }
 
@@ -408,12 +393,6 @@ object TypeChecker{
         checkFor(typeEnv.newScope, binders, stmts).lift(stmt)
 
     } // end of "stmt match", typeCheckStmt
-
-  /** Find a repeated value in xs, if there is one. */
-  private def findRepetition[A](xs: List[A]): Option[A] = 
-    if(xs.isEmpty) None
-    else if(xs.tail.contains(xs.head)) Some(xs.head)
-    else findRepetition(xs.tail)
 
   /** Typecheck stmts in environment typeEnv. */
   private def typeCheckStmtList(typeEnv: TypeEnv, stmts: List[Statement])

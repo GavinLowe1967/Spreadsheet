@@ -33,6 +33,7 @@ object TopLevelTest{
     // Factorials, rows 1-4 
     (B,1,IntValue(24)), (C,1,IntValue(24)),
     (B,3,IntValue(720)), (C,3,IntValue(720)),
+    (D,4,StringValue("first empty")),
     // More in row 6
     (B,6,IntValue(7)), (C,6,IntValue(4)), (D,6,IntValue(4)),
     (B,7,BoolValue(true)), (B,8, BoolValue(true))

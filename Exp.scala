@@ -130,17 +130,22 @@ case class UntypedCellExp(column: Exp, row: Exp) extends Exp{
 /** A pattern in a cell match expression. */
 trait Pattern{
   /** Does this pattern match type t? */
-  def matches(t: TypeT): Boolean 
+  def matches(t: CellType): Boolean 
 }
 
-/** A pattern "name: theType". */
-case class TypedPattern(name: NameExp.Name, theType: CellType) extends Pattern{
-  def matches(t: TypeT) = t == theType
+/** A pattern "name: theType" or "_: theType. */
+case class TypedPattern(oName: Option[NameExp.Name], theType: CellType)
+    extends Pattern{
+  def matches(t: CellType) = t == theType
 }
 
 /** A pattern "Empty". */
 case object EmptyPattern extends Pattern{
-  def matches(t: TypeT) = t == EmptyType
+  def matches(t: CellType) = t == EmptyType
+}
+
+case object Wildcard extends Pattern{
+  def matches(t: CellType) = true
 }
 
 /** A pattern of the form "case pattern => body". */
@@ -148,7 +153,9 @@ case class MatchBranch(pattern: Pattern, body: Exp) extends HasExtent
 
 /** An expression of the form "Cell(column, row) match{ branches }". */
 case class CellMatchExp(column: Exp, row: Exp, branches: List[MatchBranch]) 
-    extends Exp
+    extends Exp{
+  require(branches.nonEmpty)
+}
 
 // ==================================================================
 

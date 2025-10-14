@@ -60,7 +60,10 @@ class View(model: Model) extends MainFrame with ViewT{
   def redisplay() = spreadsheet.repaint()
 
   /** Show `text` in the selection box. */
-  def showSelection(text: String) = selectionBox.text = text 
+  def showSelection(text: String) = {
+    selectionBox.text = text
+    selectionBox.peer.select(0,0) // Move scrollbar to top of selectionBox
+  }
 
   /** Add `text` to the information box. */
   def addInfo(text: String) = {

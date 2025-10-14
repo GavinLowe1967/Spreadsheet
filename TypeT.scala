@@ -101,6 +101,10 @@ case object EmptyType extends CellType{
   def asString = "empty cell"
 }
 
+case object ErrorType extends CellType{
+  def asString = "error value"
+}
+
 // ==================================================================
 
 /** The type of lists with underlying type `underlying`. */

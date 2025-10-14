@@ -117,26 +117,28 @@ object ExpParserTest extends ParserTest0{
     // assertParseFail("f(#E3)")
  
     val matchExp = 
-      "#A3 match{ case n: Int => 3; case x:Float=>4;\n "+
-        "case st: String => 5; case b : Boolean => 6;\n "+
+      "#A3 match{ case n: Int => 3; case x:Float=>4 \n "+
+        "case _: String => 5; case _ : Boolean => 6 ; \n "+
         "case Empty => 7 }"
     //println(p(matchExp))
     assert(p(matchExp) == CellMatchExp(
       ColumnExp("A"), RowExp(3), List(
-        MatchBranch(TypedPattern("n", IntType), IntExp(3)),
-        MatchBranch(TypedPattern("x", FloatType), IntExp(4)),
-        MatchBranch(TypedPattern("st", StringType), IntExp(5)),
-        MatchBranch(TypedPattern("b", BoolType), IntExp(6)),
+        MatchBranch(TypedPattern(Some("n"), IntType), IntExp(3)),
+        MatchBranch(TypedPattern(Some("x"), FloatType), IntExp(4)),
+        MatchBranch(TypedPattern(None, StringType), IntExp(5)),
+        MatchBranch(TypedPattern(None, BoolType), IntExp(6)),
         MatchBranch(EmptyPattern, IntExp(7))
       ) 
     ) )
 
-    assert(p("Cell(c, r) match{ case Empty => 7; case n: Int => 0 }") == 
-      CellMatchExp(
-        NameExp("c"), NameExp("r"), 
-        List(MatchBranch(EmptyPattern,IntExp(7)), 
-          MatchBranch(TypedPattern("n",IntType),IntExp(0)) 
-        )))
+    val e1 = "Cell(c, r) match{ case Empty => 7; case n: Int => 0; case _ => 3 }"
+    assert(p(e1) == CellMatchExp(
+      NameExp("c"), NameExp("r"),
+      List(MatchBranch(EmptyPattern, IntExp(7)),
+        MatchBranch(TypedPattern(Some("n"),IntType), IntExp(0)),
+        MatchBranch(Wildcard, IntExp(3))
+      )))
+    assertParseFail("#A3 match{ }")
 
   }
 

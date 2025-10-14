@@ -248,7 +248,7 @@ case class FunctionValue(f: PartialFunction[List[Value], Value]) extends Value{
 
 /** The union of error cases. */
 trait ErrorValue extends Cell{
-  def getType = null // IMPROVE? 
+  def getType = ErrorType
 
   def msg: String
 }

@@ -5,6 +5,8 @@ object Execution{
   /** Check value `v` read from cell `name` has type `eType`.  If so, return
     * `v`.  If not, give appropriate TypeError.  */
   private def checkCellType(eType: TypeT)(v: Cell, name: String) = {
+    assert(eType != null && v != null && name != null && v.getType != null,
+      s"checkCellType($eType)($v, $name)")
     val vType = v.getType
     if(vType == eType) v
     else TypeError(

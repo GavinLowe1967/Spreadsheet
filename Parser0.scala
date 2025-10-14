@@ -56,6 +56,16 @@ trait Parser0{
 
   /** A parser for a string literal in the script. */
   protected def string: Parser[String] = lit("\"") ~~> string1 
+
+
+  /** A parser for a separator between statements or branches in a cell match
+    * expression: either a newline or a semicolon.  Note: this consumes white
+    * space at the start of its input: it should be sequenced with the
+    * preceding parser using `~~`. */
+  def separator: Parser[String] = 
+    //consumeWhiteNoNL ~> (lit("\n") | lit(";"))
+    toLineEnd | consumeWhite ~> lit(";")
+
 }
 
 

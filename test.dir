@@ -9,6 +9,14 @@ def apply[A,B](f: A => B, x: A): B = f(x)
 
 def double(y: Float): Float = 2.0*y
 
+// Row for the first empty cell in column c from row r.
+def firstEmptyInCol(c: Column, r: Row): Row =
+  Cell(c,r) match{ 
+    case Empty => r; 
+    case _: Int => firstEmptyInCol(c, r+1)
+    case _ => firstEmptyInCol(c, r+1) 
+  }
+
 // =======================================================
 
 // Inputs in column A
@@ -24,6 +32,9 @@ val hello = "Hello"; #E0 = hello
 for(r <- #1 to #4; c <- [#B, #C]; if r != #2){
   Cell(c, r) = fact(Cell(#A,r))
 }
+
+val firstEmpty = firstEmptyInCol(#A, #1) // Should give #4
+Cell(#D, firstEmpty) = "first empty"
 
 // More in row 6
 #B6 = 3+#A1 // untyped cell read.

@@ -1,22 +1,9 @@
 https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-paper-suffers-database-error/
 
-Language
-========
+Current
+=======
 
-
-1. Tidy up this file!
-
-2. Allow empty blocks, "for(x <- [2]){ }"; "def f[A,B](x: A, y: B): A = x; for(if f(true, #A1)){ }" (TypeCheckerTest1, l. 218) -- done 
-
-3. Add untyped cell reads in TopLevelTest -- done
-
-4. Check Frames in typechecker -- store untypedCell no. -- done
-
-5. Consider the case of "[] == [3]" and "[] = [f]" for f a function.  cf TypeEnv.isEqType, case TypeVar -- done
--- Change isEqType to return Reply[TypeEnv], in the case of TypeVar(tv),
-   updating to map tv to EqTypeConstraint.  Handle in TypeChecker.typeCheckBinOp
-
-6. Add double-write error, giving all places where written.
+1. Add double-write error, giving all places where written.
 
 (a) Set CellSource when value entered, or CSV read in.  Stop
   Environment.getCell from adding source. -- done
@@ -29,28 +16,58 @@ Language
 
 (d) Add double-write error
 
-7. Add more patterns for cell match expressions, e.g. "_" or "_: Int" as
-   wildcard?
+(e) Can a write overwrite user data?  
 
-8. Improve treatment of Strings:
+2. Add more patterns for cell match expressions, e.g. "_" or "_: Int" as
+   wildcard?  -- DONE
+a) Syntax: done
+b) Parsing: done
+c) Typechecking: done
+d) Evaluation: done
+
+
+Priorities
+==========
+
+* Tidy up parsing files
+
+* Overloading.
+
+* List comprehensions.
+
+* Allow assertions, error.
+
+* "println" statements.
+
+* Add "if" directives.
+
+* Haskell standard prelude.
+
+* Improve syntax for function declarations and applications -- currying.
+
+Low Priority
+============
+
+* Improve treatment of Strings:
 - Allow non-quoted strings in CSV
 - Think about escaped characters in non-quoted string cells.
 
-9. Add "if" directives.
+* Order relations on rows, columns
 
-10. Haskell standard prelude
+* Look again at Unification.scala.  Are all branches tested?
+
+* Catch stack overflows.
 
 
--- allow assertions, errors.
 
-- order relations on rows, columns
 
-- Look again at Unification.scala.  Are all branches tested?
 
-Catch stack overflows.
 
-Outstanding:
------------
+
+===================================== DONE
+
+
+1. Tidy up this file!
 
 - Seems to need newline at end 
 
@@ -62,96 +79,15 @@ Outstanding:
   Expected List[TypeVar(133)], found Int at line 1.  Also 1:: [true]; 
   tail([1]) == tail([false])
 
-- Allow function application where function is arbitrary expression
+2. Allow empty blocks, "for(x <- [2]){ }"; "def f[A,B](x: A, y: B): A = x; for(if f(true, #A1)){ }" (TypeCheckerTest1, l. 218) -- done 
 
-- Line numbers for second definitions
+3. Add untyped cell reads in TopLevelTest -- done
 
-- Source for values in cells.
+4. Check Frames in typechecker -- store untypedCell no. -- done
 
-Current: 
---------
-
-"applyToThree(doubleI)".  Needs to unify (Int => Int) against (A => B) with A
-<: Num. happens It tries to unify FunctionType(List(),List(IntType),IntType)
-and FunctionType(List(),List(TypeVar(3)),TypeVar(4)) with 3 ->
-NumTypeConstraint, 4 -> AnyTypeConstraint
-
-
- I think we should be testing whether Int is a superset of (A <: Num). 
-
-
-What happens with
-
-def f[A <: Num](x: A): Int = { def g(y: Int): Int = 3; g(x) } ?  There it
-tries to unify IntType with TypeParam A, which fails.
-
-
-
-- Test more.  Another case not working in TypeCheckerTest "applyToThree(doubleI)"
-
-(low priority)
-
-- Rename TypeChecker.typeCheckListUnify, and improve comment
-
-
-Soon
-----
-  
-Lists:
-- [_ .. _]
-- list comprehensions
-
-Long term
----------
-
-
-* "for"s. 
-
-* Allow type annonations in script, e.g. x = #A3 : Int
-
-Musings
--------
-
-Uses for TypeConstraints:
-- For type parameters (TypeParamConstraint): (Num, Eq, Any)
-- For Cells (Num, Cell, Singleton)
-- For type parameters (more general)
-
-When can type t1 instantiate t2?
-
-t1              t2
-Concrete type   Concrete type  Same type only
-TypeVar(tid)    Concrete type  Constraint on tid includes t2
-Concrete type   Type param     t1 satisfies constraint on t2
-TypeVar(tid)    Type param     Constraint on tid \inter constraint on t2 nonempty
-Type param      Type param     t1 = t2
-ListType(tt1)   ListType(tt2)  tt1 can instantiate tt2
-ListType(tt1)   Type param     ListType(tt1) satisfies constraint on t2
-
-
-Behaviour
-=========
-
-Don't allow directives to overwrite user data.
-
-Data load and save.
-
-
-Appearance
-----------
-
-Index cells from 1
-
-Code
-----
-
-Split evaluation tests off from PerserTest.
-
-Tidy up TypeCheckerTest
-
-
-===================================== DONE
-
+5. Consider the case of "[] == [3]" and "[] = [f]" for f a function.  cf TypeEnv.isEqType, case TypeVar -- done
+-- Change isEqType to return Reply[TypeEnv], in the case of TypeVar(tv),
+   updating to map tv to EqTypeConstraint.  Handle in TypeChecker.typeCheckBinOp
 
 1. Tidy up typechecking of cell expressions -- common code -- done
 -- Tidy up ExpParser. -- done
@@ -183,231 +119,3 @@ This is a new syntactic category.
 - Parsing -- done
 - Typechecking -- done
 - Evaluation -- done
-
-Consider typechecking of head([]) -- done
-
-Strings:
-- Store as literal - done
-- To enter in script, surround with quote marks, and allow escapes -- done
-- To enter in cells, same with enclosing quotes; or arbitrary not matching 
-  number or boolean. -- done, but think about latter option.
-- To display in cells, as literal, but use different colour. -- done, add to test
-- In CSV, enclosed by quote marks, with " replaced by "" (that's the standard).
-- Refactor StatementParser.scala: more number  and string1 into base class? -- done
-
-2. Add "to" and "until" infixes to build lists. -- done
-- Parsing -- done
-- Type checking -- done
-- Evaluation -- done
-
-1. Don't allow overwriting of cells. -- done
-
-3. Support saving and loading as CSV. -- mostly done, except treatment of
-Strings.
-
-4. Automate tests that load script and sheet, and checks results. -- done, but
-could be extended.
-
-for statements - done
-
-Typechecking of "def applyToThreeF[A <: Num](f: A => A): A = f(3.0)" not
-working.  Gets to call of unify(..., FloatType, TypeParam("A")), but that
-fails.  ** The restriction on A seems to have been lost from the typechecker.
-It's there just before the call to typeCheckListUnify.....  No!  I was using
-the wrong function!  Working now
-
-Type checking of "apply" not working -- done
-
-- USe TypeChecker.subTypeParams in case for FunctionApp
-
-- Also use in mkInstance. -- done
-
-- In case for FunctionApp, replace each FunctionType by an instance using mkInstance -- done
-- parser for bools in spreadsheet -- done
-val b = [] == [3] fails to typecheck
-val b = [3] == [] succeeds (?)
-
-
-Try to allow arithmetic operators to be applied to Int and Float.  Mostly done. 
-
-* EvaluationTypeChecker.unify -- update for equality, inequality
-
-* Test other binary ops.  I think equality/inequality won't work yet. 
-
-
-* Allow arithmetic operators to be applied to Int and Float.
-def f[A <: NumType](): A = 3
-[3, 5.5]
-Idea: give type of an integer litteral as a new TypeVar with
-NumTypeConstraint.  This nearly works.  It works for
-
-def f[A <: Num](x: A): A = 3+x
-
-The unification replaces the TypeVar for "3" with TypeParam("A").
-
-But it doesn't work for
-
-def f[A <: Num](x: A): A = x+3
-def f[A <: Num](): A = 3
-
-The unification tries to unify the TypeVar for "3" with TypeParam("A"), which
-fails.
-
-More test cases
-
-val y = #D3; def f[A <: Num]() : A = y
-
-I think NumTypeConstraint isn't quite the same as
-MemberOf(List(IntType,FloatType)).
-
-Allow a TypeVar to be unified with a TypeParam when the constraint on the
-TypeVar is a superset of that on the TypeParam?  (The constraint on the
-TypeParam implies that on the TypeVar.)  This would narrow the constraint on
-the TypeVar.
-
-With "val y = #D3; def f[A <: Num]() : A = y", #D3 must be an Int.
-With "#A3 = #A1 + #A2", both #A1 and #A2 can be Int or Float.
-
-When reading a value from a cell, if the read has typeconstraint
-NumTypeConstraint:
-- If cell value is Float, don't update
-- If cell value Int, don't update   ????????
-
-In Unification.unify, case (TypeVar(tId1), TypeParam(tp)) allow success only
-when tp associated with NumTypeConstraint, and tId1 with a superset of that;
-upade environment to map tId1 to IntType, but return type TypeParam(tp).  
-
-* In parse errors, print relevant line, highlighting position; trim excessive
-  text - done
-
-Function declarations and applications
-- parse function application -- done, but only for function names
-- ensure distinct param names - static analysis
-- More typenames, including in parser and ** catch incorrect types
-
-
-Improve parse error messages.
--  null -- done
-
-- polymorphism (def id[A](x: A): A = x) -- done
-- type classes (def equal[A <: Eq](x: A, y: A): Boolean = x == y)
-- give polymorphic types to built-in functions, head, tail 
-
-- Num type class
-
-* Parsing of type constraints: Eq and Num
-* Type checking with constraints 
-  def add[A <: Num](x: A, y: A): A = x+y
-  def equal[A <: Eq](x: A, y: A) : Boolean = x == y
-  def sum[A <: Num](xs: List[A]) : A = ... base case ??
-- Check that all types in function declaration signatures are declared. -- done
-1. In type environment, store (TypeParam => TypeConstraint) map.  -- done
-2. Update when processing function declaration --done
-3. Check names at same point --done
-3. Remove new names when leaving scope: store previous map in Frame -- done
-- When calling functions/binops, check that lower bound of each actual
-  parameter is a subset of the type of the formal parameter. -- done for
-  functions, I think.  But not binops
-*** In TypeChecker on FunctionDeclarations: 
-// if any of tparams gets bound to a TypeVar, update in typeEnv(name) -- NO
-val y = #A3
-def f(x: Int): Int = x+y -- seems fine
-def g[A <: Num](x: A): A = x+y -- do we want this?  -- NO- Check return type param in scope -- done
-
-- What is needed in TypeEnv at evaluation time?  constraints,
-  apply(tid). typeParamMap, constraintForTypeParam, replaceEvalTime, showType
-- Check names of parameters of functions are disjoint.  -- done
-- check declared names are disjoint in each block. -- done
-- Improve Directive.perform re error handling. -- done
-- TypeT.isSubclassOf -- done
-- Value.getType -- done
-
-- Remove eval from Exp classes. and perform from Statement -- done
-- Move FunctionDeclaration and FunctionApp and BlockExp -- done
-
-- Chenage FunctionValue to encapsulate function List[Value] => Value? -- done
-
--- Done introduction of type parameters.  Allow their use in types of params or return value. 
-- Substitution.scala. l20, FIXME
-
-- For functions with type parameters, replace each with type variable with
-  "lower bound" constraint.  (?)  No, separately record restrictions on type
-  params.
-- type checking for lists, from left-to-right
-- empty list
-All commented out tests in ParserTest, chck fail typechecking
-
-- TypeVar.isEqType
-- :: -- add eval -- done
-* Comments.
-
-- Allow Bool in cells -- done
--- Any type errors should not now arise in Exp.eval -- check this
--- Tidy up BinOp -- done
-- evalExpectError
-
-- Parser for Floats (script and cells), and eval. -- done
--- Change FloatValue to Cell -- done
-- use typeEnv when reading cells -- done, test with Floats
-error with "val column = #B" -- fixed
--- Move def of CellTypes -- done
--- Environment.checkType, update typeEnv -- done
-- Incorporate with GUI
-
-- line numbers in type errors - done
-- clear sheet before reloading - done
-- errors in window -- done
-- test ParserTest -- done
-- directives -- done
-- Test "==" with Cell types, find failures to match -- done
-
-Need to allow types to be refined in TypeEnv.replace, if tId associated with another cell
-Either:
-1. In TypeEnv, maintain map TypeID -> List(CellExpr), update in CellExpr within replace (consider case where t is TypeVar)
-2. In TypeEnv.constraints, include map to singleton type
-
-No, 1 goes wrong, as changes to the sheet won't get propsagated.  But yes -- do 1 when typechecking, but 2 at evaluation time
-
-
--- If TypeVar(x) has SingletonTypeConstraint(TypeVar(y)), then gets updated,
-   also need to update y
-
--- Get rid of cellReadMap - NO
-
-- Cell type - in progress; do binOps
-- Improve errors in TypeChecker.unify
-- Test captured variables are uncaptured - done
-- Tidy up TypeEnv - add functions - done
-- BlockExp - done
-- Better error message in unify.fail for TypeVar -- done
-- correct BlockExpr type checking -- done
-val x = #A3; val y = x; def f(x: Bool) = y+3; f(true) 
-
-(+) : Num a => (a,a) -> a; (==) : Eq a => (a,a) -> Bool; (&&) : (Bool,Bool) -> Bool, (<=) :: Num a => (a,a) -> Bool etc.  To apply to args, generate TypeVar(t) with
-constraint Num.  Try to unify with types of args.  To unify concrete type with
-Num, succeed if it is numeric.  To combine two constraints, take intersection.
-constraints need operations 
-def satisfied(t: TypeT) : Boolean
-def intersection(c: Constraint): Constraint 
-constraints correspond to Cell, Eq, Num
-Line numbers in error messages - done
-* On reload, refresh top box -- but no longer a selected cell
-Reload directives button -- DONE
-* Check return type of function - done
-- Allow "true", "false" literals -- done
-- evaluate function application -- done
-- Parse functions -- done
-- perform functions - store in environment -- done
-* Include source in declarations, for error messages. -- DONE
-
-Require statements to be separated by "\n" or ";" -- DONE
-
-Tidy up StatementParser -- all tests to separate object. -- DONE
-
-Blocks in declarations.  That makes Exp and Statement recursive. Or define
-Block extends Exp in Statement.  But ExpParser depends on StatementParser.  -- DONE 
-
-In BlockExp.eval, need to catch errors in performing stmts.  Replace view in
-Statement.perform by function handleError: ErrorValue => Unit -- DONE
-
-clear calculated in Model -- DONE

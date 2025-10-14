@@ -69,8 +69,8 @@ object ExpParser extends Parser0{
   private def cellRHS: Parser[Either[CellType, List[MatchBranch]]] = (
     lit(":") ~> cellType > { t => Left(t) }
     | 
-    lit("match") ~> lit("{") ~> repSep(matchBranch, ";") <~ lit("}") > 
-      { bs => Right(bs) }
+    lit("match") ~> lit("{") ~> repeatUntil(matchBranch, separator, lit("}")) > 
+      { case(bs,_) => Right(bs) }
   )
 
   /** A parser for a CellType. */
@@ -82,7 +82,10 @@ object ExpParser extends Parser0{
   /** A parser for a pattern in a cell match expression. */
   private def pattern: Parser[Pattern] = (
     lit("Empty") ~> success(EmptyPattern)
-    | name ~ (lit(":") ~> cellType) > toPair(TypedPattern)
+    | lit("_") ~> ( 
+      lit(":") ~> cellType > { t => TypedPattern(None, t) } | success(Wildcard)
+    )
+    | name ~ (lit(":") ~> cellType) > { case (n,t) => TypedPattern(Some(n),t) }
   )
 
   /** A parser for a branch of a cell match expression, 
@@ -127,7 +130,7 @@ object ExpParser extends Parser0{
 
   /** A parser for a block expression. */
   private def block: Parser[BlockExp] = {
-    import StatementParser.{listOf,declaration,separator}
+    import StatementParser.{listOf,declaration}
     def body: Parser[(List[Declaration], Exp)] = (
       repeat1(withExtent(consumeWhite ~> declaration) <~~ separator) ~ expr 
       //listOf(withExtent(declaration)) ~~ (separator ~> expr)
@@ -188,7 +191,7 @@ object ExpParser extends Parser0{
 
 // =======================================================
 
-object StatementParser{
+object StatementParser extends Parser0{
   import ExpParser.{expr,cell,withExtent}
 
   /** Parser for a directive, <cell> = <expr>. */
@@ -282,28 +285,11 @@ object StatementParser{
     directive | forLoop | declaration
   )
 
-  /** A parser for a separator between statements, either a newline or a
-    * semicolon.  Note: this consumes white space at the start of its input:
-    * it should be sequenced with the preceding parser using `~~`. */
-  def separator: Parser[String] = 
-    //consumeWhiteNoNL ~> (lit("\n") | lit(";"))
-    toLineEnd | consumeWhite ~> lit(";")
 
   /** A parser running `p` repeatedly, zero or more times. */
   def listOf[A <: Statement](p: Parser[A]): Parser[List[A]] = 
     //repSep(p, separator)
     p ~~ repeat1(separator ~> p) > toPair(_::_) | success(List())
-
-  /** Parse repeatedly with `p`, separated by `sep`, until `endMarker` is
-    * reached. */
-  def repeatUntil[A,B,C](p: Parser[A], sep: Parser[B], endMarker: Parser[C])
-      : Parser[(List[A], C)] = (
-    p ~~ (
-      sep ~> repeatUntil(p, sep, endMarker) 
-      |
-      consumeWhite ~> endMarker > { end => (List[A](), end) }
-    ) > { case (r1, (rs,end)) => (r1::rs, end) }
-  )
 
   /** A parser for one or more statements. */
   def statements: Parser[List[Statement]] = 

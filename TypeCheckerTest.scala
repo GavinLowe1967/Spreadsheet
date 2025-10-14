@@ -1,7 +1,7 @@
 package spreadsheet
 
 import TypeT._
-import TypeCheckerTest0._, TypeCheckerTest1._, TypeCheckerTest2._, TypeCheckerTest3._
+import TypeCheckerTest2._, TypeCheckerTest3._
 import TypeChecker.TestHooks._
 
 /** Tests on the type checker. */
@@ -33,15 +33,15 @@ object TypeCheckerTest{
       TypeCheckerTestExpr.expTests()
       // -- TypeCheckerTest1
       println("===singleDecTests===")
-      singleDecTests()
+      TypeCheckerTest1.singleDecTests()
       println("===scriptTests===")
-      scriptTests()
+      TypeCheckerTest1.scriptTests()
       println("===cellTests===")
-      cellTests()
+      TypeCheckerTest1.cellTests()
       println("===cellWriteTests===")
-      cellWriteTests()
+      TypeCheckerTest1.cellWriteTests()
       println("===listTests===")
-      listTests()
+      TypeCheckerTest1.listTests()
       println("===polyTests===")
       polyTests()
       println("===typeConstraintTests===")

@@ -6,11 +6,12 @@ def fact(n: Int) : Int = if(n <= 1) 1 else n*fact(n-1)
 // The sum in column c of rows [r..end).
 def sumCol(c: Column, r: Row, end: Row): Int = 
   if(r == end) 0 else sumCol(c, r+1, end) + Cell(c,r)
-  //Need type with if(r == end) 0 else Cell(c,r):Int + sumCol(c, r+1, end)
+  // Need type with if(r == end) 0 else Cell(c,r):Int + sumCol(c, r+1, end)
 
 // Row for the first empty cell in column c from row r.
 def firstEmptyInCol(c: Column, r: Row): Row =
-  Cell(c,r) match{ case Empty => r; case n:Int => firstEmptyInCol(c, r+1) }
+  //Cell(c,r) match{ case Empty => r; case _ => firstEmptyInCol(c, r+1) }
+  Cell(c,r) match{ case Empty => r; case _: Int => firstEmptyInCol(c, r+1) }
 
 // Row for the first empty cell in In
 val firstEmpty = firstEmptyInCol(In, #0)
