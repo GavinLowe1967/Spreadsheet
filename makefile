@@ -61,8 +61,10 @@ $(DIR)/Parser.class: $(DIR)/Input.class
 
 $(DIR)/Parser0.class: $(DIR)/Parser.class $(DIR)/Exp.class
 
-$(DIR)/StatementParser.class: $(DIR)/Parser0.class $(DIR)/Statement.class	\
+$(DIR)/DeclarationParser.class: $(DIR)/Parser0.class $(DIR)/Statement.class	\
   $(DIR)/TypeConstraint.class $(DIR)/FunctionValue.class
+
+$(DIR)/StatementParser.class: $(DIR)/DeclarationParser.class
 
 $(DIR)/ExpParserTest.class:  $(DIR)/StatementParser.class $(DIR)/Execution.class
 

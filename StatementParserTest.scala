@@ -3,7 +3,7 @@ package spreadsheet
 /** Tests on parsing of Statements. */
 object StatementParserTest extends ParserTest0{
   import Parser.parseAll
-  import StatementParser.{statement,statements}
+  import StatementParser.TestHooks.{statement,statements}
 
   /** Parse st as a statement, and check its extent. */
   private def ps(st: String): Statement = {
@@ -52,7 +52,7 @@ object StatementParserTest extends ParserTest0{
         BinOp(NameExp("x"), "+", NameExp("y")) ))
     assert(ps("val c = #B \n") == ValueDeclaration("c", ColumnExp("B")))
 
-    assert(parseAll(StatementParser.typeP, "List[Boolean]") ==
+    assert(parseAll(DeclarationParser.TestHooks.typeP, "List[Boolean]") ==
       ListType(BoolType))
     assert(ps("def add[A](x: Int, y: Int) : Int = x+y") == 
       FunctionDeclaration("add", List(("A",AnyTypeConstraint)),

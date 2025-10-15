@@ -5,7 +5,7 @@ import TypeChecker._;
 import TypeEnv._
 import TypeChecker.TestHooks._
 import Parser.parseAll; import ExpParser.expr
-import StatementParser.{statement,statements}
+import StatementParser.TestHooks.{statement,statements}
 // import NameExp.Name // Names of identifiers (Strings)
 
 /** Helper functions for tests on the type checker. */

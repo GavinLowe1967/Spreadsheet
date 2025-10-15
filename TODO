@@ -29,7 +29,10 @@ d) Evaluation: done
 Priorities
 ==========
 
-* Tidy up parsing files
+* Tidy up parsing files.  Split expressions and declarations into separate file? 
+
+* Allow typed expressions, e.g. "[]: List[Int]".  ":" should bind more tightly
+  than infix operators.  Have new syntactic term TypedExp(e: Exp, t: TypeT).
 
 * Overloading.
 

@@ -209,16 +209,16 @@ object Parser{
     (p ~ (lit(sep) ~> repSep(p, sep) | success(List())) ) > toPair(_ :: _)
 
 
-  /** Parse repeatedly with `p`, separated by `sep`, until `endMarker` is
-    * reached. */
-  def repeatUntil[A,B,C](p: Parser[A], sep: Parser[B], endMarker: Parser[C])
-      : Parser[(List[A], C)] = (
-    p ~~ (
-      sep ~> repeatUntil(p, sep, endMarker) 
-      |
-      consumeWhite ~> endMarker > { end => (List[A](), end) }
-    ) > { case (r1, (rs,end)) => (r1::rs, end) }
-  )
+  // /** Parse repeatedly with `p`, separated by `sep`, until `endMarker` is
+  //   * reached. */
+  // def repeatUntil[A,B,C](p: Parser[A], sep: Parser[B], endMarker: Parser[C])
+  //     : Parser[(List[A], C)] = (
+  //   p ~~ (
+  //     sep ~> repeatUntil(p, sep, endMarker) 
+  //     |
+  //     consumeWhite ~> endMarker > { end => (List[A](), end) }
+  //   ) > { case (r1, (rs,end)) => (r1::rs, end) }
+  // )
 
   /** A parser that optionally applies `p`. 
     * Note: when sequencing this, use ~~ or similar on the left to avoid 

@@ -4,9 +4,10 @@ package spreadsheet
 
 import Parser._
 
-/** Base class of various parsers, defining parsers for numeric values, and
-  * for string literals. */
+/** Base class of various parsers, defining parsers specific to this project. */
 trait Parser0{
+  // ========= Numbers
+
   /** A parser for an Int or Float. */
   protected def number: Parser[Exp] = {
     /* Convert `ds` to an Int. */
@@ -38,6 +39,8 @@ trait Parser0{
     posNum
   }
 
+  // ========= Strings
+
   /** Parse an escaped character. */
   private def escapedChar: Parser[Char] = 
     spot(c => List('\\', '\"', '\'', 't', 'n', 'b', 'r', 'f').contains(c)
@@ -57,18 +60,37 @@ trait Parser0{
   /** A parser for a string literal in the script. */
   protected def string: Parser[String] = lit("\"") ~~> string1 
 
+  // ========= Wrapping parsers
+
+  /** A parser for input consumed by p, surrounded by brackets, "{" and "}". */
+  protected def inBrackets[A](p: Parser[A]): Parser[A] = 
+    (lit("{") ~> p) <~ lit("}")
+
+  // ========= Sequencing
 
   /** A parser for a separator between statements or branches in a cell match
     * expression: either a newline or a semicolon.  Note: this consumes white
     * space at the start of its input: it should be sequenced with the
     * preceding parser using `~~`. */
-  def separator: Parser[String] = 
+  protected def separator: Parser[String] = 
     //consumeWhiteNoNL ~> (lit("\n") | lit(";"))
     toLineEnd | consumeWhite ~> lit(";")
 
+  /** A parser running `p` repeatedly, zero or more times. */
+  protected def listOf[A](p: Parser[A]): Parser[List[A]] = 
+    //repSep(p, separator)
+    p ~~ repeat1(separator ~> p) > toPair(_::_) | success(List()) 
+
+  // ========= Adding Extent
+
+  /** Lift `p`, so its result is annotated with its extent. */
+  protected def withExtent[A <: HasExtent](p: => Parser[A]) = new Parser[A]{
+    def apply(in: Input) = p(in) match{
+      case s @ Success(exp, in1) => exp.setExtent(in.until(in1)); s
+      case failure => failure
+    }
+  }   
 }
-
-
 
 // =======================================================
 

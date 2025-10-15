@@ -33,9 +33,13 @@ Parsing
 
 Parser.scala: general parsing combinators.
 
-Parser0.scala: base class of various parsers; parsers for cells and CSV files.
+Parser0.scala: base class of various parsers.  Includes CellParser and
+CSVParser, parsers for cells and CSV files.
 
-StatementParser.scala: parsing of statements and expressions (ExpParser). 
+DeclarationParser.scala: parsing of declarations.  Includes ExpParser, parsing
+of expressions.
+
+StatementParser.scala: parsing of statements. 
 
 ExpParserTest.scala: test of parsing expressions.
  
