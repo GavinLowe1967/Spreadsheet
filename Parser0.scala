@@ -66,6 +66,10 @@ trait Parser0{
   protected def inBrackets[A](p: Parser[A]): Parser[A] = 
     (lit("{") ~> p) <~ lit("}")
 
+  /** Parser for an expression in square brackets. */
+  protected def inSquare[A](p: Parser[A]): Parser[A] = 
+    (lit("[") ~> p) <~ lit("]")
+
   // ========= Sequencing
 
   /** A parser for a separator between statements or branches in a cell match
@@ -76,7 +80,8 @@ trait Parser0{
     //consumeWhiteNoNL ~> (lit("\n") | lit(";"))
     toLineEnd | consumeWhite ~> lit(";")
 
-  /** A parser running `p` repeatedly, zero or more times. */
+  /** A parser running `p` repeatedly, zero or more times, with separators in
+    * between. */
   protected def listOf[A](p: Parser[A]): Parser[List[A]] = 
     //repSep(p, separator)
     p ~~ repeat1(separator ~> p) > toPair(_::_) | success(List()) 
@@ -94,6 +99,37 @@ trait Parser0{
 
 // =======================================================
 
+/** A parser for types. */
+object TypeParser extends Parser0{
+  /** A parser for a CellType. */
+  def cellType: Parser[CellType] = (
+    keyword("Int") > { _ => IntType } | keyword("Float") > { _ => FloatType }
+    | keyword("Boolean") > { _ => BoolType }
+    | keyword("String") > { _ => StringType }
+  )
+
+  /** A parser for a type name or type parameter. */
+  private def typeP1: Parser[TypeT] = (
+    cellType
+    | keyword("Row") > { _ => RowType } | keyword("Column") > { _ => ColumnType }
+    | keyword("List") ~> inSquare(typeP) > { t => ListType(t) }
+    | upperName > { n => TypeParam(n) }
+  )
+
+  /** A parser for a type. */
+  def typeP: Parser[TypeT] = 
+    typeP1 ~~ opt(consumeWhite ~~> lit("=>") ~> typeP) > { _ match {
+      case (t,None) => t
+      case (t1, Some(t2)) => FunctionType(List(), List(t1), t2)
+        // IMPROVE: the "List()" looks odd.
+    }}
+
+  /** A parser for a type preceded by a colon. */
+  def ofType: Parser[TypeT] = lit(":") ~> typeP
+}
+
+// =======================================================
+
 /** A parser for a Cell. */
 object CellParser extends Parser0{
   /** Parser for a value entered in a cell by the user. */
@@ -101,8 +137,8 @@ object CellParser extends Parser0{
     (number <~ atEnd) > { 
       case IntExp(n) => IntValue(n); case FloatExp(x) => FloatValue(x) 
     }
-    | lit("true") ~> atEnd ~> success(BoolValue(true))
-    | lit("false") ~> atEnd ~> success(BoolValue(false))
+    | keyword("true") ~> atEnd ~> success(BoolValue(true))
+    | keyword("false") ~> atEnd ~> success(BoolValue(false))
       // Note: we allow trailing spaces above
     | (string <~~ atEnd) >  StringValue 
     | spot(_ != '\"') ~~ all > { case(c,st) => StringValue(c+:st) }
@@ -132,8 +168,8 @@ object CSVParser extends Parser0{
     number > { 
       case IntExp(n) => IntValue(n); case FloatExp(x) => FloatValue(x) 
     }
-    | lit("true") ~> success(BoolValue(true))
-    | lit("false") ~> success(BoolValue(false))
+    | keyword("true") ~> success(BoolValue(true))
+    | keyword("false") ~> success(BoolValue(false))
     | lit("\"") ~~> stringField > StringValue
 // FIXME: should probably allow strings without quotes
     | success(Empty())

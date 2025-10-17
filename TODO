@@ -29,12 +29,13 @@ d) Evaluation: done
 Priorities
 ==========
 
-* Tidy up parsing files.  Split expressions and declarations into separate file? 
 
-* Allow typed expressions, e.g. "[]: List[Int]".  ":" should bind more tightly
-  than infix operators.  Have new syntactic term TypedExp(e: Exp, t: TypeT).
+*** does parser work on, e.g. truely + 3?
 
 * Overloading.
+
+* Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
+  = #A3".
 
 * List comprehensions.
 
@@ -69,6 +70,16 @@ Low Priority
 
 ===================================== DONE
 
+* Tidy up parsing files.  
+  - Split expressions and declarations into separate file -- done
+  - Split parsers for types into separate class. -- done
+
+* Allow typed expressions, e.g. "[]: List[Int]".  ":" should bind more tightly
+  than infix operators.  Have new syntactic term TypedExp(e: Exp, t: TypeT).
+  - New syntactic term -- done
+  - Parsing, excluding typed cell reads -- done
+  - Type checking -- done
+  - Execution. -- done
 
 1. Tidy up this file!
 

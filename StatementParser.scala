@@ -16,7 +16,7 @@ object StatementParser extends Parser0{
   /** A parser for a single binder in a "for" expression. */
   private def binder: Parser[Binder] = (
     name ~ (lit("<-") ~> expr) > toPair(Generator) 
-    | lit("if") ~> expr > Filter
+    | keyword("if") ~> expr > Filter
   )
 
   /** A parser for one or more binders, in parentheses. */
@@ -32,7 +32,7 @@ object StatementParser extends Parser0{
 
   /** A parser for a "for" statement. */
   private def forLoop: Parser[ForStatement] = 
-    (lit("for") ~> binders ~ block) > toPair(ForStatement) 
+    (keyword("for") ~> binders ~ block) > toPair(ForStatement) 
 
   // Top-level parsers
 

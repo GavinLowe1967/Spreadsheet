@@ -154,12 +154,31 @@ object Parser{
     def apply(in: Input) = Failure(msg, in)
   }
 
-  /** A parser for the literal `st`. */
+  /** A parser for the literal `st`.  Note: this normally shouldn't be used for
+    * literals starting with a letter, is it would consume part of a variable
+    * name that starts with `lit`: use `keyword` in such cases. */
   def lit(st: String) = new Parser[String]{
+    assert(st.nonEmpty && !st.head.isLetter)
     def apply(in: Input) =
       if(in.startsWith(st)) Success(st, in.advance(st.length))
       else Failure(s"Expected \"$st\"", in)
   }
+
+  //def lit(st: String) = {assert(st.nonEmpty && !st.head.isLetter); lit1(st) }
+
+  /** A parser for the keyword `word`.  This checks that the next character is
+    * not alphanumeric, to avoid going wrong on variable names that are an
+    * extention of a keyword, e.g. "truely". */
+  def keyword(word: String) = new Parser[String]{
+    val len = word.length
+    def apply(in: Input) =
+      if(in.startsWith(word) && (in.length == len || !in(len).isLetterOrDigit))
+        Success(word, in.advance(len))
+      else Failure(s"Expected \"$word\"", in)
+  }
+
+//lit(word) <~~ testNextNot(c => c.isLetterOrDigit)
+
 
   /** A parser that consumes the first character of its input if that character
     * satisfies `p`. */
@@ -174,6 +193,30 @@ object Parser{
     }
   }
 
+  /** A parser that tests whether the next character of its input satisfies `p`,
+    * without consuming that input. */
+  def testNext(p: Char => Boolean) = new Parser[Char]{
+    def apply(in: Input) = 
+      if(in.isEmpty) Failure(s"End of input", in)
+      else{
+        val x = in.head
+        if(p(x)) Success(x, in) else Failure(s"Unexpected character $x", in)
+      }
+  }
+
+  /** A parser that tests whether the next character of its input does not
+    * satisfy `p`, without consuming that input.  Succeeds on the empty
+    * input. */
+  def testNextNot(p: Char => Boolean) = new Parser[Char]{
+    def apply(in: Input) = 
+      if(in.isEmpty) Success(null.asInstanceOf[Char], in)
+      else{
+        val x = in.head
+        if(!p(x)) Success(x, in) else Failure(s"Unexpected character $x", in)
+      }
+  }
+
+  /** A parser that consumes one character. */
   def char: Parser[Char] = spot(_ => true)
 
   // ===== Operations on parsers
@@ -222,7 +265,9 @@ object Parser{
 
   /** A parser that optionally applies `p`. 
     * Note: when sequencing this, use ~~ or similar on the left to avoid 
-    * unintentionally consuming white space. */
+    * unintentionally consuming white space.  Instead, its argument should 
+    * consume leading white space, so typically will be of the form
+    * "consumeWhite ~~> ...". */
   def opt[A](p: => Parser[A]): Parser[Option[A]] = 
     (p > (x => Some(x))) | success(None)
 

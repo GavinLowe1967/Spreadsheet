@@ -195,6 +195,12 @@ object TypeChecker{
       typeCheckStmtList(typeEnv.newScope, stmts).map{ te1 => 
         typeCheckAndClose(te1, e).map{ case (te2, te) => Ok((te2.endScope, te)) }
       }.lift(exp)
+
+    case TypedExp(e, t) => 
+      // Check t is not an unknown type parameter (or typo).
+      if(t match{ case TypeParam(n) => !typeEnv.contains(n); case _ => false })
+        FailureR(s"Type parameter ${t.asString} not in scope").lift(exp,true)
+      else typeCheckUnify(typeEnv, e, t).lift(exp)
   } // end of typeCheck
 
   // ========= Unification, and closing.

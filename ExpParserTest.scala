@@ -2,76 +2,8 @@ package spreadsheet
 
 import Parser._
 
-/** Common functions between the different parser test objects. */
-trait ParserTest0{
-  import ExpParser.expr
-
-  def isWhite(c: Char) = c == ' ' || c == '\t' || c == '\n'
-   
-  // Remove leading and training whilespace from st
-  def trim(st: String) =
-    st.dropWhile(isWhite).reverse.dropWhile(isWhite).reverse
-    
-  // Check that ext matches st
-  def checkExtent(ext: Extent, st: String) = {
-    assert(ext != null, s"Null extent with $st")
-    val st1 = trim(st); val st2 = ext.asString
-    assert(st2 == st1, s"\"$st2\" != \"$st1\"")
-  }
-
-  // Parse as expression
-  def p0(st: String): Exp = parseAll(expr, st)
-  
-  // Parse as expression, and check extent
-  def p(st: String): Exp = {
-    val e = parseAll(expr, st); checkExtent(e.getExtent, st); e
-  }
-
-  var printParseErrors = false
-
-  def assertParseFail(st: String) = 
-    parseWith(expr, st) match{
-      case Right(err) => if(printParseErrors) println(err)
-      case l: Left[_,_] => println(s"Expected parse error, found $l"); sys.exit()
-    }
-  //  assert(parseWith(expr, st).isInstanceOf[Right[_,_]])
-  
-  // Parse and print the extent
-  def pp(st: String) = {
-    val e = parseAll(expr, st); println(s"$e.")
-    println("\""+e.getExtent.asString+"\""); checkExtent(e.getExtent, st)
-  }
-
-  def env = new Environment(null, null, 0, 0, null)
-
-  // Parse and evaluate st, and check the extent
-  def pe(st: String) = {
-    val v = Execution.TestHooks.eval(env, p(st))
-    if(v.source == null) println(s"pe: $st -> $v")
-    else checkExtent(v.source.asInstanceOf[Extent], st)
-    v
-  }
-  
-  // Parse and evaluate st; print result and source
-  def pep(st: String) = { val v = pe(st); println(v); println(v.source) }
-
-  var printErrors = false
-
-  /** Check that v is an error, printing the error message if printErrors is
-    * set. */
-  def assertFail(v: Value) = v match{
-    case EvalError(err) => if(printErrors) println(err)
-    case _ => sys.error(s"Error expected, $v found")
-  }
-
-}
-
-// =======================================================
-
 object ExpParserTest extends ParserTest0{
-
   import ExpParser.expr
-  // ========= Now the tests
 
   /** Test of expression parsers on atomic values. */
   private def expressions1() = {
@@ -79,6 +11,8 @@ object ExpParserTest extends ParserTest0{
     assert(pe("123.45") == FloatValue(123.45F))
     assert(pe("-456.12") == FloatValue(-456.12F))
     assert(p("foo") == NameExp("foo")); assert(p(" ( foo ) ") == NameExp("foo"))
+
+    assert(p("truely") == NameExp("truely"))
 
     // Strings
     /* Parse `st` surrounded by quotation marks. */
@@ -105,6 +39,8 @@ object ExpParserTest extends ParserTest0{
     assert(expr("#a").isInstanceOf[Failure])
   }
 
+  // ===== Cells
+
   /** Tests on cell expressions. */
   private def cellExpressionTests() = {
     assert(p("Cell(#HW, #23): Int") == 
@@ -120,7 +56,6 @@ object ExpParserTest extends ParserTest0{
       "#A3 match{ case n: Int => 3; case x:Float=>4 \n "+
         "case _: String => 5; case _ : Boolean => 6 ; \n "+
         "case Empty => 7 }"
-    //println(p(matchExp))
     assert(p(matchExp) == CellMatchExp(
       ColumnExp("A"), RowExp(3), List(
         MatchBranch(TypedPattern(Some("n"), IntType), IntExp(3)),
@@ -139,8 +74,9 @@ object ExpParserTest extends ParserTest0{
         MatchBranch(Wildcard, IntExp(3))
       )))
     assertParseFail("#A3 match{ }")
-
   }
+
+  // ===== Binary Ops
 
   /** Tests of parsing expressions using a binary operator. */
   private def expressions2() = {
@@ -198,6 +134,8 @@ object ExpParserTest extends ParserTest0{
   // would fail typechecking, and with the current definition of evaluation
   // would throw an exception.
 
+  // ===== Compound expressions
+
   /** Tests of parsing blocks, if statements, and list expressions. */
   private def expressions3() = {
     // ===== Blocks
@@ -231,12 +169,29 @@ object ExpParserTest extends ParserTest0{
     assert(pe("[] == tail([1])") == BoolValue(true))
   }
 
+  /** Tests for explicitly typed expressions. */
+  private def typedExpressions() = {
+    assert(p("x : Int") == TypedExp(NameExp("x"), IntType))
+    assert(p("#E5: Int") == CellExp(ColumnExp("E"), RowExp(5), IntType))
+    assert(p("#E5: Int: Int") == 
+      TypedExp(CellExp(ColumnExp("E"), RowExp(5), IntType), IntType) )
+    assert(p("true:Boolean") == TypedExp(BoolExp(true), BoolType))
+    assert(p("(2 < 3) : Boolean") ==
+      TypedExp(BinOp(IntExp(2), "<", IntExp(3)), BoolType) )
+    assert(p("2 < 3 : Boolean") == 
+      BinOp(IntExp(2), "<", TypedExp(IntExp(3), BoolType)))
+    //println(p("2 < 3 : Bool"))
+    //println(p("42: Int\n"))
+  }
+
+
   /** Tests of expression parsers. */
   def apply() = {
     expressions1() // atomic values
     cellExpressionTests()
     expressions2() // binary operators
-    expressions3() // blocks, if statements, list expressions.
+    expressions3() // blocks, if statements, list expressions
+    typedExpressions()
     println("Expression tests done")
   }
 

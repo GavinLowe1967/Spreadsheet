@@ -171,6 +171,11 @@ case class ListLiteral(elems: List[Exp]) extends Exp
 /** The application of a function represented by `f` to `args`. */
 case class FunctionApp(f: Exp, args: List[Exp]) extends Exp
 
+/** A typed expression, "<e>: <theType>". */
+case class TypedExp(e: Exp, theType: TypeT) extends Exp{
+  assert(!e.isInstanceOf[UntypedCellExp])
+}
+
 
 // ========= Note =========
 // Statement.scala contains another subclass, BlockExp.

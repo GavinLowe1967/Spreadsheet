@@ -13,6 +13,10 @@ class Input(
 
   private val len = text.length
 
+  /* This represents text[pos..len). */
+
+  def length = len-pos
+
   require(pos <= len,
     s"Advanced beyond end of ${text.mkString}: pos = $pos; len = $len")
 
@@ -26,6 +30,9 @@ class Input(
 
   /** The first character of the text. */
   def head = text(pos)
+
+  /** The character at position ix of this. */
+  def apply(ix: Int) = text(pos+ix)
 
   /** Does this start with `st`? */
   def startsWith(st: String): Boolean = {

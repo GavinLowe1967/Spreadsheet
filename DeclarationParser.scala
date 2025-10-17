@@ -6,6 +6,8 @@ package spreadsheet
 import Parser._
 /** A parser for expressions. */
 object ExpParser extends Parser0{
+
+  import TypeParser.cellType
   // /** Lift `p`, so its result is annotated with its extent. */
   // def withExtent[A <: HasExtent](p: => Parser[A]) = new Parser[A]{
   //   def apply(in: Input) = p(in) match{
@@ -17,7 +19,9 @@ object ExpParser extends Parser0{
   // ===== Some basic parsers
 
   private val ReservedNames =
-    List("Cell", "if", "else", "def", "val", "for", "true", "false")
+    List("Cell", "if", "else", "def", "val", "for", "match", "case",
+      "true", "false", "Empty", "to", "until",
+      "Int", "Float", "Boolean", "String", "Row", "Column", "List", "Eq")
 
   /** Parser for a name. */
   private def name1: Parser[Exp] = withExtent(
@@ -26,13 +30,13 @@ object ExpParser extends Parser0{
 
   /** Parser for a boolean litteral. */
   private val bool: Parser[BoolExp] = (
-    lit("true") ~~> success(BoolExp(true))
-    | lit("false") ~~> success(BoolExp(false))
+    keyword("true") ~~> success(BoolExp(true))
+    | keyword("false") ~~> success(BoolExp(false))
   )
 
   /** A parser for an "if" expression. */
   private def ifP: Parser[IfExp] = withExtent(
-    lit("if") ~> inParens(expr) ~ expr ~ (lit("else") ~> expr) > {
+    keyword("if") ~> inParens(expr) ~ expr ~ (keyword("else") ~> expr) > {
       case ((test, thenClause), elseClause) => 
         IfExp(test, thenClause, elseClause)
     }
@@ -52,7 +56,7 @@ object ExpParser extends Parser0{
 
   /** A parser for an expression such as "Cell(B,3)" of "#B3". */
   def cell: Parser[(Exp,Exp)] = (
-    lit("Cell") ~! inParens((expr <~ lit(",")) ~ expr) > { case (x,y) => y }
+    keyword("Cell") ~! inParens((expr <~ lit(",")) ~ expr) > { case (x,y) => y }
     // Don't allow backtracking, or this could be parsed as a function
     // application.
     | lit("#") ~> colName ~~ posInt > 
@@ -69,21 +73,13 @@ object ExpParser extends Parser0{
     lit(":") ~> cellType > { t => Left(t) }
     | 
 //   lit("match") ~> lit("{") ~> repeatUntil(matchBranch, separator, lit("}")) > 
-    lit("match") ~> inBrackets(listOf(matchBranch)) ? (_.nonEmpty) > 
+    keyword("match") ~> inBrackets(listOf(matchBranch)) ? (_.nonEmpty) > 
       { bs => Right(bs) }
-  )
-
-
-
-  /** A parser for a CellType. */
-  def cellType: Parser[CellType] = (
-    lit("Int") > { _ => IntType } | lit("Float") > { _ => FloatType }
-    | lit("Boolean") > { _ => BoolType } | lit("String") > { _ => StringType }
   )
 
   /** A parser for a pattern in a cell match expression. */
   private def pattern: Parser[Pattern] = (
-    lit("Empty") ~> success(EmptyPattern)
+    keyword("Empty") ~> success(EmptyPattern)
     | lit("_") ~> ( 
       lit(":") ~> cellType > { t => TypedPattern(None, t) } | success(Wildcard)
     )
@@ -93,7 +89,7 @@ object ExpParser extends Parser0{
   /** A parser for a branch of a cell match expression, 
     * "case <pattern> => <expr>". */
   private def matchBranch: Parser[MatchBranch] = withExtent(
-    lit("case ") ~> pattern ~ (lit("=>") ~> expr) > {
+    keyword("case") ~> pattern ~ (lit("=>") ~> expr) > {
       case (p, e) => MatchBranch(p, e) 
     }
   )
@@ -114,8 +110,22 @@ object ExpParser extends Parser0{
   // ===== Expressions not using an infix or if at the top level. 
 
   /** A parser for expressions that use no infix operators or "if" statement
-    * outside of parentheses. */
+    * outside of parentheses, optionally with a type. */
   private def factor: Parser[Exp] = withExtent( 
+    factor0 ~~ opt(consumeWhite ~~> TypeParser.ofType) > { 
+      case(e, None) => e; case (e, Some(t)) => TypedExp(e,t) 
+    }
+  )
+
+  // Note: for an expression such as "#A3: Int", the ": Int" is consumed by
+  // factor0, specifically in cellExp, so factor produces a CellExp, as
+  // opposed to a TypedExp containing an UntypedCellExp.
+
+// IMPROVE: do we need the "withExtent" both above and below?
+
+  /** A parser for expressions that use no infix operators or "if" statement
+    * outside of parentheses. */
+  private def factor0: Parser[Exp] = withExtent( 
     number
     | string > StringExp | cellExp | bool
     // Name or application of named function
@@ -164,9 +174,12 @@ object ExpParser extends Parser0{
   private def infix(fixity: Int): Parser[Exp] = (
     if(fixity == operators.length) factor
     else{
+      // A parser for the operator `op`.  Note: we need to treat "word"
+      // operators differently from special-character operators.
+      def pp(op: String) = if(op.head.isLetter) keyword(op) else lit(op)
       // Parser for an "op term" subexpression, where term uses operators of
       // higher precedence.  Note: consumes white space at the start.
-      def p0(op: String) = consumeWhite ~> lit(op) ~ infix(fixity+1)
+      def p0(op: String) = consumeWhite ~> pp(op) ~ infix(fixity+1)
       val (ops,dir) = operators(fixity)
       // Parser for all operators of this precedence. 
       val p1 = | ( for(op <- ops) yield p0(op) )
@@ -198,42 +211,23 @@ object ExpParser extends Parser0{
 
 object DeclarationParser extends Parser0{
   import ExpParser.expr
+  import TypeParser.{typeP,ofType}
 
   /** A parser for a value declaration, "val <name> = <expr>". */
   private def valDec: Parser[ValueDeclaration] =
-    lit("val") ~> name ~ (lit("=") ~> expr) > toPair(ValueDeclaration)
-
-  /** Parser for an expression in square brackets. */
-  private def inSquare[A](p: Parser[A]): Parser[A] = 
-    (lit("[") ~> p) <~ lit("]")
-
-  /** A parser for a type name or type parameter. */
-  private def typeP1: Parser[TypeT] = (
-    ExpParser.cellType
-    | lit("Row") > { _ => RowType } | lit("Column") > { _ => ColumnType }
-    | lit("List") ~> inSquare(typeP) > { t => ListType(t) }
-    | upperName > { n => TypeParam(n) }
-  )
-
-  /** A parser for a type. */
-  private def typeP: Parser[TypeT] = 
-    typeP1 ~ opt(lit("=>") ~> typeP) > { _ match {
-      case (t,None) => t
-      case (t1, Some(t2)) => FunctionType(List(), List(t1), t2)
-        // IMPROVE: the "List()" looks odd.
-    }}
+    keyword("val") ~> name ~ (lit("=") ~> expr) > toPair(ValueDeclaration)
 
   /** A parser for a list of parameters, "name1: type1, ..., namek: typek". */
   private def params: Parser[List[(String,TypeT)]] = {
-    def param: Parser[(String,TypeT)] = (name <~ lit(":")) ~ typeP
-    repSep(param, ",")
+    // def param: Parser[(String,TypeT)] = name ~ ofType // <~ lit(":")) ~ typeP
+    repSep(name ~ ofType, ",")
   }
 
   import FunctionType.TypeParameter
 
   private def typeConstraint: Parser[TypeParamConstraint] = (
     lit("<:") ~> (
-      lit ("Eq") > (_ => EqTypeConstraint) 
+      keyword("Eq") > (_ => EqTypeConstraint) 
       // | lit("Num") > (_ => NumTypeConstraint) // MemberOf(TypeT.NumTypes))
     ) 
     | success(AnyTypeConstraint)
@@ -245,23 +239,23 @@ object DeclarationParser extends Parser0{
 
   /** Parser for type parameters. */
   private def typeParams: Parser[List[TypeParameter]] = 
-    opt(inSquare(repSep(typeParam, ","))) > 
+    opt(consumeWhite ~~> inSquare(repSep(typeParam, ","))) > 
       { case Some(ts) => ts; case None => List() }
 
   /** A parser for a function declaration 
     * "def <name>(<params>): <type> = <expr>". */
   private def funDec: Parser[FunctionDeclaration] = 
-    (lit("def") ~> name ~ typeParams ~ inParens(params)) ~ 
-      ((lit(":") ~> typeP) ~ (lit("=") ~> expr)) >
+    (keyword("def") ~> name ~~ typeParams ~ inParens(params)) ~ 
+      (ofType ~ (lit("=") ~> expr)) >
     { case (((n,tps),ps), (rt,e)) => FunctionDeclaration(n, tps, ps, rt, e) }
  
   /** A parser for a declaration: either a value or function declaration. */
   def declaration = valDec | funDec
 
-  private val outer = this
+  // private val outer = this
 
-  /** Hooks for testing. */
-  object TestHooks{
-    val typeP = outer.typeP 
-  }
+  // /** Hooks for testing. */
+  // object TestHooks{
+  //   //val typeP = outer.typeP 
+  // }
 }

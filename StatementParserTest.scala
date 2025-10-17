@@ -35,6 +35,13 @@ object StatementParserTest extends ParserTest0{
     assert(pss(s"$dir1\n$dir2\n$vDec") == List(dir1R, dir2R, vDecR) )
     assert(pss(s"$vDec;$dir1;$dir2") == List(vDecR, dir1R, dir2R))
 
+    // Test of typing information at end of line
+    assert(pss("#E2 = 42: Int\nval x = 3\n") == List(
+      Directive(ColumnExp("E"), RowExp(2), TypedExp(IntExp(42), IntType)),
+      ValueDeclaration("x", IntExp(3))
+    ))
+
+
     // println(parseAll(statements, "Cell(In, firstEmpty+1) = \"Total:\"\n"+
     //   "Cell(Out, firstEmpty+1) = sumCol(Out, #0, firstEmpty)"))
 
@@ -46,19 +53,27 @@ object StatementParserTest extends ParserTest0{
     assert(ps("def square(n: Int): Int = n*n") ==
       FunctionDeclaration("square", List(), List(("n",IntType)), IntType,
         BinOp(NameExp("n"), "*", NameExp("n")) ))
+    // Test with a newline in a strange place
+    assert(ps("def square\n(n: Int): Int = n*n") ==
+      FunctionDeclaration("square", List(), List(("n",IntType)), IntType,
+        BinOp(NameExp("n"), "*", NameExp("n")) ))
     assert(ps("def add(x: Int, y: Int) : Int = x+y") == 
       FunctionDeclaration("add", List(), 
         List(("x", IntType), ("y", IntType)), IntType,
         BinOp(NameExp("x"), "+", NameExp("y")) ))
     assert(ps("val c = #B \n") == ValueDeclaration("c", ColumnExp("B")))
 
-    assert(parseAll(DeclarationParser.TestHooks.typeP, "List[Boolean]") ==
+    assert(parseAll(TypeParser.typeP, "List[Boolean]") ==
       ListType(BoolType))
     assert(ps("def add[A](x: Int, y: Int) : Int = x+y") == 
       FunctionDeclaration("add", List(("A",AnyTypeConstraint)),
         List(("x",IntType), ("y",IntType)), IntType, 
         BinOp(NameExp("x"), "+", NameExp("y")) ))
     assert(ps("def id[A](x: A) : A = x") == 
+      FunctionDeclaration("id", List(("A",AnyTypeConstraint)),
+        List(("x",TypeParam("A"))), TypeParam("A"), NameExp("x")) )
+    // Test with a newline in a strange place.
+    assert(ps("def id\n[A](x: A) : A = x") == 
       FunctionDeclaration("id", List(("A",AnyTypeConstraint)),
         List(("x",TypeParam("A"))), TypeParam("A"), NameExp("x")) )
 

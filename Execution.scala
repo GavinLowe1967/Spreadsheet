@@ -140,6 +140,8 @@ object Execution{
         }
       }
       else e.liftError(err)
+
+    case TypedExp(e, _) => eval(env, e)
   } // end of eval
 
   // ==================================================================

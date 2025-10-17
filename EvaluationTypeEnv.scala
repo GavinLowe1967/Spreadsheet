@@ -26,6 +26,9 @@ class EvaluationTypeEnv(
 
   // ========= TypeParamMap functions
 
+  /** Does this contain the type parameter n? */
+  def contains(n: TypeParamName): Boolean = typeParamMap.contains(n)
+
   /** The constraint associated with TypeParam(n). */
   def constraintForTypeParam(n: TypeParamName): TypeParamConstraint =
     typeParamMap(n)

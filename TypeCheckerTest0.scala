@@ -211,12 +211,26 @@ object TypeCheckerTestExpr{
 printErrors = false
   }
 
+  /** Tests on explicitly typed expressions. */
+  def typedTests() = {
+    assertEq(tcp("3: Int"), IntType)
+    assertEq(tcp("[]: List[Float]"), ListType(FloatType))
+    assertFail(tcp("3: Float")) // "Expected Float, found Int"
+    assertFail(tcp("(3+ 5.6): Float"))
+    assertFail(tcp("2: A")) // "Type parameter A not in scope"
+    assertFail(tcp("2 < 3 : Boolean"))
+    assertEq(tcp("(2 < 3) : Boolean"), BoolType)
+    assertEq(tcp("2 < 3 : Int"), BoolType)
+  }
+
+
   /** Tests on expressions. */
   def expTests() = {
     basicTests() // Basic expressions
     listTests()  // Lists
     cellMatchTests() // Cell match expressions
-    untypedCellTests() // tests on untyped cell reads.
+    untypedCellTests() // tests on untyped cell reads
+    typedTests() // Tests on explicitly typed expressions.
     // Repeated names 
     assertFail(tcpss("val x = 4; val x = 5"))
     assertFail(tcpss("val x = 4; def x(): Int = 5"))
