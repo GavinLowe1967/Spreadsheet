@@ -24,8 +24,11 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
   private val spreadsheetModel = model // Avoid aliasing by Table!
 
   /** An editable text field. */
-  class MyTextField(text: String) extends TextField(text){
-    background = UserDataBackground
+  class MyTextField(text: String, calc: Boolean) extends TextField(text){
+    background = //  UserDataBackground
+      if(text.isEmpty) EmptyBackground 
+      else if(calc) CalculatedWithFocusBackground
+      else UserDataBackground
   }
 
   /** An uneditable text field containing `text`.  
@@ -59,7 +62,7 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
         case _ : StringValue => StringTextColour; case _ => DefaultTextColour
       }
       if(hasFocus) view.showSelection(cell.forSelection)
-      if(hasFocus && !calc) new MyTextField(text)
+      if(hasFocus /* && !calc */) new MyTextField(text, calc)
       else new MyLabel(text, calc, colour, hasFocus)
     } // end of rendererComponent
 
@@ -74,10 +77,12 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
         for(row <- rows){
           val v = this(row, column)
           if(v != null){
+            // Value entered in (row, column)
             val vString = v.toString
             cells(column)(row) = 
               if(vString.isEmpty) Empty() 
               else CellParser(vString).withCellSource(column,row)
+            calculated(column)(row) = false
             spreadsheetModel.update()
           }
         }

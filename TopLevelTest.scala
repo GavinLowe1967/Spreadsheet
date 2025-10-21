@@ -29,14 +29,34 @@ object TopLevelTest{
 
   /** List of expected values, with columns and rows. */
   val expected = List[(Int,Int,Value)](
-    (F,0,FloatValue(6.0F)), (B,0,IntValue(10)), (E,0,StringValue("Hello")),
+    // #B0 = sum([1,2,3,4]): Int + sum([]) + sum([]: List[Int])
+    // val hello = "Hello"; #E0 = hello
+    // #F0 = apply(double, 3.0) : Float;
+    (B,0,IntValue(10)), (E,0,StringValue("Hello")), (F,0,FloatValue(6.0F)), 
     // Factorials, rows 1-4 
+    // for(r <- #1 to #4; c <- [#B, #C]; if r != #2){
+    //   Cell(c, r) = fact(Cell(#A,r))
+    // }
     (B,1,IntValue(24)), (C,1,IntValue(24)),
     (B,3,IntValue(720)), (C,3,IntValue(720)),
+    // val firstEmpty = firstEmptyInCol(#A, #1) // Should give #4
+    // Cell(#D, firstEmpty) = "first empty"
     (D,4,StringValue("first empty")),
     // More in row 6
-    (B,6,IntValue(7)), (C,6,IntValue(4)), (D,6,IntValue(4)),
-    (B,7,BoolValue(true)), (B,8, BoolValue(true))
+    // val ff = fact: Int => Int
+    // #A6 = ff(3)
+    // #B6 = 3+#A1 // untyped cell read.
+    (A,6,IntValue(6)), (B,6,IntValue(7)), 
+    // #C6 = if(false) 3 else #A1 // Untyped cell read.
+    // #D6 = g(1) // should be 4
+    (C,6,IntValue(4)), (D,6,IntValue(4)),
+    // val flag = true
+    // for(r <- #7 to #8; if r == #6 || flag){
+    //   Cell(#B, r) = flag; val flag = false
+    // }
+    (B,7,BoolValue(true)), (B,8, BoolValue(true)),
+    // for(r <- 2 to 2; r <- #5+r to #6+r) Cell(#C, r) = 6
+    (C,7,IntValue(6)), (C,8,IntValue(6))  
   )
 
   /** Lit of cells where type errors are expected. */
@@ -44,6 +64,8 @@ object TopLevelTest{
 
   /** List of cells where evaluation errors are expected. */
   val expectedEvalErrs = List((C,0), (D,0))
+    // #C0 = 1/0: Int // Evaluation error
+    // #D0 = 3; #D0 = 4.0 // Evaluation error
 
   /** Main function. */
   def main(args: Array[String]) = {

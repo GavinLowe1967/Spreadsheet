@@ -30,6 +30,8 @@ class Environment(
     cells(c)(r) = v; calculated(c)(r) = true
   }
 
+  def isCalculated(c: Int, r: Int) = calculated(c)(r)
+
   /** Add name -> v to the environment. */
   def update(name: String, v: Value) = nameMap += (name -> v)
 

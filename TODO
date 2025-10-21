@@ -3,6 +3,7 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
+
 1. Add double-write error, giving all places where written.
 
 (a) Set CellSource when value entered, or CSV read in.  Stop
@@ -18,21 +19,37 @@ Current
 
 (e) Can a write overwrite user data?  
 
-2. Add more patterns for cell match expressions, e.g. "_" or "_: Int" as
-   wildcard?  -- DONE
-a) Syntax: done
-b) Parsing: done
-c) Typechecking: done
-d) Evaluation: done
+(f) Can a user input overwrite written data?
+** In these cases, keep the user data, store an error elsewhere. 
+
 
 
 Priorities
 ==========
 
 
-*** does parser work on, e.g. truely + 3?
-
 * Overloading.
+
+- Use the following rule: an overloaded function may not have a polymorphic
+  instance.  And allow overloading only via defs -- not vals.  This avoids a
+  lot of difficulties, and doesn't seem to lose much -- only distasteful
+  overloadings.
+
+- Require all uses of an overloaded function to either be an application of
+  that function, (e.g. "double(3.4)") or explicitly typed (e.g. "map(double:
+  Int => Int, List(3))").
+
+- Extend environment to allow name to map to multiple values.  Note:
+  declarations from outer scopes are removed.
+
+- At point of declaration, check types are distinct: this is easy given the
+  above rule.  (TypeCheker.typeCheckStmtList.)
+
+- At point of typechecking a function application, identify the instance that
+  applies.  This should be unique.  Record the type of the arguments for this
+  unique instance in the FunctionApp object.  Consider cases like def
+  f(x:Int,y:Int) = ...; def f(x:Float,y:Float) = ...; f(3,#A1).
+
 
 * Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
   = #A3".
@@ -69,6 +86,22 @@ Low Priority
 
 
 ===================================== DONE
+
+*** For loops with repeated names. - test; add to TopLevelTest -- done
+
+*** Explicit type for function. - test -- done 
+
+*** Should typechecking of for statement start new scope for each generator?
+    I don't think so, because it doesn't backtrack into the earlier scope.
+
+2. Add more patterns for cell match expressions, e.g. "_" or "_: Int" as
+   wildcard?  -- DONE
+a) Syntax: done
+b) Parsing: done
+c) Typechecking: done
+d) Evaluation: done
+
+*** does parser work on, e.g. truely + 3?  It does now.
 
 * Tidy up parsing files.  
   - Split expressions and declarations into separate file -- done

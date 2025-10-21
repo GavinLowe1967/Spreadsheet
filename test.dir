@@ -22,11 +22,11 @@ def firstEmptyInCol(c: Column, r: Row): Row =
 // Inputs in column A
 
 // Simple tests in row 0
-#F0 = apply(double, 3.0) : Float; 
 #B0 = sum([1,2,3,4]): Int + sum([]) + sum([]: List[Int])
 #C0 = 1/0: Int // Evaluation error
 #D0 = 3; #D0 = 4.0 // Evaluation error
 val hello = "Hello"; #E0 = hello
+#F0 = apply(double, 3.0) : Float; 
 
 // factorials, rows 1-4
 for(r <- #1 to #4; c <- [#B, #C]; if r != #2){
@@ -37,6 +37,8 @@ val firstEmpty = firstEmptyInCol(#A, #1) // Should give #4
 Cell(#D, firstEmpty) = "first empty"
 
 // More in row 6
+val ff = fact: Int => Int
+#A6 = ff(3)
 #B6 = 3+#A1 // untyped cell read.
 #C6 = if(false) 3 else #A1 // Untyped cell read.
 // Test of scoping
@@ -50,6 +52,8 @@ val flag = true
 for(r <- #7 to #8; if r == #6 || flag){ 
   Cell(#B, r) = flag; val flag = false 
 }  
+// Repeated variable in for loop.  Allowed but yuk!
+for(r <- 2 to 2; r <- #5+r to #6+r) Cell(#C, r) = 6 
 
 // Test of empty blocks.
 for(x <- #0 until #10){ }

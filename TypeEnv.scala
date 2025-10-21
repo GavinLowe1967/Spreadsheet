@@ -17,7 +17,7 @@ import TypeEnv._
   * @param stack The frames for outer scopes. 
   * Note: type environments are treated immutably. */
 class TypeEnv(
-  private val nameMap: NameMap, 
+  private val nameMap: NameMap, // = HashMap[Name, TypeT]
   private val constraints: Constraints, // = HashMap[TypeID, TypeConstraint]
   private val typeParamMap: TypeParamMap, // HashMap[TypeParamName, TypeParamConstraint]
   private val untypedCells: List[UntypedCellExp],

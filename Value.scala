@@ -250,7 +250,11 @@ case class FunctionValue(f: PartialFunction[List[Value], Value]) extends Value{
 trait ErrorValue extends Cell{
   def getType = ErrorType
 
+  /** The message that is written in the view InfoBox. */
   def msg: String
+
+  // Note: forError is the value that appears in the cell itself, and the
+  // selection box.
 }
 
 /** A type error arising from evaluation of an expression. */
@@ -270,4 +274,30 @@ case class ParseError(msg: String) extends ErrorValue{
 
   override def asCSV = "" // Don't write this to CSV
 // TODO think about this
+}
+
+
+/** A cell written to multiple times. */
+case class MultipleWriteError(sources: List[Source]) extends ErrorValue{
+  def msg = 
+    "Cell written to multiple times.\n"+
+      sources.map(source => source match{
+        case e: Extent => s"Cell write at line ${e.lineNumber}: ${e.asString}"
+        // case CellWriteSource(_,_,d) => 
+        //   val e = d.getExtent
+        //   s"Cell write at line ${e.lineNumber}: ${e.asString}"
+        case cs: CellSource => s"User data"
+      }
+      ).mkString("\n")
+
+  def forError = msg
+}
+
+object MultipleWriteError{
+  /** Factory method. */
+  def apply(cell: Cell, e: Extent) = cell.source match{
+      case CellWriteSource(_,_,d) => new MultipleWriteError(List(d.getExtent, e))
+      case cs: CellSource => new MultipleWriteError(List(cs, e))
+    }
+    //new MultipleWriteError(List(cell.source, e)) 
 }

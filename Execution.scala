@@ -175,9 +175,12 @@ object Execution{
 // IMPROVE: add s
                 } // end of inner match
                 else{
-                  val err0 = EvalError("Cell written to for second time")
-                  val err = s.liftError(err0, true)
-                  env.setCell(c, r, err); handleError(err)
+                  // val err0 = EvalError("Cell written to for second time")
+                  // val err = s.liftError(err0, true)
+                  println(s"$c $r ${env.isCalculated(c,r)}")
+// IMPROVE: do a case analysis in isCaluclated(...) here.  If not, don't update the cell, but store error elsewhere, and highlight in view.
+                  val mwe =  MultipleWriteError(env.getCell(c,r), d.getExtent)
+                  env.setCell(c, r, mwe); handleError(mwe)
                 }
               } // end of outer if
               else handleError(EvalError("Indexing error for row: found $r"))
