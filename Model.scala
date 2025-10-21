@@ -8,19 +8,27 @@ class Model(val height: Int, val width: Int){
   /** Set the view to be `v`.  */
   def setView(v: ViewT) = view = v
 
+  private val env = Environment(height, width)
+
+  val getCell = env.getCell _ 
+
+  val setCell = env.setCell _
+
+  def isCalculated(c: Int, r: Int) = env.isCalculated(c,r)
+
   /** The cells holding the content.  Note: indexing is done by (column, row)
     * coordinates, following the spreadsheet convention. */
-  val cells = Array.fill[Cell](width, height)(Empty())
+  // val cells = Array.fill[Cell](width, height)(Empty())
 
   /** Record of which cells were calculated. */
-  val calculated = Array.fill(width, height)(false)
+  // val calculated = Array.fill(width, height)(false)
 
   /** The statements defined in the script.  Set by loadFile. */
   private var statements = List[Statement]()
 
   /** The type environment resulting from checking the script.  Set by
     * loadFile. */
-  private var typeEnv: TypeEnv = null
+  //private var typeEnv: TypeEnv = null
 
   private var scriptName: String = null
 
@@ -50,13 +58,13 @@ class Model(val height: Int, val width: Int){
 
   /** Reload script from the saved filename. */
   def reloadScript() = {
-    clearCells(); view.clearInfo()
+    env.reset(); view.clearInfo()
     val fContents = removeComments(scala.io.Source.fromFile(scriptName).mkString)
     // println(fContents+"END")
     StatementParser.parseStatements(fContents) match{
       case Left(ss) => 
         TypeChecker(ss) match{
-          case Ok(te) => statements = ss; typeEnv = te; update1()
+          case Ok(te) => statements = ss; /* typeEnv = te; */ update1()
 
           case FailureR(err) => view.addInfo(s"Type error: $err")
         } 
@@ -67,18 +75,18 @@ class Model(val height: Int, val width: Int){
   }
 
   /** Clear calculated cells. */
-  private def clearCells() = 
-    for(c <- 0 until width; r <- 0 until height; if calculated(c)(r)){
-      calculated(c)(r) = false; cells(c)(r) = Empty() 
-    }
+  // private def clearCells() = 
+  //   for(c <- 0 until width; r <- 0 until height; if calculated(c)(r)){
+  //     calculated(c)(r) = false; cells(c)(r) = Empty() 
+  //   }
 
   /** Update cells based on statements.  Called by view. */
-  def update() = { clearCells(); view.clearInfo(); update1() }
+  def update() = { env.reset(); view.clearInfo(); update1() }
 
   /** Update cells based on statements.  Called internally. */
   private def update1() = {
-    val env = new Environment(
-      cells, calculated, height, width, typeEnv.getEvaluationTypeEnv)
+    // val env = new Environment(
+    //   cells, ???, height, width) // , typeEnv.getEvaluationTypeEnv)
     // Iterate over statements, unless an error is found.
     def handleError(err: ErrorValue) = view.addInfo(err.msg)
     Execution.performAll(statements, env, handleError)
@@ -94,8 +102,8 @@ class Model(val height: Int, val width: Int){
     val bw = new BufferedWriter(new FileWriter(file.getAbsoluteFile()))
     for(r <- 0 until height)  // Write row r
       bw.write(
-        (0 until width).map(c =>
-          if(!calculated(c)(r)) cells(c)(r).asCSV else ""
+        (0 until width).map(c => env.getUserCell(c,r).asCSV
+//          if(!calculated(c)(r)) cells(c)(r).asCSV else ""
         ).mkString(",") + "\n"
       )
     bw.close()
@@ -109,9 +117,16 @@ class Model(val height: Int, val width: Int){
       for(r <- 0 until lines.length){
         val fields = CSVParser(lines(r)).toArray 
         for(c <- 0 until fields.length) 
-          cells(c)(r) = fields(c).withCellSource(c,r)
+          env.setUserCell(c, r, fields(c).withCellSource(c,r))
+          //cells(c)(r) = fields(c).withCellSource(c,r)
       }
     }
   }
+
+  // val outer = this
+
+  // object TestHooks{
+  //   def calculated(c: Int)(r: Int) = env.isCalculated(c,r) 
+  // }
 
 }

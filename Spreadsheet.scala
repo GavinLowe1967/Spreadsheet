@@ -16,10 +16,10 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
   preferredSize = new Dimension(800,500)
 
   /** The cells, holding Values. */
-  private val cells = model.cells
+  //private val cells = model.cells
 
   /** Indication of which cells were calculated by directives. */
-  private val calculated = model.calculated
+  //private val calculated = model.calculated
 
   private val spreadsheetModel = model // Avoid aliasing by Table!
 
@@ -56,8 +56,8 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
     override def rendererComponent(
       isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int)
         : Component = {
-      val cell = cells(column)(row); val text = cell.asCell
-      val calc = calculated(column)(row)
+      val cell = spreadsheetModel.getCell(column,row); val text = cell.asCell
+      val calc = spreadsheetModel.isCalculated(column,row)
       val colour = cell match{ 
         case _ : StringValue => StringTextColour; case _ => DefaultTextColour
       }
@@ -79,10 +79,12 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
           if(v != null){
             // Value entered in (row, column)
             val vString = v.toString
-            cells(column)(row) = 
+            val cell =
               if(vString.isEmpty) Empty() 
               else CellParser(vString).withCellSource(column,row)
-            calculated(column)(row) = false
+            spreadsheetModel.setCell(column, row, cell)
+            // cells(column)(row) = 
+            // calculated(column)(row) = false
             spreadsheetModel.update()
           }
         }

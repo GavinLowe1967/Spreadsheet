@@ -3,6 +3,14 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
+1. Split cells into user cells and calculated cells.  Needs change in Model.cells.  
+
+* Changes in Environment: userCells and calculatedCells initialised with Empty()
+
+* Change cells in Model to getCell.
+
+* Use null to represent empty cells, and adapt getCell
+
 
 1. Add double-write error, giving all places where written.
 
