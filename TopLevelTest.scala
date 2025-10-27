@@ -7,7 +7,8 @@ object TopLevelTest{
   val Height = 100; val Width = 26
   private val model = new Model(Height,Width); model.setView(DummyView)
   //val cells = model.cells; 
-  val isCalculated = model.isCalculated _ 
+  val isCalculated = model.isCalculated 
+
   // The value in (c,r).  The type is for historical reasons...  
   def cells(c: Int)(r: Int) = model.getCell(c,r)
 
@@ -94,10 +95,8 @@ object TopLevelTest{
     // Check evaluation errors are as expected. 
     for((c,r) <- expectedEvalErrs){
       filled(c)(r) = true; checkCalculated(c,r)
-/*
-// FIXME: include this
-      assert(cells(c)(r).isInstanceOf[EvalError])
- */
+// IMPROVE: be more specific about the types of errors here. 
+      assert(cells(c)(r).isInstanceOf[ErrorValue])
     }
     // Check remaining cells are Empty. 
     for(c <- 0 until Width; r <- 0 until Height; if !filled(c)(r))

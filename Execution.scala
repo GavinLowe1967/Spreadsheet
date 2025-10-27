@@ -34,7 +34,7 @@ object Execution{
       case CellExp(column, row, theType) =>
         // Check contents of cell has type theType
         val v1 = applyToCell(column, row, checkCellType(theType))
-        e.liftValue(v1, true)
+        e.liftValue(v1, false) // true)
 
       case CellMatchExp(column, row, branches) =>
         // Try to match v against branches
@@ -153,6 +153,44 @@ object Execution{
       source.asString+"\""
   }
 
+  /** Write the value of `expr` into cell (c,r), using `d` as the source, but
+    * dealing with overwriting of cells.  Handle errors using handleError.  */
+  private def writeCell(
+    env: Environment, handleError: ErrorValue => Unit, 
+    c: Int, r: Int, expr: Exp, d: Directive) 
+  = {
+    val v1 = eval(env, expr).asInstanceOf[Cell].withCellWriteSource(c,r,d) 
+      // match{
+    //   //case ev: ErrorValue => ev.withCellWriteSource(c,r,d)
+    //   // Note: ErrorValue <: Cell, so the ordering is important.
+    //   case v2: Cell => v2.withCellWriteSource(c,r,d)
+    // } // end of  match
+    if(env.isEmpty(c,r)){
+      env.setCell(c,r,v1)
+      v1 match{ case ev: ErrorValue => handleError(ev); case _ => {} }
+    }
+    else{
+      val mwe = MultipleWriteError(env.getCell1(c,r), v1) 
+      env.setCell(c, r, mwe); handleError(mwe)
+    }
+  }
+
+/*
+v match{
+      case ev: ErrorValue =>
+        val ev1 = d.liftError(ev); env.setCell(c, r, ev1.withCellSource(c,r))
+        handleError(ev1)
+      // Note: ErrorValue <: Cell, so the ordering is important.
+      case v1: Cell => env.setCell(c, r, v1.withCellWriteSource(c,r,d))
+    } // end of  match
+ */
+
+      // val err0 = EvalError("Cell written to for second time")
+      // val err = s.liftError(err0, true)
+      //println(s"$c $r ${env.isCalculated(c,r)}")
+      // IMPROVE: do a case analysis in isCaluclated(...) here.  If not, don't update the cell, but store error elsewhere, and highlight in view.
+
+
   /** Perform `s` in `env`, handling errors with `handleError`. 
     * @return false if an error occurred in a declaration. */
   private def perform(
@@ -163,26 +201,8 @@ object Execution{
         case ColumnValue(c) =>
           if(0 <= c && c < env.width) eval(env, re) match{
             case RowValue(r) =>
-              if(0 <= r && r < env.height){
-                if(env.isEmpty(c,r)) eval(env, expr) match{
-                  case ev: ErrorValue =>
-                    val ev1 = s.liftError(ev)
-                    env.setCell(c, r, ev1.withCellSource(c,r))
-                    handleError(ev1)
-                  // Note: ErrorValue <: Cell, so the ordering is important.
-                  case v1: Cell => 
-                    env.setCell(c, r, v1.withCellWriteSource(c,r,d))
-// IMPROVE: add s
-                } // end of inner match
-                else{
-                  // val err0 = EvalError("Cell written to for second time")
-                  // val err = s.liftError(err0, true)
-                  println(s"$c $r ${env.isCalculated(c,r)}")
-// IMPROVE: do a case analysis in isCaluclated(...) here.  If not, don't update the cell, but store error elsewhere, and highlight in view.
-                  val mwe =  MultipleWriteError(env.getCell(c,r), d.getExtent)
-                  env.setCell(c, r, mwe); handleError(mwe)
-                }
-              } // end of outer if
+              if(0 <= r && r < env.height) 
+                writeCell(env, handleError, c, r, expr, d)
               else handleError(EvalError("Indexing error for row: found $r"))
               // end of case RowValue(r)
 

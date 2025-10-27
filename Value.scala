@@ -41,6 +41,12 @@ trait Cell extends Value{
 
   /** The type of this value.  Set in subclasses. */
   def getType: CellType // TypeT
+
+  /** Is this an empty Cell? */
+  def isEmpty = getType == EmptyType
+
+  /** Is this a non-empty Cell? */
+  def nonEmpty = !isEmpty
 }
 
 
@@ -278,15 +284,16 @@ case class ParseError(msg: String) extends ErrorValue{
 
 
 /** A cell written to multiple times. */
-case class MultipleWriteError(sources: List[Source]) extends ErrorValue{
+case class MultipleWriteError(sources: List[Cell]) extends ErrorValue{
   def msg = 
-    "Cell written to multiple times.\n"+
-      sources.map(source => source match{
-        case e: Extent => s"Cell write at line ${e.lineNumber}: ${e.asString}"
-        // case CellWriteSource(_,_,d) => 
-        //   val e = d.getExtent
-        //   s"Cell write at line ${e.lineNumber}: ${e.asString}"
-        case cs: CellSource => s"User data"
+    "Cell assigned multiple times.\n"+
+      sources.map(v => v.source match{
+        case CellWriteSource(_,_,d) => 
+          val e = d.getExtent
+          s"Value ${v.forError} from cell write at line ${e.lineNumber}: "+
+            e.asString
+        case cs: CellSource => s"User data: ${v.forError}"
+        case null => s"null source: $v"
       }
       ).mkString("\n")
 
@@ -295,9 +302,8 @@ case class MultipleWriteError(sources: List[Source]) extends ErrorValue{
 
 object MultipleWriteError{
   /** Factory method. */
-  def apply(cell: Cell, e: Extent) = cell.source match{
-      case CellWriteSource(_,_,d) => new MultipleWriteError(List(d.getExtent, e))
-      case cs: CellSource => new MultipleWriteError(List(cs, e))
-    }
-    //new MultipleWriteError(List(cell.source, e)) 
+  def apply(c1: Cell, c2: Cell) = c1 match{
+    case MultipleWriteError(cells) => new MultipleWriteError(cells:+c2)
+    case _ => new MultipleWriteError(List(c1,c2))
+  }
 }

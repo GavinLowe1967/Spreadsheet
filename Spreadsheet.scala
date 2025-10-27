@@ -15,12 +15,6 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
 
   preferredSize = new Dimension(800,500)
 
-  /** The cells, holding Values. */
-  //private val cells = model.cells
-
-  /** Indication of which cells were calculated by directives. */
-  //private val calculated = model.calculated
-
   private val spreadsheetModel = model // Avoid aliasing by Table!
 
   /** An editable text field. */
@@ -53,17 +47,30 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
     showGrid = true
     gridColor = new java.awt.Color(150, 150, 150)
 
+// TODO: if there is both a user cell and a calculated cell, the former should
+// appear in the cell, but with a different colour.  The calculated value is
+// necessarily a MultipleWriteError.  If the cell is selected, the calculated
+// value should be used in the selection box.
+
     override def rendererComponent(
       isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int)
         : Component = {
       val cell = spreadsheetModel.getCell(column,row); val text = cell.asCell
       val calc = spreadsheetModel.isCalculated(column,row)
-      val colour = cell match{ 
-        case _ : StringValue => StringTextColour; case _ => DefaultTextColour
+      if(hasFocus){
+        val cell1 = spreadsheetModel.getForSelection(column, row)
+        view.showSelection(cell1.forSelection) 
+        new MyTextField(text, calc)
       }
-      if(hasFocus) view.showSelection(cell.forSelection)
-      if(hasFocus /* && !calc */) new MyTextField(text, calc)
-      else new MyLabel(text, calc, colour, hasFocus)
+          //(cell.forSelection)
+      //if(hasFocus /* && !calc */) new MyTextField(text, calc)
+      else{
+        val colour = cell match{
+          case _ : StringValue => StringTextColour; case _ => DefaultTextColour
+            // TODO: different colour for errors
+        }
+        new MyLabel(text, calc, colour, hasFocus)
+      }
     } // end of rendererComponent
 
     /** String to represent the entry in (row, column). */
@@ -82,9 +89,7 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
             val cell =
               if(vString.isEmpty) Empty() 
               else CellParser(vString).withCellSource(column,row)
-            spreadsheetModel.setCell(column, row, cell)
-            // cells(column)(row) = 
-            // calculated(column)(row) = false
+            spreadsheetModel.setUserCell(column, row, cell)
             spreadsheetModel.update()
           }
         }

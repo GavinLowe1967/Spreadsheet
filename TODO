@@ -3,14 +3,6 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
-1. Split cells into user cells and calculated cells.  Needs change in Model.cells.  
-
-* Changes in Environment: userCells and calculatedCells initialised with Empty()
-
-* Change cells in Model to getCell.
-
-* Use null to represent empty cells, and adapt getCell
-
 
 1. Add double-write error, giving all places where written.
 
@@ -23,12 +15,21 @@ Current
 
 (c) show in selection -- done
 
-(d) Add double-write error
+(d) Add double-write error -- done, needs improving
 
-(e) Can a write overwrite user data?  
+(e) Can a write overwrite user data?  -- error detected
 
-(f) Can a user input overwrite written data?
+(f) Can a user input overwrite written data? -- yes
 ** In these cases, keep the user data, store an error elsewhere. 
+
+(g) Change MultipleWriteError to store list of Values.
+
+(h) Change user feedback, e.g. "Value 5 from cell write at line 53: #D3 = 5",
+"User data 5".
+-- Mostly done.  Check results again.  Tidy up Execution.writeCell.  Consider 
+   the case where the cell already holds a MultipleWriteError.
+
+(i)  Colour all errors red. 
 
 
 
@@ -87,13 +88,22 @@ Low Priority
 
 * Catch stack overflows.
 
-
-
+* In Environment, use null intead of Empty() (to save memory). 
 
 
 
 
 ===================================== DONE
+
+1. Split cells into user cells and calculated cells.  Needs change in Model.cells.  
+
+* Changes in Environment: userCells and calculatedCells initialised with Empty()
+
+* Change cells in Model to getCell.
+
+* In TopLevelTest, re-add tests for errors
+
+* Use null to represent empty cells, and adapt getCell
 
 *** For loops with repeated names. - test; add to TopLevelTest -- done
 

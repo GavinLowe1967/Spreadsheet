@@ -14,35 +14,52 @@ import scala.collection.mutable.HashMap
 class Environment(
   userCells: Array[Array[Cell]], calculatedCells: Array[Array[Cell]],
   val height: Int, val width: Int, 
-//  private var typeEnv: EvaluationTypeEnv,
-  private var nameMap: HashMap[String, Value] = Environment.initNameMap
+  private var nameMap: HashMap[String, Value] 
 ){
-  /** Get the value in cell (c,r). */
+  /* Note: indexing of cells is done by (column, row) coordinates, following the
+   * spreadsheet convention. */
+
+  /** Get the value in cell (c,r).  By default, the user's value; otherwise the
+    * calculated value. */
   def getCell(c: Int, r: Int): Cell = {
     val v = userCells(c)(r)
-    if(v.getType != EmptyType) v else calculatedCells(c)(r)
+    if(v.nonEmpty) v else calculatedCells(c)(r)
   }
 
   /** Get the user value in cell (c,r).  Called when saving the script. */
   def getUserCell(c: Int, r: Int): Cell = userCells(c)(r)
 
-  /** Set cell (c,r) to store user value cell.  */ 
+  /** Set cell (c,r) to store user value cell.  Called by the view, when the
+    * user enters a value, or when loading a CSV file. */ 
   def setUserCell(c: Int, r: Int, cell: Cell) = userCells(c)(r) = cell
-
-  //cells(c)(r)//.withCellSource(CellSource(c,r))
 
   /** Is cell (c,r) empty? */
   def isEmpty(c: Int, r: Int): Boolean = 
-    userCells(c)(r).getType == EmptyType && 
-      calculatedCells(c)(r).getType == EmptyType
+    userCells(c)(r).isEmpty && calculatedCells(c)(r).isEmpty
 
   /** Set the value of cell(c,r) to v, and record that it was calculated. */
   def setCell(c: Int, r: Int, v: Cell) = {
-    require(isEmpty(c,r) || v.isInstanceOf[ErrorValue])
-    calculatedCells(c)(r) = v // ; calculated(c)(r) = true
+    require(isEmpty(c,r) || v.isInstanceOf[MultipleWriteError])
+    calculatedCells(c)(r) = v 
   }
 
-  def isCalculated(c: Int, r: Int) = calculatedCells(c)(r).getType != EmptyType //  calculated(c)(r)
+  /** Get the value in cell (c,r), prioritising a calculated value. */
+  def getCell1(c: Int, r: Int): Cell = {
+    val v = calculatedCells(c)(r)
+    if(v.nonEmpty) v else userCells(c)(r)
+  }
+
+  /** Has a value been calculated for cell (c,r). */
+  def isCalculated(c: Int, r: Int) = calculatedCells(c)(r).nonEmpty
+
+  /** Get the value to be displayed in the selection box. */
+  def getForSelection(c: Int, r: Int): Cell = {
+    val uc = userCells(c)(r); val cc = calculatedCells(c)(r)
+    if(uc.nonEmpty){
+      if(cc.isEmpty) uc else{ assert(cc.isInstanceOf[MultipleWriteError]); cc } 
+    }
+    else cc
+  }
 
   /** Reset, corresponding to starting to rerun the script. */
   def reset() = {
@@ -58,7 +75,7 @@ class Environment(
 
   /** Clone this. */
   override def clone = 
-    new Environment(userCells, calculatedCells, height, width,  nameMap.clone)
+    new Environment(userCells, calculatedCells, height, width, nameMap.clone)
 
 }
 
@@ -74,6 +91,6 @@ object Environment{
   def apply(height: Int, width: Int) = new Environment(
     Array.fill[Cell](width, height)(Empty()),
     Array.fill[Cell](width, height)(Empty()),
-    height, width
+    height, width, initNameMap
   )
 }

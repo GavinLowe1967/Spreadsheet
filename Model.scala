@@ -8,33 +8,24 @@ class Model(val height: Int, val width: Int){
   /** Set the view to be `v`.  */
   def setView(v: ViewT) = view = v
 
+  /** The environment in which the script is executed. */
   private val env = Environment(height, width)
 
+  // Export operations on cells.
   val getCell = env.getCell _ 
-
   val setCell = env.setCell _
-
-  def isCalculated(c: Int, r: Int) = env.isCalculated(c,r)
-
-  /** The cells holding the content.  Note: indexing is done by (column, row)
-    * coordinates, following the spreadsheet convention. */
-  // val cells = Array.fill[Cell](width, height)(Empty())
-
-  /** Record of which cells were calculated. */
-  // val calculated = Array.fill(width, height)(false)
+  val setUserCell = env.setUserCell _
+  val isCalculated = env.isCalculated _ 
+  val getForSelection = env.getForSelection _
 
   /** The statements defined in the script.  Set by loadFile. */
   private var statements = List[Statement]()
 
-  /** The type environment resulting from checking the script.  Set by
-    * loadFile. */
-  //private var typeEnv: TypeEnv = null
+  private var scriptName: String = null // File name for the script
 
-  private var scriptName: String = null
+  private var sheetName: String = null // File name for the CSV file. 
 
-  private var sheetName: String = null
-
-  /** Load statements from files `fname`.dir and fname.csv. */
+  /** Load script from scN and CSV from shN. */
   def loadScript(scN: String, shN: String) = {
     scriptName = scN; sheetName = shN
     if(sheetName != null) loadSheet()
@@ -52,7 +43,6 @@ class Model(val height: Int, val width: Int){
       }
       else{ sb += st(i); i += 1 }
     }
-    // println(sb.toString)
     sb.toString
   }
 
@@ -60,11 +50,10 @@ class Model(val height: Int, val width: Int){
   def reloadScript() = {
     env.reset(); view.clearInfo()
     val fContents = removeComments(scala.io.Source.fromFile(scriptName).mkString)
-    // println(fContents+"END")
     StatementParser.parseStatements(fContents) match{
       case Left(ss) => 
         TypeChecker(ss) match{
-          case Ok(te) => statements = ss; /* typeEnv = te; */ update1()
+          case Ok(te) => statements = ss; update1()
 
           case FailureR(err) => view.addInfo(s"Type error: $err")
         } 
@@ -74,19 +63,11 @@ class Model(val height: Int, val width: Int){
     }
   }
 
-  /** Clear calculated cells. */
-  // private def clearCells() = 
-  //   for(c <- 0 until width; r <- 0 until height; if calculated(c)(r)){
-  //     calculated(c)(r) = false; cells(c)(r) = Empty() 
-  //   }
-
   /** Update cells based on statements.  Called by view. */
   def update() = { env.reset(); view.clearInfo(); update1() }
 
   /** Update cells based on statements.  Called internally. */
   private def update1() = {
-    // val env = new Environment(
-    //   cells, ???, height, width) // , typeEnv.getEvaluationTypeEnv)
     // Iterate over statements, unless an error is found.
     def handleError(err: ErrorValue) = view.addInfo(err.msg)
     Execution.performAll(statements, env, handleError)
@@ -102,9 +83,7 @@ class Model(val height: Int, val width: Int){
     val bw = new BufferedWriter(new FileWriter(file.getAbsoluteFile()))
     for(r <- 0 until height)  // Write row r
       bw.write(
-        (0 until width).map(c => env.getUserCell(c,r).asCSV
-//          if(!calculated(c)(r)) cells(c)(r).asCSV else ""
-        ).mkString(",") + "\n"
+        (0 until width).map(c => env.getUserCell(c,r).asCSV).mkString(",") + "\n"
       )
     bw.close()
   }
@@ -117,16 +96,9 @@ class Model(val height: Int, val width: Int){
       for(r <- 0 until lines.length){
         val fields = CSVParser(lines(r)).toArray 
         for(c <- 0 until fields.length) 
-          env.setUserCell(c, r, fields(c).withCellSource(c,r))
-          //cells(c)(r) = fields(c).withCellSource(c,r)
+          setUserCell(c, r, fields(c).withCellSource(c,r))
       }
     }
   }
-
-  // val outer = this
-
-  // object TestHooks{
-  //   def calculated(c: Int)(r: Int) = env.isCalculated(c,r) 
-  // }
 
 }
