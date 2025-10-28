@@ -11,12 +11,8 @@ class Model(val height: Int, val width: Int){
   /** The environment in which the script is executed. */
   private val env = Environment(height, width)
 
-  // Export operations on cells.
-  val getCell = env.getCell _ 
-  val setCell = env.setCell _
-  val setUserCell = env.setUserCell _
-  val isCalculated = env.isCalculated _ 
-  val getForSelection = env.getForSelection _
+  /** Get the environment. */
+  def getEnv = env
 
   /** The statements defined in the script.  Set by loadFile. */
   private var statements = List[Statement]()
@@ -96,7 +92,7 @@ class Model(val height: Int, val width: Int){
       for(r <- 0 until lines.length){
         val fields = CSVParser(lines(r)).toArray 
         for(c <- 0 until fields.length) 
-          setUserCell(c, r, fields(c).withCellSource(c,r))
+          env.setUserCell(c, r, fields(c).withCellSource(c,r))
       }
     }
   }

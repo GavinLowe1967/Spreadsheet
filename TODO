@@ -4,33 +4,6 @@ Current
 =======
 
 
-1. Add double-write error, giving all places where written.
-
-(a) Set CellSource when value entered, or CSV read in.  Stop
-  Environment.getCell from adding source. -- done
-
-(b) When writing to cell, add source; so there are potentially two types of
-  sources, the cell the value was read from, and the script code that produced
-  that value.  Set combinatiopn in Execution.perform, case Directive. -- done
-
-(c) show in selection -- done
-
-(d) Add double-write error -- done, needs improving
-
-(e) Can a write overwrite user data?  -- error detected
-
-(f) Can a user input overwrite written data? -- yes
-** In these cases, keep the user data, store an error elsewhere. 
-
-(g) Change MultipleWriteError to store list of Values.
-
-(h) Change user feedback, e.g. "Value 5 from cell write at line 53: #D3 = 5",
-"User data 5".
--- Mostly done.  Check results again.  Tidy up Execution.writeCell.  Consider 
-   the case where the cell already holds a MultipleWriteError.
-
-(i)  Colour all errors red. 
-
 
 
 Priorities
@@ -94,6 +67,36 @@ Low Priority
 
 
 ===================================== DONE
+
+
+
+1. Add double-write error, giving all places where written.
+
+(a) Set CellSource when value entered, or CSV read in.  Stop
+  Environment.getCell from adding source. -- done
+
+(b) When writing to cell, add source; so there are potentially two types of
+  sources, the cell the value was read from, and the script code that produced
+  that value.  Set combinatiopn in Execution.perform, case Directive. -- done
+
+(c) show in selection -- done
+
+(d) Add double-write error -- done, needs improving
+
+(e) Can a write overwrite user data?  -- error detected
+
+(f) Can a user input overwrite written data? -- yes
+** In these cases, keep the user data, store an error elsewhere. 
+
+(g) Change MultipleWriteError to store list of Values.
+
+(h) Change user feedback, e.g. "Value 5 from cell write at line 53: #D3 = 5",
+"User data 5".
+-- Mostly done.  Check results again.  Tidy up Execution.writeCell.  Consider 
+   the case where the cell already holds a MultipleWriteError. -- done
+
+(i)  Colour all errors red. -- done
+
 
 1. Split cells into user cells and calculated cells.  Needs change in Model.cells.  
 

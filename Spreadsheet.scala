@@ -10,33 +10,23 @@ import java.awt.Color
 class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
   import Spreadsheet._
 
-  val height = model.height
-  val width = model.width 
+  val height = model.height; val width = model.width 
 
   preferredSize = new Dimension(800,500)
 
   private val spreadsheetModel = model // Avoid aliasing by Table!
 
+  private val env = model.getEnv
+
   /** An editable text field. */
-  class MyTextField(text: String, calc: Boolean) extends TextField(text){
-    background = //  UserDataBackground
-      if(text.isEmpty) EmptyBackground 
-      else if(calc) CalculatedWithFocusBackground
-      else UserDataBackground
+  class MyTextField(text: String, background: Color) extends TextField(text){
+    this.background = background 
   }
 
-  /** An uneditable text field containing `text`.  
-    * @param calc was the value in this field calculated by a directive? */
-  class MyLabel(text: String, calc: Boolean, colour: Color, hasFocus: Boolean)
+  /** An uneditable text field containing `text`.  */
+  class MyLabel(text: String, colour: Color, background: Color)
       extends Label(text){
-    // editable = false
-    background = 
-      if(text.isEmpty) EmptyBackground 
-      else if(calc){
-        if(hasFocus) CalculatedWithFocusBackground else CalculatedBackground
-      }
-      else UserDataBackground
-    foreground = colour; peer.setOpaque(true)
+    this.background = background; foreground = colour; peer.setOpaque(true)
     xAlignment = Alignment.Right
   }
 
@@ -47,29 +37,27 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
     showGrid = true
     gridColor = new java.awt.Color(150, 150, 150)
 
-// TODO: if there is both a user cell and a calculated cell, the former should
-// appear in the cell, but with a different colour.  The calculated value is
-// necessarily a MultipleWriteError.  If the cell is selected, the calculated
-// value should be used in the selection box.
-
     override def rendererComponent(
       isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int)
         : Component = {
-      val cell = spreadsheetModel.getCell(column,row); val text = cell.asCell
-      val calc = spreadsheetModel.isCalculated(column,row)
+      val cell = env.getCell(column,row); val text = cell.asCell
+      val background = 
+        if(text.isEmpty) EmptyBackground
+        else if(env.isError(column,row)) ErrorBackground
+        else if(env.isCalculated(column,row)){
+          if(hasFocus) CalculatedWithFocusBackground else CalculatedBackground
+        }
+        else UserDataBackground
       if(hasFocus){
-        val cell1 = spreadsheetModel.getForSelection(column, row)
+        val cell1 = env.getForSelection(column, row)
         view.showSelection(cell1.forSelection) 
-        new MyTextField(text, calc)
+        new MyTextField(text, background)
       }
-          //(cell.forSelection)
-      //if(hasFocus /* && !calc */) new MyTextField(text, calc)
       else{
         val colour = cell match{
           case _ : StringValue => StringTextColour; case _ => DefaultTextColour
-            // TODO: different colour for errors
         }
-        new MyLabel(text, calc, colour, hasFocus)
+        new MyLabel(text, colour, background)
       }
     } // end of rendererComponent
 
@@ -89,7 +77,7 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
             val cell =
               if(vString.isEmpty) Empty() 
               else CellParser(vString).withCellSource(column,row)
-            spreadsheetModel.setUserCell(column, row, cell)
+            env.setUserCell(column, row, cell)
             spreadsheetModel.update()
           }
         }
@@ -114,6 +102,7 @@ object Spreadsheet{
   val CalculatedBackground = new Color(0.0F, 1.0F, 0.0F, 0.18F) // light green
   val CalculatedWithFocusBackground = 
     new Color(0.0F, 1.0F, 0.0F, 0.4F) // darker green
+  val ErrorBackground = new Color(1.0F, 0.0F, 0.0F, 0.18F) // light red
   val StringTextColour = new Color(100,100,100) // grey
   val DefaultTextColour = new Color(0,0,0) // black
 }

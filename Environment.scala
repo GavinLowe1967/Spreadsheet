@@ -52,6 +52,8 @@ class Environment(
   /** Has a value been calculated for cell (c,r). */
   def isCalculated(c: Int, r: Int) = calculatedCells(c)(r).nonEmpty
 
+  def isError(c: Int, r: Int) = calculatedCells(c)(r).isInstanceOf[ErrorValue]
+
   /** Get the value to be displayed in the selection box. */
   def getForSelection(c: Int, r: Int): Cell = {
     val uc = userCells(c)(r); val cc = calculatedCells(c)(r)

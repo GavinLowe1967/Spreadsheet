@@ -6,11 +6,10 @@ object TopLevelTest{
   // Initialise Model
   val Height = 100; val Width = 26
   private val model = new Model(Height,Width); model.setView(DummyView)
-  //val cells = model.cells; 
-  val isCalculated = model.isCalculated 
+  val env = model.getEnv; val isCalculated = env.isCalculated _
 
   // The value in (c,r).  The type is for historical reasons...  
-  def cells(c: Int)(r: Int) = model.getCell(c,r)
+  def cells(c: Int)(r: Int) = env.getCell(c,r)
 
   /** Check cells(c,r) contains a calculated value. */
   def checkCalculated(c: Int, r: Int) = 
