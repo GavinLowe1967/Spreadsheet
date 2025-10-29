@@ -1,13 +1,14 @@
 package spreadsheet
 
-import TypeVar.TypeID // Type variables (Ints)
-import NameExp.Name // Names of identifiers (Strings)
-import TypeT.NumTypes // = List(IntType, FloatType)
 import TypeParam.TypeParamName // Names of type parameters (Strings)
-import FunctionType.TypeParameter // (TypeParamName, TypeParamConstraint)
-import Unification.unify
 
+/** Type checker for expressions. */
 object ExpTypeChecker{
+  import TypeVar.TypeID // Type variables (Ints)
+  import NameExp.Name // Names of identifiers (Strings)
+  import FunctionType.TypeParameter // (TypeParamName, TypeParamConstraint)
+  import Unification.unify
+
   import DeclarationTypeChecker.typeCheckDeclList
 
   /** Contents of the result of a successful call to typeCheck. */
@@ -22,7 +23,7 @@ object ExpTypeChecker{
   private var nextNameIx = 0
 
   /** Get a new Name. */
-  private def newName() : Name = { nextNameIx += 1; "%"+nextNameIx } 
+  private def newName(): Name = { nextNameIx += 1; "%"+nextNameIx } 
 
   /** Make a String representing a disjunction: "<X>, <Y>, ... or <Z>". */
   private def mkDisjunction(ts: List[TypeT]): String = ts match{
@@ -335,6 +336,11 @@ object ExpTypeChecker{
   }
 }
 
+
+
+
+
+
 // =======================================================
 
 object DeclarationTypeChecker{
@@ -406,14 +412,8 @@ object DeclarationTypeChecker{
   /** Type check decls. */
   def typeCheckDeclList(typeEnv: TypeEnv, decls: List[Declaration])
       : Reply[TypeEnv] = 
-    checkDisjointNames(typeEnv, decls).map{ iterTypeCheckDecls(_, decls) }
-
-  /** Typecheck stmts in environment typeEnv.  All names of functions should
-    * already be bound to the claimed types. */ 
-  private def iterTypeCheckDecls(typeEnv: TypeEnv, decls: List[Declaration])
-      : Reply[TypeEnv] =
-    if(decls.isEmpty) Ok(typeEnv)
-    else typeCheckDecl(typeEnv, decls.head).map{ te1 => 
-      iterTypeCheckDecls(te1, decls.tail)
+    // Check names are disjoint
+    checkDisjointNames(typeEnv, decls).map{ te1 =>  // Iterate along decls
+      Reply.fold(typeCheckDecl, te1, decls)
     }
 }

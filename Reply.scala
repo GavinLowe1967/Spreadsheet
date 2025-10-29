@@ -40,3 +40,10 @@ case class FailureR(err: String) extends Reply[Nothing]{
     FailureR(err+lnString+"\nin "+extent.asString)
   }
 }
+
+object Reply{
+  /** Fold with f along xs, starting with e, as long as f gives Ok results. */
+  def fold[A,B](f: (A, B) => Reply[A], e: A, xs: List[B]): Reply[A] =
+    if(xs.isEmpty) Ok(e)
+    else f(e, xs.head).map(e1 => fold(f, e1, xs.tail))
+}
