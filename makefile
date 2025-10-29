@@ -52,8 +52,11 @@ $(DIR)/TypeEnv.class: $(DIR)/Exp.class $(DIR)/BuiltInFunctions.class	\
 $(DIR)/Unification.class: $(DIR)/TypeEnv.class	
 #  $(DIR)/EvaluationTypeChecker.class
 
-$(DIR)/TypeChecker.class: $(DIR)/Unification.class $(DIR)/Substitution.class	\
-  $(DIR)/Exp.class $(DIR)/FunctionValue.class $(DIR)/Statement.class
+$(DIR)/DeclarationTypeChecker.class: $(DIR)/Unification.class		\
+  $(DIR)/Substitution.class $(DIR)/Exp.class $(DIR)/FunctionValue.class	\
+  $(DIR)/Statement.class
+
+$(DIR)/TypeChecker.class:  $(DIR)/DeclarationTypeChecker.class
 
 # Parsing and tests
 

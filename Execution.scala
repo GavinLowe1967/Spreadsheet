@@ -160,11 +160,6 @@ object Execution{
     c: Int, r: Int, expr: Exp, d: Directive) 
   = {
     val v1 = eval(env, expr).asInstanceOf[Cell].withCellWriteSource(c,r,d) 
-      // match{
-    //   //case ev: ErrorValue => ev.withCellWriteSource(c,r,d)
-    //   // Note: ErrorValue <: Cell, so the ordering is important.
-    //   case v2: Cell => v2.withCellWriteSource(c,r,d)
-    // } // end of  match
     if(env.isEmpty(c,r)){
       env.setCell(c,r,v1)
       v1 match{ case ev: ErrorValue => handleError(ev); case _ => {} }
@@ -174,22 +169,6 @@ object Execution{
       env.setCell(c, r, mwe); handleError(mwe)
     }
   }
-
-/*
-v match{
-      case ev: ErrorValue =>
-        val ev1 = d.liftError(ev); env.setCell(c, r, ev1.withCellSource(c,r))
-        handleError(ev1)
-      // Note: ErrorValue <: Cell, so the ordering is important.
-      case v1: Cell => env.setCell(c, r, v1.withCellWriteSource(c,r,d))
-    } // end of  match
- */
-
-      // val err0 = EvalError("Cell written to for second time")
-      // val err = s.liftError(err0, true)
-      //println(s"$c $r ${env.isCalculated(c,r)}")
-      // IMPROVE: do a case analysis in isCaluclated(...) here.  If not, don't update the cell, but store error elsewhere, and highlight in view.
-
 
   /** Perform `s` in `env`, handling errors with `handleError`. 
     * @return false if an error occurred in a declaration. */

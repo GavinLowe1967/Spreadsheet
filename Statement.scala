@@ -40,7 +40,7 @@ case class Filter(exp: Exp) extends Binder
 
 /** A for statement, for(binders){ stmts }. */
 case class ForStatement(binders: List[Binder], stmts: List[Statement]) 
-    extends Declaration
+    extends Statement //  Declaration
 
 
 /* Note: we can't include this in Exp.scala, because it builds on Statement. */

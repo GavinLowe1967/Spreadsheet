@@ -3,13 +3,6 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
-
-
-
-Priorities
-==========
-
-
 * Overloading.
 
 - Use the following rule: an overloaded function may not have a polymorphic
@@ -31,6 +24,13 @@ Priorities
   applies.  This should be unique.  Record the type of the arguments for this
   unique instance in the FunctionApp object.  Consider cases like def
   f(x:Int,y:Int) = ...; def f(x:Float,y:Float) = ...; f(3,#A1).
+
+
+
+Priorities
+==========
+
+
 
 
 * Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int

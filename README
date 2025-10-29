@@ -58,6 +58,9 @@ TypeEnv.scala: a type environment for type checking.
 
 Unification.scala: unification of types. 
 
+DeclarationTypeChecker.scala: type checker for declarations.  Includes
+ExpTypeChecker, type checker for expressions.
+
 TypeChecker.scala: the type checker.
 
 TypeCheckerTest*.scala: tests.

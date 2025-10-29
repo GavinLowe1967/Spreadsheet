@@ -1,6 +1,7 @@
 package spreadsheet
 
 // import TypeT._
+import ExpTypeChecker.{TypeCheckRes,typeCheckAndClose}
 import TypeChecker._; 
 import TypeEnv._
 import TypeChecker.TestHooks._
