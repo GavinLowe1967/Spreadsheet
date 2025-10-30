@@ -1,7 +1,7 @@
 package spreadsheet
 
 // import TypeT._
-import ExpTypeChecker.TypeCheckRes
+import TypeChecker0.TypeCheckRes
 import TypeChecker._; 
 import TypeEnv._
 import TypeChecker.TestHooks._
@@ -24,11 +24,10 @@ object TypeCheckerTest0{
   def assertOk[A](r: Reply[A]) = assert(r.isInstanceOf[Ok[A]], r)
   
   /* Assert that r is an Ok for type t. */
-  def assertEq(r: Reply[TypeCheckRes], t: TypeT) =
-    assert(r.isInstanceOf[Ok[TypeCheckRes]] &&
-      r.asInstanceOf[Ok[TypeCheckRes]].x._2 == t, 
-      s"Expected $t, found "+r.asInstanceOf[Ok[TypeCheckRes]].x._2)
-  
+  def assertEq(r: TypeCheckRes, t: TypeT) = r match{
+    case Ok((_,t1)) => assert(t == t1, s"Expected $t, found $t1")
+  }
+
   /* Get new type environment. */
   def newEnv: TypeEnv = TypeEnv() // new TypeEnv(new NameMap, new Constraints)
   
@@ -45,12 +44,12 @@ object TypeCheckerTest0{
   }
 
   /** Check that r corresponds to an IntType. */
-  def assertInt(r: Reply[TypeCheckRes]) = r match{
+  def assertInt(r: TypeCheckRes) = r match{
     case Ok((te, IntType)) => {}
     case _ => sys.error(s"Expected Int, found $r")
   }
 
-  def assertListInt(r: Reply[TypeCheckRes]) = r match{
+  def assertListInt(r: TypeCheckRes) = r match{
     case Ok((_, ListType(IntType))) => {}
     case _ => sys.error(s"Expected List[Int], found $r")
   }
