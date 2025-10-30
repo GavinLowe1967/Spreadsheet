@@ -1,5 +1,10 @@
 package spreadsheet
 
+/* Note: this file contains various parts of the type checker.  ExpTypeChecker
+ * type checks expressions.  BinOpTypeChecker type checks binary operations.
+ * DeclarationTypeChecker type checks declarations.  These are mutually
+ * recursive.  */
+
 import TypeParam.TypeParamName // Names of type parameters (Strings)
 
 /** Type checker for expressions. */
@@ -25,14 +30,6 @@ object ExpTypeChecker{
   /** Get a new Name. */
   private def newName(): Name = { nextNameIx += 1; "%"+nextNameIx } 
 
-  /** Make a String representing a disjunction: "<X>, <Y>, ... or <Z>". */
-  private def mkDisjunction(ts: List[TypeT]): String = ts match{
-    case List() => sys.error("Empty list in mkDisjunction") // Can't happen
-    case List(t) => t.asString
-    case List(t1, t2) => t1.asString+" or "+t2.asString
-    case t::ts1 => t.asString+", "+mkDisjunction(ts1)
-  }
-
   // Cell reads
 
   /** Check `column` and `row` produce a ColumnType and RowType respectively; if
@@ -42,67 +39,6 @@ object ExpTypeChecker{
       : Reply[TypeCheckRes] = 
     typeCheckUnify(typeEnv, column, ColumnType).map{ case (te1, ColumnType) =>
       typeCheckUnify(te1, row, RowType).map{ case (te2, RowType) => f(te2) }
-    }
-
-  // ========= Binary operators
-
-  /** Map giving all types for infix operators, except for equality,
-    * inequality and (::). */
-  private val binopTypes: Map[String, List[(TypeT,TypeT,TypeT)]] = {
-    val numeric = // numeric operators
-      List((IntType,IntType,IntType), (FloatType,FloatType,FloatType))
-    val arith =  // + and -
-      numeric ++ List((RowType,IntType,RowType), (ColumnType,IntType,ColumnType))
-    val order = // order relations; TODO: add Row, Column
-      List((IntType,IntType,BoolType), (FloatType,FloatType,BoolType))
-    val bool = List((BoolType,BoolType,BoolType))
-    val enumT = // enumerable types
-      for(t <- List(IntType,RowType,ColumnType)) yield (t,t,ListType(t))
-    Map(
-      "+" -> arith, "-" -> arith, "*" -> numeric, "/" -> numeric,
-      "<" -> order, "<=" -> order, ">" -> order, ">=" -> order,
-      "&&" -> bool, "||" -> bool, "to" -> enumT, "until" -> enumT
-    )
-  }
-
-  /** Typecheck BinOp(left, op, right). */
-  private def typeCheckBinOp(typeEnv: TypeEnv, left: Exp, op: String, right: Exp)
-      : Reply[TypeCheckRes] =
-    typeCheck(typeEnv, left).map{ case (te1, tl) =>
-      op match{
-        case "==" | "!=" =>
-          // Check tl is a concrete equality type
-          close(te1,tl).map{ case (te2,`tl`) =>
-            te2.mkEqType(tl).map{ te3 => 
-              typeCheckUnify(te3, right, tl).map{ case (te4, tr) =>
-                // Note, in the case of "[] == [f]" for f not an equality type, 
-                // unification fails.
-                Ok((te4,BoolType))
-              }.lift(right,true)
-            }
-          }
-        case "::" =>
-          typeCheckUnify(te1, right, ListType(tl))
-        case _ => // Overloaded operator
-          val ts = binopTypes(op)
-          if(ts.length == 1){ // Unify tl with expected type
-            val (etl,etr,rt) = ts.head
-            unify(te1, tl, etl).map{ case (te2, `etl`) =>
-              typeCheckUnify(te2, right, etr).map{ case (te3, `etr`) =>
-                Ok((te3, rt)) }
-            }
-          }
-          else // tl should match a first field of a member of ts
-            close(te1,tl).map{ case (te2,`tl`) => ts.filter(_._1 == tl) match{
-              case List((`tl`,etr,rt)) =>
-                typeCheckUnify(te2, right, etr).map{ case (te3, `etr`) =>
-                  Ok((te3, rt)) }
-              case List() =>
-                FailureR("Expected "+mkDisjunction(ts.map(_._1))+
-                  ", found "+tl.asString).lift(left)
-              case _ => sys.error(s"($left,$op,$right)")// Can't happen
-            } }
-      } // end of "op match"
     }
 
   // ===== Cell match expressions
@@ -151,7 +87,7 @@ object ExpTypeChecker{
   /** Typecheck expression `exp` in type environment `typeEnv`.
     * @return a Reply, if successful, the updated type environment and the 
     * type of exp. */
-  private def typeCheck(typeEnv: TypeEnv, exp: Exp)
+  def typeCheck(typeEnv: TypeEnv, exp: Exp)
       : Reply[TypeCheckRes] = exp match{
     case NameExp(n) => typeEnv.get(n) match{
       case Some(t) => Ok((typeEnv,t))
@@ -166,7 +102,7 @@ object ExpTypeChecker{
     case ColumnExp(column) => Ok((typeEnv, ColumnType))
     // Binary operators  
     case BinOp(left, op, right) => 
-      typeCheckBinOp(typeEnv, left, op, right).lift(exp)
+      BinOpTypeChecker.typeCheckBinOp(typeEnv, left, op, right).lift(exp)
     // Typed cell expressions
     case ce @ CellExp(column, row, theType) =>
       checkCellRead(typeEnv, column, row, te => Ok(te, theType)).lift(exp)
@@ -228,7 +164,7 @@ object ExpTypeChecker{
       typeCheckDeclList(typeEnv.newScope, stmts).map{ te1 => 
         typeCheckAndClose(te1, e).map{ case (te2, te) => Ok((te2.endScope, te)) }
       }.lift(exp)
-
+      // Typed expressions
     case TypedExp(e, t) => 
       // Check t is not an unknown type parameter (or typo).
       if(t match{ case TypeParam(n) => !typeEnv.contains(n); case _ => false })
@@ -239,14 +175,14 @@ object ExpTypeChecker{
   // ========= Unification, and closing.
 
   /** Typecheck exp, and unify with eType. */
-  private def typeCheckUnify(typeEnv: TypeEnv, exp: Exp, eType: TypeT)
+  def typeCheckUnify(typeEnv: TypeEnv, exp: Exp, eType: TypeT)
       : Reply[TypeCheckRes] =
     typeCheck(typeEnv, exp).map{ case (te1,t) =>
       unify(te1, t, eType).lift(exp, true) // add line number here
     }
  
   /** Check that all UntypedCellExps have been given a concrete type. */
-  private def close(typeEnv: TypeEnv, t: TypeT): Reply[TypeCheckRes] = {
+  def close(typeEnv: TypeEnv, t: TypeT): Reply[TypeCheckRes] = {
     val untypedCells = typeEnv.getUntypedCells
     if(untypedCells.isEmpty) Ok(typeEnv.removeUntypedCells, t)
     else{
@@ -336,13 +272,84 @@ object ExpTypeChecker{
   }
 }
 
+// =======================================================
 
+/** Type checker for binary operations. */
+object BinOpTypeChecker{
+  import Unification.unify
+  import ExpTypeChecker.{TypeCheckRes,typeCheck,typeCheckUnify,close}
 
+  /** Make a String representing a disjunction: "<X>, <Y>, ... or <Z>". */
+  private def mkDisjunction(ts: List[TypeT]): String = ts match{
+    case List() => sys.error("Empty list in mkDisjunction") // Can't happen
+    case List(t) => t.asString
+    case List(t1, t2) => t1.asString+" or "+t2.asString
+    case t::ts1 => t.asString+", "+mkDisjunction(ts1)
+  }
 
+  /** Map giving all types for infix operators, except for equality,
+    * inequality and (::). */
+  private val binopTypes: Map[String, List[(TypeT,TypeT,TypeT)]] = {
+    val numeric = // numeric operators
+      List((IntType,IntType,IntType), (FloatType,FloatType,FloatType))
+    val arith =  // + and -
+      numeric ++ List((RowType,IntType,RowType), (ColumnType,IntType,ColumnType))
+    val order = // order relations; TODO: add Row, Column
+      List((IntType,IntType,BoolType), (FloatType,FloatType,BoolType))
+    val bool = List((BoolType,BoolType,BoolType))
+    val enumT = // enumerable types
+      for(t <- List(IntType,RowType,ColumnType)) yield (t,t,ListType(t))
+    Map(
+      "+" -> arith, "-" -> arith, "*" -> numeric, "/" -> numeric,
+      "<" -> order, "<=" -> order, ">" -> order, ">=" -> order,
+      "&&" -> bool, "||" -> bool, "to" -> enumT, "until" -> enumT
+    )
+  }
 
+  /** Typecheck BinOp(left, op, right). */
+  def typeCheckBinOp(typeEnv: TypeEnv, left: Exp, op: String, right: Exp)
+      : Reply[TypeCheckRes] =
+    typeCheck(typeEnv, left).map{ case (te1, tl) =>
+      op match{
+        case "==" | "!=" =>
+          // Check tl is a concrete equality type
+          close(te1,tl).map{ case (te2,`tl`) =>
+            te2.mkEqType(tl).map{ te3 => 
+              typeCheckUnify(te3, right, tl).map{ case (te4, tr) =>
+                // Note, in the case of "[] == [f]" for f not an equality type, 
+                // unification fails.
+                Ok((te4,BoolType))
+              }.lift(right,true)
+            }
+          }
+        case "::" =>
+          typeCheckUnify(te1, right, ListType(tl))
+        case _ => // Overloaded operator
+          val ts = binopTypes(op)
+          if(ts.length == 1){ // Unify tl with expected type
+            val (etl,etr,rt) = ts.head
+            unify(te1, tl, etl).map{ case (te2, `etl`) =>
+              typeCheckUnify(te2, right, etr).map{ case (te3, `etr`) =>
+                Ok((te3, rt)) }
+            }
+          }
+          else // tl should match a first field of a member of ts
+            close(te1,tl).map{ case (te2,`tl`) => ts.filter(_._1 == tl) match{
+              case List((`tl`,etr,rt)) =>
+                typeCheckUnify(te2, right, etr).map{ case (te3, `etr`) =>
+                  Ok((te3, rt)) }
+              case List() =>
+                FailureR("Expected "+mkDisjunction(ts.map(_._1))+
+                  ", found "+tl.asString).lift(left)
+              case _ => sys.error(s"($left,$op,$right)")// Can't happen
+            } }
+      } // end of "op match"
+    }
+}
 
 // =======================================================
 
+/** Type checker for declarations. */
 object DeclarationTypeChecker{
   import ExpTypeChecker.{typeCheckAndClose,typeCheckUnifyAndClose}
 
