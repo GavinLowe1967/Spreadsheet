@@ -1,7 +1,7 @@
 package spreadsheet
 
 // import TypeT._
-import ExpTypeChecker.{TypeCheckRes,typeCheckAndClose}
+import ExpTypeChecker.TypeCheckRes
 import TypeChecker._; 
 import TypeEnv._
 import TypeChecker.TestHooks._
@@ -11,6 +11,9 @@ import StatementParser.TestHooks.{statement,statements}
 
 /** Helper functions for tests on the type checker. */
 object TypeCheckerTest0{
+  // Checking of expressions
+  val typeCheckAndClose = DeclarationTypeChecker.etc.typeCheckAndClose _
+
   var printErrors = false // Should error messages be printed?
   
   /* If printErrors, print error message. */

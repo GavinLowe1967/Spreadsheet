@@ -2,8 +2,11 @@ package spreadsheet
 
 /** The type checker for statements. */
 object TypeChecker{
+  val etc = DeclarationTypeChecker.etc
+  private val typeCheckAndClose = etc.typeCheckAndClose _
+  private val typeCheckUnifyAndClose = etc.typeCheckUnifyAndClose _ 
 
-  import ExpTypeChecker.{typeCheckAndClose,typeCheckUnifyAndClose}
+  // import ExpTypeChecker.{typeCheckAndClose,typeCheckUnifyAndClose}
   import DeclarationTypeChecker.{typeCheckDecl,checkDisjointNames}
 
   /** Typecheck the statement `stmt`. 
