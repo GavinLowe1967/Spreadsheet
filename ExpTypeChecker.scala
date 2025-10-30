@@ -1,5 +1,9 @@
 package spreadsheet
 
+import TypeVar.TypeID // Type variables (Ints)
+import TypeParam.TypeParamName // Names of type parameters (Strings)
+import NameExp.Name // Names of identifiers (Strings)
+
 /** The interface of DeclarationTypeChecker, as seen by ExpTypeChecker. */
 trait DeclarationTypeCheckerT{
   /** Type check decls, returning the resulting type environment if
@@ -10,14 +14,42 @@ trait DeclarationTypeCheckerT{
 
 // =======================================================
 
-import TypeVar.TypeID // Type variables (Ints)
-import TypeParam.TypeParamName // Names of type parameters (Strings)
-
-import NameExp.Name // Names of identifiers (Strings)
-
+/** Companion object for ExpTypeChecker. */
 object ExpTypeChecker{
   /** Contents of the result of a successful call to typeCheck. */
   type TypeCheckRes = (TypeEnv,TypeT)
+}
+
+// =======================================================
+
+/** Interface of ExpTypeChecker, as seen by BinOpTypeChecker. */
+trait ExpTypeCheckerT{
+  import ExpTypeChecker.TypeCheckRes
+
+  /** Typecheck exp. */
+  def typeCheck(typeEnv: TypeEnv, exp: Exp): Reply[TypeCheckRes]
+
+  /** Typecheck exp, and unify with eType. */
+  def typeCheckUnify(typeEnv: TypeEnv, exp: Exp, eType: TypeT)
+      : Reply[TypeCheckRes]
+
+  /** Check that all UntypedCellExps have been given a concrete type, and remove
+    * those cells from the type environment. */
+  def close(typeEnv: TypeEnv, t: TypeT): Reply[TypeCheckRes] 
+}
+
+// =======================================================
+
+// Note: a single ExpTypeChecker object is created, in DeclarationTypeChecker. 
+
+/** Type checker for expressions. */
+class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
+  import FunctionType.TypeParameter // (TypeParamName, TypeParamConstraint)
+  import Unification.unify
+  import ExpTypeChecker.{TypeCheckRes}
+
+  /** The object used to typecheck binary operations. */
+  private val botc = new BinOpTypeChecker(this)
 
   /** The next type identifier to use. */
   private var next = 0
@@ -29,44 +61,6 @@ object ExpTypeChecker{
 
   /** Get a new Name. */
   private def newName(): Name = { nextNameIx += 1; "%"+nextNameIx } 
-
-  /** Check that all UntypedCellExps have been given a concrete type. */
-  def close(typeEnv: TypeEnv, t: TypeT): Reply[TypeCheckRes] = {
-    val untypedCells = typeEnv.getUntypedCells
-    if(untypedCells.isEmpty) Ok(typeEnv.removeUntypedCells, t)
-    else{
-      val s = if(untypedCells.length > 1) "s" else ""
-      FailureR(
-        s"Couldn't find type$s for cell expression$s "+
-          untypedCells.map(_.getExtent.asString).mkString(", ")
-      )
-    }
-  }
-
-}
-
-// =======================================================
-
-trait ExpTypeCheckerT{
-  import ExpTypeChecker.TypeCheckRes
-  def typeCheck(typeEnv: TypeEnv, exp: Exp): Reply[TypeCheckRes]
-  def typeCheckUnify(typeEnv: TypeEnv, exp: Exp, eType: TypeT)
-      : Reply[TypeCheckRes]
-}
-
-// Note: a single ExpTypeChecker object is created, in DeclarationTypeChecker. 
-
-/** Type checker for expressions. */
-class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
-  import FunctionType.TypeParameter // (TypeParamName, TypeParamConstraint)
-  import Unification.unify
-  import ExpTypeChecker.{TypeCheckRes,nextTypeID,newName,close}
-
-  //import DeclarationTypeChecker.typeCheckDeclList
-
-  private val botc = new BinOpTypeChecker(this)
-
-
 
   // Cell reads
 
@@ -184,7 +178,6 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
             // Create fresh type variables to replace tParams in domain and range
             val (te2, domain1, range1) = 
               subTypeParams(te1.newScope, tParams, domain, range)
-              // subTypeParams(te1, tParams, domain, range)
             // Generate a new name, and bind it to range1 in the environment;
             // then unify the types of args with domain1, so the new name gets
             // updated to the appropriate return type.
@@ -219,18 +212,19 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
       unify(te1, t, eType).lift(exp, true) // add line number here
     }
  
-  // /** Check that all UntypedCellExps have been given a concrete type. */
-  // def close(typeEnv: TypeEnv, t: TypeT): Reply[TypeCheckRes] = {
-  //   val untypedCells = typeEnv.getUntypedCells
-  //   if(untypedCells.isEmpty) Ok(typeEnv.removeUntypedCells, t)
-  //   else{
-  //     val s = if(untypedCells.length > 1) "s" else ""
-  //     FailureR(
-  //       s"Couldn't find type$s for cell expression$s "+
-  //         untypedCells.map(_.getExtent.asString).mkString(", ")
-  //     )
-  //   }
-  // }
+  /** Check that all UntypedCellExps have been given a concrete type, and remove
+    * those cells from the type environment.. */
+  def close(typeEnv: TypeEnv, t: TypeT): Reply[TypeCheckRes] = {
+    val untypedCells = typeEnv.getUntypedCells
+    if(untypedCells.isEmpty) Ok(typeEnv.removeUntypedCells, t)
+    else{
+      val s = if(untypedCells.length > 1) "s" else ""
+      FailureR(
+        s"Couldn't find type$s for cell expression$s "+
+          untypedCells.map(_.getExtent.asString).mkString(", ")
+      )
+    }
+  }
 
   /** Typecheck exp in typeEnv, and ensure all UntypedCellExps have been given a
     * concrete type. */
@@ -310,20 +304,17 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
   }
 }
 
-// =======================================================
-
-/** Type checker for binary operations. */
-object BinOpTypeChecker{
-
-}
 
 // =======================================================
 
+/** Type checker for binary operations.  
+  * @param etc object to use to recursively typecheck subexpressions.  */
 class BinOpTypeChecker(etc: ExpTypeCheckerT){
   import Unification.unify
-  import ExpTypeChecker.{TypeCheckRes,close} // ,typeCheck,typeCheckUnify,close}
+  import ExpTypeChecker.TypeCheckRes
 
   private val typeCheckUnify = etc.typeCheckUnify _
+  private val close = etc.close _
 
   /** Make a String representing a disjunction: "<X>, <Y>, ... or <Z>". */
   private def mkDisjunction(ts: List[TypeT]): String = ts match{

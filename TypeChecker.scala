@@ -2,11 +2,11 @@ package spreadsheet
 
 /** The type checker for statements. */
 object TypeChecker{
-  val etc = DeclarationTypeChecker.etc
+  /** The ExpTypeChecker object. */
+  private val etc = DeclarationTypeChecker.etc
   private val typeCheckAndClose = etc.typeCheckAndClose _
   private val typeCheckUnifyAndClose = etc.typeCheckUnifyAndClose _ 
 
-  // import ExpTypeChecker.{typeCheckAndClose,typeCheckUnifyAndClose}
   import DeclarationTypeChecker.{typeCheckDecl,checkDisjointNames}
 
   /** Typecheck the statement `stmt`. 
@@ -40,7 +40,6 @@ object TypeChecker{
     checkDisjointNames(typeEnv, stmts).map{ te1 => // Iterate along stmts
       Reply.fold(typeCheckStmt, te1, stmts)
     }
-
 
   /** Typecheck a "for" statement. */
   private
@@ -78,9 +77,7 @@ object TypeChecker{
 
   /** Test hooks, to give TypeCheckerTest access to private operations. */
   object TestHooks{
-    //val typeCheck = outer.typeCheck _
     val typeCheckStmtList = outer.typeCheckStmtList _
-    //val typeCheckAndClose = outer.typeCheckAndClose _
   }
 
 }
