@@ -14,16 +14,23 @@ Current
   that function, (e.g. "double(3.4)") or explicitly typed (e.g. "map(double:
   Int => Int, List(3))").
 
+- Add function that, given list of types, finds the instance (if any) that
+  matches a given type.
+
+- Add function that, given list of function types, finds the instance (if any)
+  that matches a given argument type.
+
 - Extend environment to allow name to map to multiple values.  Note:
   declarations from outer scopes are removed.
 
-- At point of declaration, check types are distinct: this is easy given the
-  above rule.  (TypeCheker.typeCheckStmtList.)
-
 - Add new case in ExpTypeChecker.apply TypedExp(NameExp(n), t) that allows n
-  to be overloeaded.  Don't allow overloading in the simple NameExp(n) case.
+  to be overloaded.  Don't allow overloading in the simple NameExp(n) case.
 
-- Allow overloading only in the case of FunctionApp(NameExp(fn), args).  
+- At point of declaration, check argument types are distinct: this is easy
+  given the above rule.  (TypeCheker.typeCheckStmtList.)
+
+- Allow overloading only in the case of FunctionApp(NameExp(fn), args).  In
+  more general case, require the function to evaluate to a FunctionType.
 
 - At point of typechecking a function application, identify the instance that
   applies.  This should be unique.  Record the type of the arguments for this

@@ -1,10 +1,10 @@
 package spreadsheet
 
-/* This file contains some basics of the type checker. */
+/* This file contains some basics of the type checker, and type checkers
+ * responsible for type checking particular syntactic forms.. */
 
 import Unification.unify
 import TypeVar.TypeID // Type variables (Ints)
-//import NameExp.Name // Names of identifiers (Strings)
 
 object TypeChecker0{
   /** The result of typechecking an expression. */
@@ -29,15 +29,14 @@ object TypeChecker0{
 
   /** Get a new type identifier. */
   def nextTypeID() : TypeID = TypeVar.getNext()
-
 }
 
 import TypeChecker0._
 
 // =======================================================
 
-/** Interface of ExpTypeChecker, as seen by BinOpTypeChecker and
-  * CellReadTypeChecker. */
+/** Interface of ExpTypeChecker, as seen by BinOpTypeChecker,
+  * CellReadTypeChecker and FunctionAppTypeChecker. */
 trait ExpTypeCheckerT{
   /** Typecheck exp. */
   def typeCheck(typeEnv: TypeEnv, exp: Exp): TypeCheckRes
@@ -191,7 +190,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   /** Get a new Name. */
   private def newName(): Name = { nextNameIx += 1; "%"+nextNameIx } 
 
-  /** Typecheck the application of ff to args. */
+  /** Type check the application of ff to args. */
   def checkFunctionApp(typeEnv: TypeEnv, ff: FunctionType, args: List[Exp])
       : TypeCheckRes = {
     val FunctionType(tParams, domain, range) = ff
@@ -221,7 +220,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     var updates = List[(TypeParamName, TypeVar)]();
     var constraints = List[(TypeID, TypeConstraint)]()
     for((p,c) <- tParams){
-      val tId = TypeChecker0.nextTypeID(); updates ::= (p, TypeVar(tId))
+      val tId = nextTypeID(); updates ::= (p, TypeVar(tId))
       constraints ::= (tId,c)
     }
     // The instantiated domain and range
@@ -256,5 +255,4 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       (te, FunctionType(List(), domain1, range1))
     case _ => (typeEnv, t)
   }
-
 }

@@ -58,6 +58,11 @@ TypeEnv.scala: a type environment for type checking.
 
 Unification.scala: unification of types. 
 
+TypeChecker0.scala: some basics for the type checker, including
+BinOpTypeChecker (type checking of binary operations), CellReadTypeChecker
+(type checking of cell reads), and FunctionAppTypeChecker (type checking of
+function applications).
+
 ExpTypeChecker: type checker for expressions.
 
 DeclarationTypeChecker.scala: type checker for declarations. 
