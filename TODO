@@ -20,6 +20,11 @@ Current
 - At point of declaration, check types are distinct: this is easy given the
   above rule.  (TypeCheker.typeCheckStmtList.)
 
+- Add new case in ExpTypeChecker.apply TypedExp(NameExp(n), t) that allows n
+  to be overloeaded.  Don't allow overloading in the simple NameExp(n) case.
+
+- Allow overloading only in the case of FunctionApp(NameExp(fn), args).  
+
 - At point of typechecking a function application, identify the instance that
   applies.  This should be unique.  Record the type of the arguments for this
   unique instance in the FunctionApp object.  Consider cases like def
