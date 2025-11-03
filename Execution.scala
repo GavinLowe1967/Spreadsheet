@@ -227,7 +227,13 @@ object Execution{
     statements: List[Statement], env: Environment, 
     handleError: ErrorValue => Unit) 
       : Boolean = {
-    var ok = true; val iter = statements.iterator
+    // We evaluate the function declarations first, because it is legal to
+    // make a forward reference to a function, and at this point the functions
+    // are evaluated lazily (converted into Scala functions).
+    val statements1 = 
+      statements.filter(_.isInstanceOf[FunctionDeclaration]) ++
+        statements.filter(! _.isInstanceOf[FunctionDeclaration])
+    var ok = true; val iter = statements1.iterator
     while(ok && iter.hasNext) ok = perform(env, handleError, iter.next())
     ok
   }

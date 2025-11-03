@@ -53,6 +53,8 @@ class TypeEnv(
   /** Remove name from the type environment. */
   def - (name: Name): TypeEnv = make(nameMap - name)
 
+  def -- (names: List[Name]): TypeEnv = make(nameMap -- names)
+
   /** Replace tId by t in nameMap. */
   private def subInNameMap(nameMap: NameMap, tId: TypeID, t: TypeT): NameMap =
     nameMap.map{ case (n,t1) => (n, Substitution.reMap(tId, t, t1)) }

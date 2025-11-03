@@ -54,24 +54,23 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
     }
 
   /** Check the names bound in stmts are disjoint.  If so, return the type
-    * environment formed by binding the function names to their claimed
-    * types. */
+    * environment formed by binding the function names to their claimed types,
+    * and removing val names that duplicate names in an outer block. */
   def checkDisjointNames(typeEnv: TypeEnv, stmts: List[Statement])
       : Reply[TypeEnv] = {
     // Check bound names are disjoint
-    val names = (
-      (for(ValueDeclaration(name,_) <- stmts) yield name) ++
-      (for(FunctionDeclaration(name,_,_,_,_) <- stmts) yield name)
-    )
+    val valNames = for(ValueDeclaration(name,_) <- stmts) yield name 
+    val fnDecs = Statement.getFnDecs(stmts)
+    val names = valNames ++ fnDecs.map(_.name)
     findRepetition(names) match{
       case Some(name) => FailureR(s"$name has two definitions") // IMPROVE
       case None =>
         // Extend typeEnv on assumption all FunctionDeclarations are correctly
-        // typed.
+        // typed, but remove overwritten names.
         val updates = 
-          for(FunctionDeclaration(name, tparams, params, rt, body) <- stmts) 
+          for(FunctionDeclaration(name, tparams, params, rt, body) <- fnDecs) 
           yield name -> FunctionType(tparams, params.map(_._2), rt)
-        Ok(typeEnv++updates)
+        Ok(typeEnv -- valNames ++ updates)
     }
   }
 

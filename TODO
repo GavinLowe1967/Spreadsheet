@@ -3,25 +3,78 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
+
 * Overloading.
 
 - Use the following rule: an overloaded function may not have a polymorphic
-  instance.  And allow overloading only via defs -- not vals.  This avoids a
-  lot of difficulties, and doesn't seem to lose much -- only distasteful
-  overloadings.
+  instance.  This avoids a lot of difficulties, and doesn't seem to lose much
+  -- only distasteful overloadings.
+
+?? And allow overloading only via defs -- not vals.  This seems consistent with
+  the rule that forward-references to vals are not allowed, and we calculate
+  the types of vals in order of declaration: we don't want to add a type for
+  an overloaded def/val part way through.
 
 - Require all uses of an overloaded function to either be an application of
   that function, (e.g. "double(3.4)") or explicitly typed (e.g. "map(double:
-  Int => Int, List(3))").
+  Int => Int, List(3))").  [Aside: in the latter cases, if not explicitly
+  typed, e.g. map(double, List(3)), Scala picks the instance by a mechanism
+  that seems arbitrary.]
 
-- Add function that, given list of types, finds the instance (if any) that
+Plan:
+
+1. Extend environment to map each name to a list of values.  Arrange for get
+to return Option[List[TypeT]].  **temporarily** keep sigs of + and ++, but
+store singleton list.
+
+2. Update the NameExp case to treat None as at present, Some(List()) as a
+forward-reference failure, Some(List(t)) as present, and Some(ts) as an
+overloading failure.
+
+<testing here unchanged>
+
+3a. Add version of TypeEnv.++ to take a list of types, and to overwrite
+previous types.
+
+3b. At start of new scope (DeclarationTypeChecker.typeCheckDeclList):
+a. Check that overloaded functions are not polymorphic (no polymorphic types
+for arguments).
+b. Check that argument types of overloaded functions are
+disjoint (easy because of lack of polymorphism).
+c. Map names of functions to the relevant list of types.
+
+<testing here unchanged, but can't deal with overloading>
+
+4. Add a case FunctionApp(NameExp(fn), args) to typeCheck.  Identify the
+  instance that applies.  This should be unique.  Typecheck based on this.
+
+<add tests of typechecker with overloading>
+
+5. Record the instance of the function in the FunctionApp object. 
+a. For each overloaded name, store in each FunctionDeclaration object its
+index in the corresponding list of types.  
+b. Store that index in the FunctionApp object at step 4.
+
+<testing here unchanged>
+
+6. At the point of execution of a FunctionDeclaration, store the corresponding
+FunctionValue against a string formed from `name` and the index.
+
+7. At the point of evaluation of a function app, obtain the relevant instance
+by using the name stored in the FunctionApp object.
+
+----- Previous musings
+
+? Add function that, given list of types, finds the instance (if any) that
   matches a given type.
 
-- Add function that, given list of function types, finds the instance (if any)
+? Add function that, given list of function types, finds the instance (if any)
   that matches a given argument type.
 
-- Extend environment to allow name to map to multiple values.  Note:
-  declarations from outer scopes are removed.
+ Note:
+  declarations from outer scopes are removed.  This means nameMap needs to
+  record the level of scope nesting.  Or store function bindings in a separate
+  component -- updated only in DeclarationTypeChecker.checkDisjointNames.
 
 - Add new case in ExpTypeChecker.apply TypedExp(NameExp(n), t) that allows n
   to be overloaded.  Don't allow overloading in the simple NameExp(n) case.
@@ -76,11 +129,49 @@ Low Priority
 * In Environment, use null intead of Empty() (to save memory). 
 
 
-
+======================================================================
 
 ===================================== DONE
 
 
+** I think at present, the typechecker will pass a val declaration that makes
+   a forward reference to a function def, but execution will fail.  e.g.
+
+     val x = f(3); def f(y: Int): Int = y+4
+
+   Type checking succeeds because it is done starting from an environment that
+   includes all the claimed types for defs.  Execution fails, because it
+   processes the declarations in order, and so the evaluation of x doesn't
+   have access to the value of f.  Execution of recursive functions works
+   (assuming no forward references) because the body of the function is
+   evaluated in an environment that includes both functions. 
+
+   Scala effectively initialises vals to default values of the type (null for
+   functions), evaluates declarations in order, but allows forward reference
+   to defs based upon the possibly default values.  I don't like that.
+
+Rule 1: no forward references to vals
+
+Rule 2: no forward calls to defs from within val declarations.  This includes
+indirect calls, e.g.
+
+  def f(x: Int): Int = g(x); val y = f(3); def g(x: Int): Int = x+4
+
+Algorithm:
+
+a. Identify references to local names (i.e. names declared in this block) used
+  in each declaration (both references to vals and defs, separately)
+
+b. Find fixed points of function names used in functions, i.e. including via
+  indirect calls.
+
+c. Iterate through declarations, and check no forward refs to vals (using (a)),
+  and no forward calls to functions from vals (using (b)).
+
+ALTERNATIVE: Evaluate defs before anything else in the block.  This is roughly
+the same as Scala, but doesn't allow a val or cell write to depend upon a
+later val.  Also, purge new names at the start of the block.  -- done
+  
 
 1. Add double-write error, giving all places where written.
 

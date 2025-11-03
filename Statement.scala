@@ -4,6 +4,12 @@ package spreadsheet
   * file. */
 trait Statement extends HasExtent
 
+object Statement{
+  /** Get all the FunctionDeclarations from stmts. */
+  def getFnDecs(stmts: List[Statement]): List[FunctionDeclaration] = 
+    for(fn @ FunctionDeclaration(_,_,_,_,_) <- stmts) yield fn 
+}
+
 /** Trait of declarations.  These can appear in expression blocks. */
 trait Declaration extends Statement
 

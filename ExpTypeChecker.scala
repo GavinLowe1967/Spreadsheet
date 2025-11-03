@@ -41,7 +41,7 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
   def typeCheck(typeEnv: TypeEnv, exp: Exp): TypeCheckRes = exp match{
     case NameExp(n) => typeEnv.get(n) match{
       case Some(t) => Ok((typeEnv,t))
-      case None => FailureR("Name not found").lift(exp, true)
+      case None => FailureR(s"Name $n not found").lift(exp, true)
     }
     // Atomic types
     case IntExp(v) => Ok((typeEnv,IntType))
