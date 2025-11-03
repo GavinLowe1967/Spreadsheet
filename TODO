@@ -25,16 +25,19 @@ Plan:
 
 1. Extend environment to map each name to a list of values.  Arrange for get
 to return Option[List[TypeT]].  **temporarily** keep sigs of + and ++, but
-store singleton list.
+store singleton list. -- done
 
 2. Update the NameExp case to treat None as at present, Some(List()) as a
 forward-reference failure, Some(List(t)) as present, and Some(ts) as an
-overloading failure.
+overloading failure. -- done
 
-<testing here unchanged>
+2a. Change block code to map new names to List(), so attempts to access them
+before the definition will generate "forward reference" errors. -- done
+
+<testing here unchanged>  -- done
 
 3a. Add version of TypeEnv.++ to take a list of types, and to overwrite
-previous types.
+previous types. -- done
 
 3b. At start of new scope (DeclarationTypeChecker.typeCheckDeclList):
 a. Check that overloaded functions are not polymorphic (no polymorphic types

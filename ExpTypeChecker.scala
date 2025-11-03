@@ -40,7 +40,10 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
     * type of exp. */
   def typeCheck(typeEnv: TypeEnv, exp: Exp): TypeCheckRes = exp match{
     case NameExp(n) => typeEnv.get(n) match{
-      case Some(t) => Ok((typeEnv,t))
+      case Some(List(t)) => Ok((typeEnv,t))
+      case Some(List()) => 
+        FailureR(s"Forward reference to name $n").lift(exp,true)
+      case Some(ts) => ??? // Can't resolve
       case None => FailureR(s"Name $n not found").lift(exp, true)
     }
     // Atomic types

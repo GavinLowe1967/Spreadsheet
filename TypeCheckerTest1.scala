@@ -75,7 +75,8 @@ object TypeCheckerTest1{
     assertInt(tcp("{"+script+"; fact(4) }"))
     assertFail(tcp("{"+script+"; fact(true) }"))
     assertFail(tcp("{"+faultyScript+"; fact(4) }"))
-    // The reference to x, below, is a forward reference so not allowed. 
+    // The reference to x, below, is a forward reference so not allowed.
+    // "Forward reference to name x".
     assertFail(tcp("{ val x = 3; { val y = x+1; val x = 4; y } }"))
     assertFail(tcpss(
       "val x = 3; def f(y: Int): Int = { val z = x; val x = 4; y+z+x }"))

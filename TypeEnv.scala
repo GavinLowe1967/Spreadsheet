@@ -9,7 +9,11 @@ import EvaluationTypeEnv._
 import TypeEnv._
 
 /** A type environment.
-  * @param nameMap A mapping from names in the script to their types.
+  * @param nameMap A mapping from each names in the script to its types
+  * (possibly multiple).  If a name maps to the empty list, it indicates that
+  * the name is declared (as a val) later in the local block, so an attempt to
+  * reference it should give a "forward reference" error.  If a name maps to
+  * multiple types, they should all be FunctionTypes.
   * @param constraints A mapping from type identifiers to constraints.
   * @param typeParamMap A mapping from TypeParamName to TypeConstraint
   * @param untypedCells The UntypedCellExps for which we are seeking the type.
@@ -38,26 +42,45 @@ class TypeEnv(
 
   // ========= NameMap functions
 
-  /** The type associated with name. */
-  def apply(name: Name): TypeT = nameMap(name)
+  /** The type associated with name.  Pre: there is precisely one such type. */
+  def apply(name: Name): TypeT = {
+    val ts = nameMap(name); require(ts.length == 1); ts.head
+  }
 
   /** Optionally, the type associated with name. */
-  def get(name: Name): Option[TypeT] = nameMap.get(name)
+  def get(name: Name): Option[List[TypeT]] = nameMap.get(name) 
+  // def get(name: Name): Option[TypeT] = nameMap.get(name) match{
+  //   case None => None; case Some(List(t)) => Some(t)
+  // }
 
   /** The TypeEnv formed by adding the mapping name -> t. */
-  def + (name: Name, t: TypeT) : TypeEnv = make(nameMap + (name -> t))
+  def + (name: Name, t: TypeT): TypeEnv = make(nameMap + (name -> List(t)))
+
+  /** The TypeEnv formed by adding the mapping name -> ts. */
+  def + (name: Name, ts: List[TypeT]): TypeEnv = {
+    require(ts.length == 1 || ts.forall(_.isInstanceOf[FunctionType]))
+    make(nameMap + (name -> ts))
+  }
 
   /** The TypeEnv formed by adding each name -> t for (name,t) in pairs. */
-  def ++ (pairs: List[(Name, TypeT)]) : TypeEnv = make(nameMap ++ pairs)
+  def ++ (pairs: List[(Name, TypeT)]) : TypeEnv = {
+    make(nameMap ++ pairs.map{ case (n,t) => (n, List(t)) })
+  }
 
   /** Remove name from the type environment. */
   def - (name: Name): TypeEnv = make(nameMap - name)
 
-  def -- (names: List[Name]): TypeEnv = make(nameMap -- names)
+  /** Map all the names in `names` to the empty list of types.  Each names will
+    * be updated within the current local block, but an attempt to read it
+    * before then will generate a "forward reference" error. */
+  def -- (names: List[Name]): TypeEnv = // make(nameMap -- names)
+    make(nameMap ++ names.map(_ -> List[TypeT]()))
 
   /** Replace tId by t in nameMap. */
   private def subInNameMap(nameMap: NameMap, tId: TypeID, t: TypeT): NameMap =
-    nameMap.map{ case (n,t1) => (n, Substitution.reMap(tId, t, t1)) }
+    nameMap.map{ case (n,ts) =>
+      (n, ts.map(t1 => Substitution.reMap(tId, t, t1))) }
+//    nameMap.map{ case (n,t1) => (n, Substitution.reMap(tId, t, t1)) }
 
   // ========= Constraints functions
 
@@ -196,8 +219,8 @@ class TypeEnv(
 
 /** Companion object for TypeEnv. */
 object TypeEnv{
-  /** A mapping from names in the script to their types. */
-  private type NameMap = HashMap[Name, TypeT] // immutable 
+  /** A mapping each name in the script to its types. */
+  private type NameMap = HashMap[Name, List[TypeT]] // immutable 
 
   /** A stack frame, storing information about the type environment for the
     * outer scope. */
@@ -205,7 +228,9 @@ object TypeEnv{
 
   /** An initial TypeEnv. */
   def apply() = {
-    val nameMap = new NameMap ++ BuiltInFunctions.builtInTypes
+    val nameMap = 
+      new NameMap ++ 
+        BuiltInFunctions.builtInTypes.map{ case (n,t) => (n, List(t)) }
     new TypeEnv(nameMap, new Constraints, new TypeParamMap, 
       List[UntypedCellExp](), Map[CellTypeVar, CellType](), List[Frame]())
   }

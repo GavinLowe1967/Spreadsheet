@@ -67,10 +67,12 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
       case None =>
         // Extend typeEnv on assumption all FunctionDeclarations are correctly
         // typed, but remove overwritten names.
-        val updates = 
+        val updates1 = 
           for(FunctionDeclaration(name, tparams, params, rt, body) <- fnDecs) 
           yield name -> FunctionType(tparams, params.map(_._2), rt)
-        Ok(typeEnv -- valNames ++ updates)
+        // val updates2 = valNames.map(n => n -> List[TypeT]())
+        // Ok(typeEnv ++ (updates1 ++ updates2))
+        Ok(typeEnv -- valNames ++ updates1)
     }
   }
 
