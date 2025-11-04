@@ -28,7 +28,9 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
       case FunctionDeclaration(name, tparams, params, rt, body) =>
         // name should already be bound to an appropriate FunctionType, by
         // typeCheckStmtList
-        require(typeEnv(name) == FunctionType(tparams, params.map(_._2), rt))
+        val Some(ts) = typeEnv.get(name)
+        require(ts.contains(FunctionType(tparams, params.map(_._2), rt)))
+        //require(typeEnv(name) == FunctionType(tparams, params.map(_._2), rt))
         // Check names of params, tparams are disjoint
         (findRepetition(params.map(_._1)) match{
           case Some(p) => FailureR(s"Repeated parameter $p")
@@ -53,6 +55,26 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
         }).lift(decl)
     }
 
+  /** Check that the definitions `defs` for function `name` is allowed: if there
+    * is more than one definition, that none is polymorphic, and that they
+    * have disjoint types.  If not, return appropriate FailureR; return null
+    * if ok. */
+  private 
+  def checkOverloadingAllowed(name: String, defs: List[FunctionDeclaration])
+      : Reply[TypeEnv] = {
+    if(defs.length > 1){
+      val poly = defs.filter(_.tParams.nonEmpty)
+      if(poly.nonEmpty)
+        FailureR(
+          s"Function $name with repeated definitions has polymorphic instance:"+
+            "\n"+poly.head) 
+          // IMPROVE presentation of type and give line number.
+      else null 
+// FIXME: check disjoint types
+    }
+    else null
+  }
+
   /** Check the names bound in stmts are disjoint.  If so, return the type
     * environment formed by binding the function names to their claimed types,
     * and removing val names that duplicate names in an outer block. */
@@ -61,18 +83,38 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
     // Check bound names are disjoint
     val valNames = for(ValueDeclaration(name,_) <- stmts) yield name 
     val fnDecs = Statement.getFnDecs(stmts)
-    val names = valNames ++ fnDecs.map(_.name)
-    findRepetition(names) match{
-      case Some(name) => FailureR(s"$name has two definitions") // IMPROVE
-      case None =>
-        // Extend typeEnv on assumption all FunctionDeclarations are correctly
-        // typed, but remove overwritten names.
-        val updates1 = 
-          for(FunctionDeclaration(name, tparams, params, rt, body) <- fnDecs) 
-          yield name -> FunctionType(tparams, params.map(_._2), rt)
-        // val updates2 = valNames.map(n => n -> List[TypeT]())
-        // Ok(typeEnv ++ (updates1 ++ updates2))
-        Ok(typeEnv -- valNames ++ updates1)
+    val grouped: Map[String, List[FunctionDeclaration]] = fnDecs.groupBy(_.name) 
+    val fnNames = grouped.keys
+    val repeats = valNames.filter(n => grouped.contains(n))
+    if(repeats.nonEmpty)
+      FailureR(s"${repeats.head} has both val and def definitions") 
+        // IMPROVE: needs line numbers.
+    else{
+      findRepetition(valNames) match{
+        case Some(name) => FailureR(s"$name has two val definitions") 
+            // IMPROVE: needs line numbers
+        case None =>
+          // Iterate over grouped, and check each
+          var result: Reply[TypeEnv] = null; val iter = grouped.iterator
+          while(iter.hasNext && result == null){
+            val (name,defs) = iter.next()
+            result = checkOverloadingAllowed(name, defs)
+          }
+          if(result != null) result
+          else{
+            // Remove overwritten val names, then extend with claimed types
+            // for functions.
+            var te = typeEnv -- valNames
+            for((name,defs) <- grouped){
+              val ts: List[TypeT] = 
+                for(FunctionDeclaration(name, tparams, params, rt, body) <- defs)
+                yield FunctionType(tparams, params.map(_._2), rt)
+              te = te + (name, ts)
+            }
+            Ok(te)
+            //Ok(typeEnv -- valNames ++ updates)
+          }
+      }
     }
   }
 

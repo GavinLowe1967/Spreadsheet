@@ -31,7 +31,7 @@ object TypeCheckerTest{
       // printErrors = true
       // -- TypeCheckerTest0
       TypeCheckerTestExpr.expTests()
-      // -- TypeCheckerTest1
+      // -- TypeCheckerTest1.scala
       println("===singleDecTests===")
       TypeCheckerTest1.singleDecTests()
       println("===scriptTests===")
@@ -48,8 +48,11 @@ object TypeCheckerTest{
       typeConstraintTests()
       println("===higherOrderTests===")
       higherOrderTests()
+      // TypeCheckerTest2.scala
       println("===forLoopTests===")
       forLoopTests()
+      println("===overloadingtests===")
+      overloadingTests()
     }
     println("Done")
   }

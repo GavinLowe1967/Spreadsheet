@@ -40,11 +40,12 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
     * type of exp. */
   def typeCheck(typeEnv: TypeEnv, exp: Exp): TypeCheckRes = exp match{
     case NameExp(n) => typeEnv.get(n) match{
-      case Some(List(t)) => Ok((typeEnv,t))
+      case None => FailureR(s"Name $n not found").lift(exp, true)
       case Some(List()) => 
         FailureR(s"Forward reference to name $n").lift(exp,true)
+      case Some(List(t)) => Ok((typeEnv,t))
       case Some(ts) => ??? // Can't resolve
-      case None => FailureR(s"Name $n not found").lift(exp, true)
+// FIXME
     }
     // Atomic types
     case IntExp(v) => Ok((typeEnv,IntType))
@@ -89,12 +90,26 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
         // Try to unify types of remainder with t1
         typeCheckListSingleType(te1, elems.tail, t1).lift(exp)
       }
+    // Application of function name; allow overloading here
+    case FunctionApp(NameExp(fn), args) => typeEnv.get(fn) match{
+      case None => FailureR(s"Name $fn not found").lift(exp, true)
+      case Some(List()) => 
+        FailureR(s"Forward reference to name $fn").lift(exp, true)
+      case Some(List(t)) => 
+        fatc.checkFunctionApp(typeEnv, t, args).lift(exp, true)
+      case Some(ts) => assert(ts.nonEmpty); ??? // Overloading
+// FIXME: to do
+    }
     // Function applications
     case FunctionApp(f, args) => 
-      typeCheck(typeEnv, f).map{ case (te1, ff) => ff match{
-        case fff: FunctionType => fatc.checkFunctionApp(te1, fff, args) 
-        case _ => FailureR("Non-function applied as function")
-      }}.lift(exp, true)
+      typeCheck(typeEnv, f).map{ case (te1, ff) =>
+        fatc.checkFunctionApp(te1, ff, args)
+        //  ff match{
+        // case fff: FunctionType => fatc.checkFunctionApp(te1, fff, args) 
+        // case _ => FailureR("Non-function applied as function")
+
+      //}
+      }.lift(exp, true)
     // Block
     case BlockExp(stmts, e) => 
       // Create a new scope for this block, but return to the outer scope at

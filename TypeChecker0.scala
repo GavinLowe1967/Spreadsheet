@@ -190,10 +190,20 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   /** Get a new Name. */
   private def newName(): Name = { nextNameIx += 1; "%"+nextNameIx } 
 
-  /** Type check the application of ff to args. */
-  def checkFunctionApp(typeEnv: TypeEnv, ff: FunctionType, args: List[Exp])
+  /** Typecheck the application of a value of type t (not necessarily a
+    * FunctionType) to args. */
+  def checkFunctionApp(typeEnv: TypeEnv, t: TypeT, args: List[Exp])
+      : TypeCheckRes =
+    t match{
+      case ft: FunctionType => checkFunctionApp1(typeEnv, ft, args)
+      case _ => FailureR("Non-function applied as function")
+    }
+
+  /** Typecheck the application of a function of type ft to args. */
+  private 
+  def checkFunctionApp1(typeEnv: TypeEnv, ft: FunctionType, args: List[Exp])
       : TypeCheckRes = {
-    val FunctionType(tParams, domain, range) = ff
+    val FunctionType(tParams, domain, range) = ft
     if(domain.length != args.length)
       FailureR(s"Expected ${domain.length} arguments, found "+args.length)
     else{
