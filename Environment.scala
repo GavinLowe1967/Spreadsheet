@@ -75,6 +75,10 @@ class Environment(
   /** Optionally get the value associated with `name` in the environment. */
   def get(name: String): Option[Value] = nameMap.get(name)
 
+  def apply(name: String): Value = get(name) match{
+    case Some(v) => v; case None => sys.error(s"Name not found: $name")
+  }
+
   /** Clone this. */
   override def clone = 
     new Environment(userCells, calculatedCells, height, width, nameMap.clone)

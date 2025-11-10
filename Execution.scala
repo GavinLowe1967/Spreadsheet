@@ -57,14 +57,13 @@ object Execution{
     }
   }
 
-
   /** Evaluate `e` in environment `env`. */
   private def eval0(env: Environment, e: Exp): Value = e match{
-    case NameExp(name) => 
-      env.get(name) match{
-        case Some(value) => value
-        case None => sys.error(s"Name not found: $name")
-      }
+    case NameExp(name) => env(name)
+      // env.get(name) match{
+      //   case Some(value) => value
+      //   case None => sys.error(s"Name not found: $name")
+      // }
 
     case IntExp(value) => IntValue(value)
     case FloatExp(value) => FloatValue(value) 
@@ -104,13 +103,12 @@ object Execution{
       }
       if(error != null) error else ListValue(vs.reverse)
 
-    //case fa @ FunctionApp(NameExp(name), args) => 
-
     case fa @ FunctionApp(f, args) => 
       val fVal: Value = f match{ // The value of f
-        case NameExp(name) => env.get(fa.getName) match{
-          case Some(v) => v; case None => sys.error(s"Name not found: $name ${fa.getName}")
-        }
+        case NameExp(name) => env(fa.getName) //  env.get(fa.getName) match{
+        //   case Some(v) => v
+        //   case None => sys.error(s"Name not found: $name ${fa.getName}")
+        // }
         case _ => eval(env, f)
       }
       fVal match{
@@ -221,6 +219,8 @@ object Execution{
         eval(env2, body)
       }
       env.update(fd.getName, FunctionValue(f _)); true
+      // Note, if f is overloaded, the different instances are stored against
+      // different names, given by fd.getName, as set during type checking.
 
     case ForStatement(binders, stmts) =>
       def he(ev: ErrorValue) = handleError(s.liftError(ev)) 

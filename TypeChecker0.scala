@@ -299,14 +299,6 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       }
     }
   }
-  // private def tryMatch(
-  //   typeEnv: TypeEnv, domain: List[TypeT], range: TypeT, args: List[Exp])
-  //     : TypeCheckRes = {
-  //   val name = newName(); val te2 = typeEnv + (name, range1)
-  //   typeCheckListUnify(te2, args, domain1).map{ te3 =>
-  //     Ok((te3.endScope, te3(name)))  // extract type of name
-  //   }
-  // }
 
 
 }

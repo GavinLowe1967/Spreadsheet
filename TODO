@@ -40,17 +40,16 @@ before the definition will generate "forward reference" errors. -- done
 previous types. -- done
 
 3b. At start of new scope (DeclarationTypeChecker.typeCheckDeclList):
-a. Check that overloaded functions are not polymorphic (no polymorphic types
+*** a. Check that overloaded functions are not polymorphic (no polymorphic types
 for arguments). -- done; IMPROVE feedback
-b. Check that argument types of overloaded functions are
-disjoint (easy because of lack of polymorphism). -- TODO
+*** b. Check that argument types of overloaded functions are
+disjoint (easy because of lack of polymorphism). 
 c. Map names of functions to the relevant list of types. -- done
 
 <testing here unchanged, but can't deal with application of overloaded function>
 
 4. Add a case FunctionApp(NameExp(fn), args) to typeCheck.  Identify the
   instance that applies.  This should be unique.  Typecheck based on this.
---  Missing error case.
 
 <add tests of typechecker with overloading>
 
@@ -62,10 +61,12 @@ b. Store that index in the FunctionApp object at step 4. -- done
 <testing here unchanged>
 
 6. At the point of execution of a FunctionDeclaration, store the corresponding
-FunctionValue against a string formed from `name` and the index.
+FunctionValue against a string formed from `name` and the index. -- done
 
 7. At the point of evaluation of a function app, obtain the relevant instance
-by using the name stored in the FunctionApp object.
+by using the name stored in the FunctionApp object. -- done
+
+8. Add case TypedExp(NameExp(n), t) to ExpTypeChecker
 
 ----- Previous musings
 

@@ -30,7 +30,6 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
         // typeCheckStmtList
         val Some(ts) = typeEnv.get(name)
         require(ts.contains(FunctionType(tparams, params.map(_._2), rt)))
-        //require(typeEnv(name) == FunctionType(tparams, params.map(_._2), rt))
         // Check names of params, tparams are disjoint
         (findRepetition(params.map(_._1)) match{
           case Some(p) => FailureR(s"Repeated parameter $p")
@@ -114,10 +113,6 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
                 if(defs.length > 1){ fd.setIndex(i); i += 1 }
                 ts = ts :+ FunctionType(tparams, params.map(_._2), rt)
               }
-//               val ts1: List[TypeT] = 
-//                 for(FunctionDeclaration(name, tparams, params, rt, body) <- defs)
-//                 yield FunctionType(tparams, params.map(_._2), rt)
-//               assert(ts == ts1, s"$ts\n$ts1")
               te = te + (name, ts)
             }
             Ok(te)

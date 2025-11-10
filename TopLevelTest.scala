@@ -22,7 +22,7 @@ object TopLevelTest{
       s"Expected $e found ${cells(c)(r)} in #${ColumnValue.getName(c)}$r")
 
   // Column names
-  val A = 0; val B = 1; val C = 2; val D = 3; val E = 4; val F = 5
+  val A = 0; val B = 1; val C = 2; val D = 3; val E = 4; val F = 5; val G = 6
 
   /** Values expected to be provided as inputs. */
   val expectedInputs = List[(Int,Int,Value)](
@@ -32,10 +32,12 @@ object TopLevelTest{
 
   /** List of expected values, with columns and rows. */
   val expected = List[(Int,Int,Value)](
-    // #B0 = sum([1,2,3,4]): Int + sum([]) + sum([]: List[Int])
+    // #A0 = sum([2.4,4.6])
+    // #B0 = sum([1,2,3,4]): Int + sum([]: List[Int])
     // val hello = "Hello"; #E0 = hello
-    // #F0 = apply(double, 3.0) : Float;
-    (B,0,IntValue(10)), (E,0,StringValue("Hello")), (F,0,FloatValue(6.0F)), 
+    // #F0 = double(3.0); #G0 = double(2)
+    (A,0,FloatValue(7.0F)), (B,0,IntValue(10)), (E,0,StringValue("Hello")), 
+    (F,0,FloatValue(6.0F)), (G,0,IntValue(4)),
     // Factorials, rows 1-4 
     // for(r <- #1 to #4; c <- [#B, #C]; if r != #2){
     //   Cell(c, r) = fact(Cell(#A,r))

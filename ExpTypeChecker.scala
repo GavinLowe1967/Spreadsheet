@@ -44,8 +44,9 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
       case Some(List()) => 
         FailureR(s"Forward reference to name $n").lift(exp,true)
       case Some(List(t)) => Ok((typeEnv,t))
-      case Some(ts) => ??? // Can't resolve
-// FIXME
+      case Some(ts) => 
+        FailureR(s"Cannot resolve overloaded name $n with types\n"+
+          ts.map(_.asString).mkString(", "))
     }
     // Atomic types
     case IntExp(v) => Ok((typeEnv,IntType))
@@ -96,14 +97,13 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
       case Some(List()) => FailureR(s"Forward reference to name $fn")
       case Some(List(t)) => fatc.checkFunctionApp(typeEnv, t, args)
       case Some(ts) => 
-        // println(s"ExpTypeChecker: $fn -> $ts")
         assert(ts.nonEmpty && ts.forall(_.isInstanceOf[FunctionType])) 
         val ts1 = ts.map(_.asInstanceOf[FunctionType]).toArray
         fatc.findFunctionApp(typeEnv, ts1, args).map{ case (ix, te1, t) =>
           // Record the index in the FunctionApp object.
           fa.setIndex(ix); Ok(te1,t)
         }
-    }).lift(exp, true) // TODO: Move lift to here??
+    }).lift(exp, true) 
     // Function applications
     case FunctionApp(f, args) => 
       typeCheck(typeEnv, f).map{ case (te1, ff) =>

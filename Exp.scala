@@ -174,14 +174,24 @@ case class FunctionApp(f: Exp, args: List[Exp]) extends Exp{
     * definitions. */
   private var index = -1
 
-  def setIndex(ix: Int) = { /* println(s"$f -> $ix");*/ index = ix }
+  def setIndex(ix: Int) = index = ix 
 
   /** The name against which the name of this function is stored in the
     * evaluation environment. */
   def getName = f match{ 
-    case NameExp(name) => if(index < 0) name else name+"$$"+index 
+    case NameExp(name) => FunctionApp.getName(name, index)
   }
 }
+
+object FunctionApp{
+  /** The name against which an overloaded function with name `name` is stored
+    * in the evaluation environment.
+    * @param index The index in the list of declarations. */
+  def getName(name: String, index: Int) = 
+    if(index < 0) name else name+"$$"+index
+}
+
+// =======================================================
 
 /** A typed expression, "<e>: <theType>". */
 case class TypedExp(e: Exp, theType: TypeT) extends Exp{

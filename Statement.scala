@@ -16,7 +16,6 @@ trait Declaration extends Statement
 // =======================================================
 
 /** A simple Directive of the form `Cell(col,row) = exp`. */
-// case class Directive(cell: CellExp, expr: Exp) extends Statement{
 case class Directive(col: Exp, row: Exp, expr: Exp) extends Statement{
   override def toString = s"Cell($col,$row) = $expr"
 }
@@ -37,7 +36,9 @@ case class FunctionDeclaration(
 
   def setIndex(ix: Int) = index = ix
 
-  def getName = if(index < 0) name else name+"$$"+index
+  /** The name against which the name of this function is stored in the
+    * evaluation environment. */
+  def getName = FunctionApp.getName(name, index)
 }
 
 // =======================================================
@@ -52,8 +53,7 @@ case class Filter(exp: Exp) extends Binder
 
 /** A for statement, for(binders){ stmts }. */
 case class ForStatement(binders: List[Binder], stmts: List[Statement]) 
-    extends Statement //  Declaration
-
+    extends Statement
 
 /* Note: we can't include this in Exp.scala, because it builds on Statement. */
 
