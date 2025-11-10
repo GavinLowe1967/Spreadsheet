@@ -109,7 +109,7 @@ case object ErrorType extends CellType{
 
 /** The type of lists with underlying type `underlying`. */
 case class ListType(underlying: TypeT) extends TypeT{
-  def asString = { val u = underlying.asString; s"List**[$u]" }
+  def asString = { val u = underlying.asString; s"List[$u]" }
   def typeParams = underlying.typeParams
 }
 

@@ -265,4 +265,48 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       (te, FunctionType(List(), domain1, range1))
     case _ => (typeEnv, t)
   }
+
+  /** Type check es in turn.  If successful, return the resulting type
+    * environment and list of types. */
+  private def typeCheckList(typeEnv: TypeEnv, es: List[Exp])
+      : Reply[(TypeEnv, List[TypeT])] = {
+    if(es.isEmpty) Ok(typeEnv, List[TypeT]())
+    else etc.typeCheck(typeEnv, es.head).map{ case(te1, t1) => 
+      val (te2,t2) = mkInstance(te1,t1)
+      typeCheckList(te2, es.tail).map{ case (te3,ts) => Ok(te3, t2::ts) }
+    }
+  }
+
+
+  /** Typecheck args, and find the FunctionType in ts that can be applied to
+    * args, if any.  If successful, return the index, resulting environment,
+    * and the type of the function application. */
+  def findFunctionApp(typeEnv: TypeEnv, ts: Array[FunctionType], args: List[Exp])
+      : Reply[(Int, TypeEnv, TypeT)] = {
+    assert(ts.forall(_.params.isEmpty))
+    // Get types of actual parameters
+    typeCheckList(typeEnv.newScope, args).map{ case (te1, argsTs) => 
+      // Find those elements that match
+      (0 until ts.length).toList.filter(i => ts(i).domain == argsTs) match{
+        case List() => 
+          FailureR("Overloaded function application with types\n"+
+            ts.map(_.asString).mkString(", ")+"\ncan't be applied to argument"+
+            (if(args.length > 1) "s" else "")+" of type "+
+            argsTs.map(_.asString).mkString(", "))
+        case List(index) =>  Ok((index, te1.endScope, ts(index).range))
+        case _ => ??? // I think this can't happen
+// FIXME
+      }
+    }
+  }
+  // private def tryMatch(
+  //   typeEnv: TypeEnv, domain: List[TypeT], range: TypeT, args: List[Exp])
+  //     : TypeCheckRes = {
+  //   val name = newName(); val te2 = typeEnv + (name, range1)
+  //   typeCheckListUnify(te2, args, domain1).map{ te3 =>
+  //     Ok((te3.endScope, te3(name)))  // extract type of name
+  //   }
+  // }
+
+
 }

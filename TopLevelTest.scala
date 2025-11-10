@@ -72,6 +72,7 @@ object TopLevelTest{
 
   /** Main function. */
   def main(args: Array[String]) = {
+    println("===TopLevelTest===")
     model.loadScript("test.dir", "test.csv")
     val filled = Array.ofDim[Boolean](Width,Height)
 

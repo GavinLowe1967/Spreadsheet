@@ -30,6 +30,7 @@ object TypeCheckerTest3{
   }
 
   def overloadingTests() = {
+// printErrors = true
     assertFail(tcpss("val x = 3; val x = 5")) // Needs line numbers
     assertFail(tcpss("val x = 3; def x(y: Int): Int = y+1"))  // Needs line numbers
     assertFail(tcpss("def f(x: Int): Int = x+1; def f[A](x: A): A = x")) // Needsl line number
@@ -37,14 +38,37 @@ object TypeCheckerTest3{
     assertFail(tcpss("val x = f(3)\n val f = 5"))
     assertFail(tcpss("val x = f(3)"))
 
-
     val doubleS = 
       "def double(x: Int): Int = 2*x; def double(x: Float): Float = 2.0*x"
-    tcpss(doubleS) match{ case Ok(te) => 
-      assert(te.get("double").get == List(
-        FunctionType(List(), List(IntType), IntType), 
-        FunctionType(List(), List(FloatType), FloatType)
-      ) ) 
+    tcpss(doubleS+"\nval y = double(2); val z = double(3.4)") match{
+      case Ok(te) => 
+        assert(te.get("double").get == List(
+          FunctionType(List(), List(IntType), IntType),
+          FunctionType(List(), List(FloatType), FloatType)
+        ) )
+        assert(te("y") == IntType && te("z") == FloatType) 
     }
+    // "Overloaded function application with types (Int) => Int, (Float) =>
+    // Float can't be applied to argument of type Boolean"
+    assertFail(tcpss(doubleS+"\nval x = double(true)"))
+
+    val sumS = // ok, these definitions are wrong
+      "def sum(xs: List[Int]): Int = 0; def sum(xs: List[Float]): Float = 0.0"
+    tcpss(sumS+"\nval x = sum([2,3,4]); val y = sum([2.4,3.4])") match{ 
+      case Ok(te) =>
+        assert(te.get("sum").get == List(
+          FunctionType(List(), List(ListType(IntType)), IntType),
+          FunctionType(List(), List(ListType(FloatType)), FloatType)
+        ) )
+        assert(te("x") == IntType && te("y") == FloatType)
+    }
+    assertFail(tcpss(sumS+"; val x = sum([true])"))
+    assertFail(tcpss(sumS+"; val x = sum([])"))
+    assertFail(tcpss(sumS+"; val x = sum(5)"))
+    tcpss(sumS+"; val x = sum([]: List[Int])") match{ case Ok(te) =>
+      assert(te("x") == IntType) }
+
+// printErrors = false
+
   }
 }

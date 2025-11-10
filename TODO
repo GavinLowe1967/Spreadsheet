@@ -41,7 +41,7 @@ previous types. -- done
 
 3b. At start of new scope (DeclarationTypeChecker.typeCheckDeclList):
 a. Check that overloaded functions are not polymorphic (no polymorphic types
-for arguments). -- done; improve feedback
+for arguments). -- done; IMPROVE feedback
 b. Check that argument types of overloaded functions are
 disjoint (easy because of lack of polymorphism). -- TODO
 c. Map names of functions to the relevant list of types. -- done
@@ -50,13 +50,14 @@ c. Map names of functions to the relevant list of types. -- done
 
 4. Add a case FunctionApp(NameExp(fn), args) to typeCheck.  Identify the
   instance that applies.  This should be unique.  Typecheck based on this.
+--  Missing error case.
 
 <add tests of typechecker with overloading>
 
 5. Record the instance of the function in the FunctionApp object. 
 a. For each overloaded name, store in each FunctionDeclaration object its
-index in the corresponding list of types.  
-b. Store that index in the FunctionApp object at step 4.
+index in the corresponding list of types.  -- done
+b. Store that index in the FunctionApp object at step 4. -- done
 
 <testing here unchanged>
 

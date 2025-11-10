@@ -32,7 +32,13 @@ case class ValueDeclaration(name: String, exp: Exp) extends Declaration
 case class FunctionDeclaration(
   name: String, tParams: List[FunctionType.TypeParameter], 
   params: List[(String, TypeT)], rt: TypeT, body: Exp)
-    extends Declaration
+    extends Declaration{
+  private var index = -1
+
+  def setIndex(ix: Int) = index = ix
+
+  def getName = if(index < 0) name else name+"$$"+index
+}
 
 // =======================================================
 

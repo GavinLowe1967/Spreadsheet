@@ -106,9 +106,18 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
             // for functions.
             var te = typeEnv -- valNames
             for((name,defs) <- grouped){
-              val ts: List[TypeT] = 
-                for(FunctionDeclaration(name, tparams, params, rt, body) <- defs)
-                yield FunctionType(tparams, params.map(_._2), rt)
+              // Label each element of defs with its index in defs (unless
+              // defs is a singleton); and build list of types.
+              var ts = List[TypeT](); var i = 0
+              for(fd <- defs){
+                val FunctionDeclaration(name, tparams, params, rt, body) = fd
+                if(defs.length > 1){ fd.setIndex(i); i += 1 }
+                ts = ts :+ FunctionType(tparams, params.map(_._2), rt)
+              }
+//               val ts1: List[TypeT] = 
+//                 for(FunctionDeclaration(name, tparams, params, rt, body) <- defs)
+//                 yield FunctionType(tparams, params.map(_._2), rt)
+//               assert(ts == ts1, s"$ts\n$ts1")
               te = te + (name, ts)
             }
             Ok(te)

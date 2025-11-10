@@ -91,24 +91,23 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
         typeCheckListSingleType(te1, elems.tail, t1).lift(exp)
       }
     // Application of function name; allow overloading here
-    case FunctionApp(NameExp(fn), args) => typeEnv.get(fn) match{
-      case None => FailureR(s"Name $fn not found").lift(exp, true)
-      case Some(List()) => 
-        FailureR(s"Forward reference to name $fn").lift(exp, true)
-      case Some(List(t)) => 
-        fatc.checkFunctionApp(typeEnv, t, args).lift(exp, true)
-      case Some(ts) => assert(ts.nonEmpty); ??? // Overloading
-// FIXME: to do
-    }
+    case fa @ FunctionApp(NameExp(fn), args) => (typeEnv.get(fn) match{
+      case None => FailureR(s"Name $fn not found")
+      case Some(List()) => FailureR(s"Forward reference to name $fn")
+      case Some(List(t)) => fatc.checkFunctionApp(typeEnv, t, args)
+      case Some(ts) => 
+        // println(s"ExpTypeChecker: $fn -> $ts")
+        assert(ts.nonEmpty && ts.forall(_.isInstanceOf[FunctionType])) 
+        val ts1 = ts.map(_.asInstanceOf[FunctionType]).toArray
+        fatc.findFunctionApp(typeEnv, ts1, args).map{ case (ix, te1, t) =>
+          // Record the index in the FunctionApp object.
+          fa.setIndex(ix); Ok(te1,t)
+        }
+    }).lift(exp, true) // TODO: Move lift to here??
     // Function applications
     case FunctionApp(f, args) => 
       typeCheck(typeEnv, f).map{ case (te1, ff) =>
         fatc.checkFunctionApp(te1, ff, args)
-        //  ff match{
-        // case fff: FunctionType => fatc.checkFunctionApp(te1, fff, args) 
-        // case _ => FailureR("Non-function applied as function")
-
-      //}
       }.lift(exp, true)
     // Block
     case BlockExp(stmts, e) => 

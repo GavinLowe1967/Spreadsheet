@@ -104,28 +104,37 @@ object Execution{
       }
       if(error != null) error else ListValue(vs.reverse)
 
-    case FunctionApp(f, args) => eval(env, f) match{
-      case fv : FunctionValue =>
-        // Evaluate args, but stop if an error occurs
-        var error: ErrorValue = null; val iter = args.iterator
-        var vs = List[Value]() // built in reverse
-        while(error == null && iter.hasNext){
-          val arg = iter.next()
-          eval(env, arg) match{
-            case err: ErrorValue => error = e.liftError(err, true)
-            case v =>  vs ::= v
-          }
-        }
-        if(error != null) error
-        else fv(vs.reverse) match{
-          case err: ErrorValue => e.liftError(err); case result => result
-        }
-   
-      case err: ErrorValue => e.liftError(err)
+    //case fa @ FunctionApp(NameExp(name), args) => 
 
-      case other => sys.error(s"$f -> $other")
-        // Note: eval0 is never called on a CellExpr
-    } // end of case FunctionApp(...)
+    case fa @ FunctionApp(f, args) => 
+      val fVal: Value = f match{ // The value of f
+        case NameExp(name) => env.get(fa.getName) match{
+          case Some(v) => v; case None => sys.error(s"Name not found: $name ${fa.getName}")
+        }
+        case _ => eval(env, f)
+      }
+      fVal match{
+        case fv : FunctionValue =>
+          // Evaluate args, but stop if an error occurs
+          var error: ErrorValue = null; val iter = args.iterator
+          var vs = List[Value]() // built in reverse
+          while(error == null && iter.hasNext){
+            val arg = iter.next()
+            eval(env, arg) match{
+              case err: ErrorValue => error = e.liftError(err, true)
+              case v =>  vs ::= v
+            }
+          }
+          if(error != null) error
+          else fv(vs.reverse) match{
+            case err: ErrorValue => e.liftError(err); case result => result
+          }
+
+        case err: ErrorValue => e.liftError(err)
+
+        case other => sys.error(s"$f -> $other")
+          // Note: eval0 is never called on a CellExpr
+      } // end of case FunctionApp(...)
 
     case BlockExp(stmts, exp) => 
       val env1 = env.clone
@@ -202,7 +211,7 @@ object Execution{
         case _ => env.update(name, v); true
       }
 
-    case FunctionDeclaration(name, tParams, params, rt, body) => 
+    case fd @ FunctionDeclaration(name, tParams, params, rt, body) => 
       // Build a Scala function to capture the FunctionDeclaration
       def f(args: List[Value]): Value = {
         require(args.length == params.length)
@@ -211,7 +220,7 @@ object Execution{
         for(((x,_),v) <- params.zip(args)) env2.update(x, v)
         eval(env2, body)
       }
-      env.update(name, FunctionValue(f _)); true
+      env.update(fd.getName, FunctionValue(f _)); true
 
     case ForStatement(binders, stmts) =>
       def he(ev: ErrorValue) = handleError(s.liftError(ev)) 
