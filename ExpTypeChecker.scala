@@ -99,7 +99,7 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
       case Some(ts) => 
         assert(ts.nonEmpty && ts.forall(_.isInstanceOf[FunctionType])) 
         val ts1 = ts.map(_.asInstanceOf[FunctionType]).toArray
-        fatc.findFunctionApp(typeEnv, ts1, args).map{ case (ix, te1, t) =>
+        fatc.findFunctionApp(typeEnv, fn, ts1, args).map{ case (ix, te1, t) =>
           // Record the index in the FunctionApp object.
           fa.setIndex(ix); Ok(te1,t)
         }

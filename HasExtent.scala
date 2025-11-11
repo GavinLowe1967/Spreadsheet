@@ -7,6 +7,8 @@ trait HasExtent{
 
   def getExtent = extent
 
+  def lineNumber = extent.lineNumber
+
   /** Set the Extent representing the string from which this was produced. */
   def setExtent(e: Extent) = extent = e  
 

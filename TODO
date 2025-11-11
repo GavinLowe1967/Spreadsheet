@@ -40,10 +40,10 @@ before the definition will generate "forward reference" errors. -- done
 previous types. -- done
 
 3b. At start of new scope (DeclarationTypeChecker.typeCheckDeclList):
-*** a. Check that overloaded functions are not polymorphic (no polymorphic types
-for arguments). -- done; IMPROVE feedback
-*** b. Check that argument types of overloaded functions are
-disjoint (easy because of lack of polymorphism). 
+a. Check that overloaded functions are not polymorphic (no polymorphic types
+for arguments). -- done; 
+b. Check that argument types of overloaded functions are
+disjoint (easy because of lack of polymorphism).  -- done
 c. Map names of functions to the relevant list of types. -- done
 
 <testing here unchanged, but can't deal with application of overloaded function>
@@ -66,7 +66,7 @@ FunctionValue against a string formed from `name` and the index. -- done
 7. At the point of evaluation of a function app, obtain the relevant instance
 by using the name stored in the FunctionApp object. -- done
 
-8. Add case TypedExp(NameExp(n), t) to ExpTypeChecker
+*** 8. Add case TypedExp(NameExp(n), t) to ExpTypeChecker
 
 ----- Previous musings
 

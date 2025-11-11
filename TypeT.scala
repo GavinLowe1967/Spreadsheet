@@ -17,6 +17,9 @@ object TypeT{
 
   /** Numeric types. */
   val NumTypes = List(IntType, FloatType) 
+
+  /** String representing ts. */
+  def showList(ts: List[TypeT]) = ts.map(_.asString).mkString(", ")
 }
 
 // ==================================================================

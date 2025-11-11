@@ -281,21 +281,24 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   /** Typecheck args, and find the FunctionType in ts that can be applied to
     * args, if any.  If successful, return the index, resulting environment,
     * and the type of the function application. */
-  def findFunctionApp(typeEnv: TypeEnv, ts: Array[FunctionType], args: List[Exp])
+  def findFunctionApp(typeEnv: TypeEnv, fn: String, ts: Array[FunctionType], args: List[Exp])
       : Reply[(Int, TypeEnv, TypeT)] = {
     assert(ts.forall(_.params.isEmpty))
     // Get types of actual parameters
     typeCheckList(typeEnv.newScope, args).map{ case (te1, argsTs) => 
+      //def showArgTs = argsTs.map(_.asString).mkString(", ")
       // Find those elements that match
       (0 until ts.length).toList.filter(i => ts(i).domain == argsTs) match{
         case List() => 
-          FailureR("Overloaded function application with types\n"+
+          FailureR(
+            s"Overloaded function application of function $fn with types\n"+
             ts.map(_.asString).mkString(", ")+"\ncan't be applied to argument"+
-            (if(args.length > 1) "s" else "")+" of type "+
-            argsTs.map(_.asString).mkString(", "))
+            (if(args.length > 1) "s" else "")+" of type "+TypeT.showList(argsTs))
         case List(index) =>  Ok((index, te1.endScope, ts(index).range))
-        case _ => ??? // I think this can't happen
-// FIXME
+        case _ => 
+          sys.error(s"Multiple functions $fn with arguments of type(s)"+
+            TypeT.showList(argsTs))
+          // I think this can't happen
       }
     }
   }

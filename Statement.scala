@@ -6,8 +6,8 @@ trait Statement extends HasExtent
 
 object Statement{
   /** Get all the FunctionDeclarations from stmts. */
-  def getFnDecs(stmts: List[Statement]): List[FunctionDeclaration] = 
-    for(fn @ FunctionDeclaration(_,_,_,_,_) <- stmts) yield fn 
+  // def getFnDecs(stmts: List[Statement]): List[FunctionDeclaration] = 
+  //   for(fn @ FunctionDeclaration(_,_,_,_,_) <- stmts) yield fn 
 }
 
 /** Trait of declarations.  These can appear in expression blocks. */
@@ -39,6 +39,12 @@ case class FunctionDeclaration(
   /** The name against which the name of this function is stored in the
     * evaluation environment. */
   def getName = FunctionApp.getName(name, index)
+
+  /** The types of the parameters of this. */
+  def paramTs = params.map(_._2)
+
+  /** A FunctionType object representing the type of this function. */
+  def mkFunctionType = FunctionType(tParams, paramTs, rt)
 }
 
 // =======================================================

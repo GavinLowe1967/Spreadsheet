@@ -39,6 +39,10 @@ case class FailureR(err: String) extends Reply[Nothing]{
     val lnString = if(lineNum) " at line "+extent.lineNumber else ""
     FailureR(err+lnString+"\nin "+extent.asString)
   }
+
+  /** Add the line numbers from e1 and e2. */
+  def addLines(e1: HasExtent, e2: HasExtent) = 
+    FailureR(s"$err at lines ${e1.lineNumber} and ${e2.lineNumber}.")
 }
 
 object Reply{

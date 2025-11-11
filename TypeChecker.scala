@@ -7,7 +7,7 @@ object TypeChecker{
   private val typeCheckAndClose = etc.typeCheckAndClose _
   private val typeCheckUnifyAndClose = etc.typeCheckUnifyAndClose _ 
 
-  import DeclarationTypeChecker.{typeCheckDecl,checkDisjointNames}
+  import DeclarationTypeChecker.{typeCheckDecl,checkOverloading}
 
   /** Typecheck the statement `stmt`. 
     * If successful, return the resulting type environment. */
@@ -35,9 +35,8 @@ object TypeChecker{
 
   /** Typecheck stmts in environment typeEnv. */
   private def typeCheckStmtList(typeEnv: TypeEnv, stmts: List[Statement])
-      : Reply[TypeEnv] = 
-    // Check names are disjoint
-    checkDisjointNames(typeEnv, stmts).map{ te1 => // Iterate along stmts
+      : Reply[TypeEnv] =
+    checkOverloading(typeEnv, stmts).map{ te1 => // Iterate along stmts
       Reply.fold(typeCheckStmt, te1, stmts)
     }
 
