@@ -27,11 +27,27 @@ trait Exp extends HasExtent{
 /** A name. */
 case class NameExp(name: NameExp.Name) extends Exp{
   override def toString = name
+
+  /** If this function name is overloaded, the index into the list of
+    * definitions. */
+  private var index = -1
+
+  def setIndex(ix: Int) = index = ix 
+
+  /** The name against which the name of this function is stored in the
+    * evaluation environment. */
+  def getName = NameExp.getName(name, index)
 }
 
 object NameExp{
   /** The type of names of identifiers. */
   type Name = String
+
+ /** The name against which an overloaded function with name `name` is stored
+    * in the evaluation environment.
+    * @param index The index in the list of declarations. */
+  def getName(name: String, index: Int) = 
+    if(index < 0) name else name+"$$"+index
 }
 
 // ==================================================================
@@ -179,17 +195,11 @@ case class FunctionApp(f: Exp, args: List[Exp]) extends Exp{
   /** The name against which the name of this function is stored in the
     * evaluation environment. */
   def getName = f match{ 
-    case NameExp(name) => FunctionApp.getName(name, index)
+    case NameExp(name) => NameExp.getName(name, index)
   }
 }
 
-object FunctionApp{
-  /** The name against which an overloaded function with name `name` is stored
-    * in the evaluation environment.
-    * @param index The index in the list of declarations. */
-  def getName(name: String, index: Int) = 
-    if(index < 0) name else name+"$$"+index
-}
+//object FunctionApp{}
 
 // =======================================================
 

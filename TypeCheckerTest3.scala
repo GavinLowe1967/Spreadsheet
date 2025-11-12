@@ -30,17 +30,17 @@ object TypeCheckerTest3{
   }
 
   def overloadingTests() = {
-// printErrors = true
-    assertFail(tcpss("val x = 3; val x = 5")) // Needs line numbers
-    assertFail(tcpss("val x = 3; def x(y: Int): Int = y+1"))  // Needs line numbers
-    assertFail(tcpss("def f(x: Int): Int = x+1; def f[A](x: A): A = x")) // Needsl line number
+//printErrors = true
+    assertFail(tcpss("val x = 3; val x = 5"))
+    assertFail(tcpss("val x = 3; def x(y: Int): Int = y+1"))
+    assertFail(tcpss("def f(x: Int): Int = x+1; def f[A](x: A): A = x"))
     // "Forward reference to name f"
     assertFail(tcpss("val x = f(3)\n val f = 5"))
     assertFail(tcpss("val x = f(3)"))
 
     val doubleS = 
-      "def double(x: Int): Int = 2*x; def double(x: Float): Float = 2.0*x"
-    tcpss(doubleS+"\nval y = double(2); val z = double(3.4)") match{
+      "def double(x: Int): Int = 2*x; def double(x: Float): Float = 2.0*x\n"
+    tcpss(doubleS+"val y = double(2); val z = double(3.4)") match{
       case Ok(te) => 
         assert(te.get("double").get == List(
           FunctionType(List(), List(IntType), IntType),
@@ -50,7 +50,7 @@ object TypeCheckerTest3{
     }
     // "Overloaded function application with types (Int) => Int, (Float) =>
     // Float can't be applied to argument of type Boolean"
-    assertFail(tcpss(doubleS+"\nval x = double(true)"))
+    assertFail(tcpss(doubleS+"val x = double(true)"))
 
     val sumS = // ok, these definitions are wrong
       "def sum(xs: List[Int]): Int = 0; def sum(xs: List[Float]): Float = 0.0"
@@ -68,7 +68,14 @@ object TypeCheckerTest3{
     tcpss(sumS+"; val x = sum([]: List[Int])") match{ case Ok(te) =>
       assert(te("x") == IntType) }
 
-// printErrors = false
+    val script = 
+      doubleS + "def apply[A,B](f: A => B, x: A): B = f(x)\n"+
+        "val x = apply(double: Float => Float, 3.0); "+
+        "val y = apply(double: Int => Int, 3)"
+    tcpss(script) match{ case Ok(te) => 
+      assert(te("x") == FloatType && te("y") == IntType) }
+
+//printErrors = false
 
   }
 }

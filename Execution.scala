@@ -59,7 +59,7 @@ object Execution{
 
   /** Evaluate `e` in environment `env`. */
   private def eval0(env: Environment, e: Exp): Value = e match{
-    case NameExp(name) => env(name)
+    case ne @ NameExp(name) => env(ne.getName) //  env(name)
       // env.get(name) match{
       //   case Some(value) => value
       //   case None => sys.error(s"Name not found: $name")

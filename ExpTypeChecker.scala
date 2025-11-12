@@ -48,6 +48,16 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
         FailureR(s"Cannot resolve overloaded name $n with types\n"+
           ts.map(_.asString).mkString(", "))
     }
+    case TypedExp(ne @ NameExp(n), t) => typeEnv.get(n) match{
+      case None => FailureR(s"Name $n not found").lift(exp, true)
+      case Some(List()) => 
+        FailureR(s"Forward reference to name $n").lift(exp,true)
+      case Some(List(t1)) => unify(typeEnv, t1, t)
+      case Some(ts) =>
+        val index = ts.indexOf(t)
+        if(index >= 0){ ne.setIndex(index); Ok((typeEnv,t)) } 
+        else FailureR("XXX")
+    }
     // Atomic types
     case IntExp(v) => Ok((typeEnv,IntType))
     case FloatExp(v) => Ok((typeEnv,FloatType))

@@ -38,7 +38,7 @@ case class FunctionDeclaration(
 
   /** The name against which the name of this function is stored in the
     * evaluation environment. */
-  def getName = FunctionApp.getName(name, index)
+  def getName = NameExp.getName(name, index)
 
   /** The types of the parameters of this. */
   def paramTs = params.map(_._2)
