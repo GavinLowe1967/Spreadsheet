@@ -278,13 +278,12 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     }
   }
 
-
   /** Typecheck the arguments of fa, and find the type from ts for the function.
     * If successful, store the index in fa.  */
   def findFunctionApp(typeEnv: TypeEnv, fa: FunctionApp, ts: Array[FunctionType])
       : Reply[(TypeEnv, TypeT)] = {
-    val FunctionApp(NameExp(fn), args) = fa
-    assert(ts.forall(_.params.isEmpty))
+    val FunctionApp(ne @ NameExp(fn), args) = fa
+    assert(ts.length >= 2 && ts.forall(_.params.isEmpty))
     // Get types of actual parameters
     typeCheckList(typeEnv.newScope, args).lift(fa).map{ case (te1, argsTs) => 
       // Find those elements that match
@@ -296,7 +295,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
             (if(args.length > 1) "s" else "")+" of type "+showList(argsTs)
           ).lift(fa, true)
         case List(index) =>
-          fa.setIndex(index); Ok((te1.endScope, ts(index).range))
+          ne /*fa*/.setIndex(index); Ok((te1.endScope, ts(index).range))
         case _ => 
           sys.error(s"Multiple functions $fn with arguments of type(s)"+
             showList(argsTs))
@@ -304,6 +303,4 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       }
     }
   }
-
-
 }

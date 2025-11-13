@@ -105,10 +105,7 @@ object Execution{
 
     case fa @ FunctionApp(f, args) => 
       val fVal: Value = f match{ // The value of f
-        case NameExp(name) => env(fa.getName) //  env.get(fa.getName) match{
-        //   case Some(v) => v
-        //   case None => sys.error(s"Name not found: $name ${fa.getName}")
-        // }
+//        case NameExp(name) => env(fa.getName) 
         case _ => eval(env, f)
       }
       fVal match{

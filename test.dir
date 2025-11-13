@@ -25,13 +25,15 @@ def firstEmptyInCol(c: Column, r: Row): Row =
 // Inputs in column A
 
 // Simple tests in row 0
+val s = sum: List[Int] => Int
 #A0 = sum([2.4,4.6])
-#B0 = sum([1,2,3,4]): Int + sum([]: List[Int])// + sum([]) *** Not allowed
+#B0 = sum([1,4]): Int + s([2,3]) + sum([]: List[Int]) // + sum([]) *** Not allowed
 #C0 = 1/0: Int // Evaluation error
 #D0 = 3; #D0 = 4.0 // Evaluation error
 val hello = "Hello"; #E0 = hello
-// #F0 = apply(double: Float => Float, 3.0) : Float //;  ****** Not yet implemented
-#F0 = double(3.0); #G0 = double(2)
+#F0 = apply(double: Float => Float, 3.0) : Float 
+// #F0 = double(3.0)
+#G0 = double(2)
 
 // factorials, rows 1-4
 for(r <- #1 to #4; c <- [#B, #C]; if r != #2){

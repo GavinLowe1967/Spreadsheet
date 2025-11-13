@@ -71,10 +71,13 @@ by using the name stored in the FunctionApp object. -- done
 a. Add case TypedExp(NameExp(n), t) to ExpTypeChecker 
 b. Store index in NameExp object -- done
 c. Use appropriate name Execution, line 62 (eval0 for NameExp) -- done;
-d. add to TopLevelTest -- TODO
+d. add to TopLevelTest -- done
 
 9. In (5), would it be better to store the index in the NameExp instead?  Some
-repeated code between NameExp and FunctionApp
+repeated code between NameExp and FunctionApp.
+a) In FunctionTypeChecker.findFunctionApp, sore in the NameExp.  
+b) In Execution, case FuncionApp, remove the NameExp case
+c) Remove FunctionApp.setIndex
 
 ----- Previous musings
 
@@ -108,8 +111,7 @@ repeated code between NameExp and FunctionApp
 Priorities
 ==========
 
-
-
+* Split FunctionAppTypeChecker into separate file.
 
 * Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
   = #A3".

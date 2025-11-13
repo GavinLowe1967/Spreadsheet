@@ -186,17 +186,17 @@ case class ListLiteral(elems: List[Exp]) extends Exp
 
 /** The application of a function represented by `f` to `args`. */
 case class FunctionApp(f: Exp, args: List[Exp]) extends Exp{
-  /** If this function name is overloaded, the index into the list of
-    * definitions. */
-  private var index = -1
+  // /** If this function name is overloaded, the index into the list of
+  //   * definitions. */
+  // private var index = -1
 
-  def setIndex(ix: Int) = index = ix 
+  // def setIndex(ix: Int) = index = ix 
 
-  /** The name against which the name of this function is stored in the
-    * evaluation environment. */
-  def getName = f match{ 
-    case NameExp(name) => NameExp.getName(name, index)
-  }
+  // /** The name against which the name of this function is stored in the
+  //   * evaluation environment. */
+  // def getName = f match{ 
+  //   case NameExp(name) => NameExp.getName(name, index)
+  // }
 }
 
 //object FunctionApp{}
