@@ -55,7 +55,9 @@ $(DIR)/Unification.class: $(DIR)/TypeEnv.class
 $(DIR)/TypeChecker0.class: $(DIR)/Reply.class $(DIR)/TypeEnv.class	\
   $(DIR)/Exp.class $(DIR)/Unification.class
 
-$(DIR)/ExpTypeChecker.class: $(DIR)/TypeChecker0.class $(DIR)/Statement.class
+$(DIR)/FunctionAppTypeChecker.class: $(DIR)/TypeChecker0.class
+
+$(DIR)/ExpTypeChecker.class: $(DIR)/FunctionAppTypeChecker.class $(DIR)/Statement.class
 
 $(DIR)/DeclarationTypeChecker.class: $(DIR)/ExpTypeChecker.class
 
