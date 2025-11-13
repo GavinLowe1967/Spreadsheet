@@ -30,6 +30,11 @@ object TypeCheckerTest3{
   }
 
   def overloadingTests() = {
+    val doubleS = 
+      "def double(x: Int): Int = 2*x; def double(x: Float): Float = 2.0*x\n"
+    val sumS = // ok, these definitions are wrong
+      "def sum(xs: List[Int]): Int = 0; def sum(xs: List[Float]): Float = 0.0"
+    val applyS = "def apply[A,B](f: A => B, x: A): B = f(x)\n"
 //printErrors = true
     assertFail(tcpss("val x = 3; val x = 5"))
     assertFail(tcpss("val x = 3; def x(y: Int): Int = y+1"))
@@ -38,8 +43,7 @@ object TypeCheckerTest3{
     assertFail(tcpss("val x = f(3)\n val f = 5"))
     assertFail(tcpss("val x = f(3)"))
 
-    val doubleS = 
-      "def double(x: Int): Int = 2*x; def double(x: Float): Float = 2.0*x\n"
+    // Application of double
     tcpss(doubleS+"val y = double(2); val z = double(3.4)") match{
       case Ok(te) => 
         assert(te.get("double").get == List(
@@ -52,8 +56,7 @@ object TypeCheckerTest3{
     // Float can't be applied to argument of type Boolean"
     assertFail(tcpss(doubleS+"val x = double(true)"))
 
-    val sumS = // ok, these definitions are wrong
-      "def sum(xs: List[Int]): Int = 0; def sum(xs: List[Float]): Float = 0.0"
+    // Application of sum
     tcpss(sumS+"\nval x = sum([2,3,4]); val y = sum([2.4,3.4])") match{ 
       case Ok(te) =>
         assert(te.get("sum").get == List(
@@ -68,14 +71,16 @@ object TypeCheckerTest3{
     tcpss(sumS+"; val x = sum([]: List[Int])") match{ case Ok(te) =>
       assert(te("x") == IntType) }
 
-    val script = 
-      doubleS + "def apply[A,B](f: A => B, x: A): B = f(x)\n"+
+    // Overloaded name with type.
+    val script = doubleS + applyS +
         "val x = apply(double: Float => Float, 3.0); "+
         "val y = apply(double: Int => Int, 3)"
     tcpss(script) match{ case Ok(te) => 
       assert(te("x") == FloatType && te("y") == IntType) }
+    assertFail(tcpss(
+      doubleS+applyS+"val x = apply(double: Boolean => Boolean, true)"))
 
-//printErrors = false
+// printErrors = false
 
   }
 }

@@ -184,6 +184,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   import FunctionType.TypeParameter // (TypeParamName, TypeParamConstraint)
   import TypeParam.TypeParamName // Names of type parameters (Strings)
   import NameExp.Name // Names of identifiers (Strings)
+  import TypeT.showList
 
   private var nextNameIx = 0
 
@@ -278,26 +279,27 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   }
 
 
-  /** Typecheck args, and find the FunctionType in ts that can be applied to
-    * args, if any.  If successful, return the index, resulting environment,
-    * and the type of the function application. */
-  def findFunctionApp(typeEnv: TypeEnv, fn: String, ts: Array[FunctionType], args: List[Exp])
-      : Reply[(Int, TypeEnv, TypeT)] = {
+  /** Typecheck the arguments of fa, and find the type from ts for the function.
+    * If successful, store the index in fa.  */
+  def findFunctionApp(typeEnv: TypeEnv, fa: FunctionApp, ts: Array[FunctionType])
+      : Reply[(TypeEnv, TypeT)] = {
+    val FunctionApp(NameExp(fn), args) = fa
     assert(ts.forall(_.params.isEmpty))
     // Get types of actual parameters
-    typeCheckList(typeEnv.newScope, args).map{ case (te1, argsTs) => 
-      //def showArgTs = argsTs.map(_.asString).mkString(", ")
+    typeCheckList(typeEnv.newScope, args).lift(fa).map{ case (te1, argsTs) => 
       // Find those elements that match
       (0 until ts.length).toList.filter(i => ts(i).domain == argsTs) match{
         case List() => 
           FailureR(
-            s"Overloaded function application of function $fn with types\n"+
+            s"Application of overloaded function $fn with types\n"+
             ts.map(_.asString).mkString(", ")+"\ncan't be applied to argument"+
-            (if(args.length > 1) "s" else "")+" of type "+TypeT.showList(argsTs))
-        case List(index) =>  Ok((index, te1.endScope, ts(index).range))
+            (if(args.length > 1) "s" else "")+" of type "+showList(argsTs)
+          ).lift(fa, true)
+        case List(index) =>
+          fa.setIndex(index); Ok((te1.endScope, ts(index).range))
         case _ => 
           sys.error(s"Multiple functions $fn with arguments of type(s)"+
-            TypeT.showList(argsTs))
+            showList(argsTs))
           // I think this can't happen
       }
     }

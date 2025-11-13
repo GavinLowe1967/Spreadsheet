@@ -69,7 +69,6 @@ by using the name stored in the FunctionApp object. -- done
 8.  Deal with explicitly typed overloaded functions.
 
 a. Add case TypedExp(NameExp(n), t) to ExpTypeChecker 
-   ** -- done, IMPROVE error, TEST error cases.
 b. Store index in NameExp object -- done
 c. Use appropriate name Execution, line 62 (eval0 for NameExp) -- done;
 d. add to TopLevelTest -- TODO

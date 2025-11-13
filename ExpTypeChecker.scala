@@ -3,6 +3,7 @@ package spreadsheet
 import TypeVar.TypeID // Type variables (Ints)
 import TypeParam.TypeParamName // Names of type parameters (Strings)
 import NameExp.Name // Names of identifiers (Strings)
+import TypeT.showList
 
 /** The interface of DeclarationTypeChecker, as seen by ExpTypeChecker. */
 trait DeclarationTypeCheckerT{
@@ -39,25 +40,23 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
     * @return a Reply, if successful, the updated type environment and the 
     * type of exp. */
   def typeCheck(typeEnv: TypeEnv, exp: Exp): TypeCheckRes = exp match{
-    case NameExp(n) => typeEnv.get(n) match{
-      case None => FailureR(s"Name $n not found").lift(exp, true)
-      case Some(List()) => 
-        FailureR(s"Forward reference to name $n").lift(exp,true)
+    case NameExp(n) => (typeEnv.get(n) match{
+      case None => FailureR(s"Name $n not found") 
+      case Some(List()) => FailureR(s"Forward reference to name $n") 
       case Some(List(t)) => Ok((typeEnv,t))
       case Some(ts) => 
-        FailureR(s"Cannot resolve overloaded name $n with types\n"+
-          ts.map(_.asString).mkString(", "))
-    }
-    case TypedExp(ne @ NameExp(n), t) => typeEnv.get(n) match{
-      case None => FailureR(s"Name $n not found").lift(exp, true)
-      case Some(List()) => 
-        FailureR(s"Forward reference to name $n").lift(exp,true)
+        FailureR(s"Cannot resolve overloaded name $n with types\n"+showList(ts))
+    }).lift(exp, true)
+    case TypedExp(ne @ NameExp(n), t) => (typeEnv.get(n) match{
+      case None => FailureR(s"Name $n not found")
+      case Some(List()) =>  FailureR(s"Forward reference to name $n")
       case Some(List(t1)) => unify(typeEnv, t1, t)
       case Some(ts) =>
         val index = ts.indexOf(t)
         if(index >= 0){ ne.setIndex(index); Ok((typeEnv,t)) } 
-        else FailureR("XXX")
-    }
+        else FailureR(s"Overloaded name $n with types\n"+showList(ts)+
+          s"\nis not of type ${t.asString}")
+    }).lift(exp, true)
     // Atomic types
     case IntExp(v) => Ok((typeEnv,IntType))
     case FloatExp(v) => Ok((typeEnv,FloatType))
@@ -103,22 +102,20 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
       }
     // Application of function name; allow overloading here
     case fa @ FunctionApp(NameExp(fn), args) => (typeEnv.get(fn) match{
-      case None => FailureR(s"Name $fn not found")
-      case Some(List()) => FailureR(s"Forward reference to name $fn")
-      case Some(List(t)) => fatc.checkFunctionApp(typeEnv, t, args)
+      case None => FailureR(s"Name $fn not found").lift(exp, true) 
+      case Some(List()) => 
+        FailureR(s"Forward reference to name $fn").lift(exp, true)
+      case Some(List(t)) => fatc.checkFunctionApp(typeEnv, t, args).lift(exp) 
       case Some(ts) => 
         assert(ts.nonEmpty && ts.forall(_.isInstanceOf[FunctionType])) 
         val ts1 = ts.map(_.asInstanceOf[FunctionType]).toArray
-        fatc.findFunctionApp(typeEnv, fn, ts1, args).map{ case (ix, te1, t) =>
-          // Record the index in the FunctionApp object.
-          fa.setIndex(ix); Ok(te1,t)
-        }
-    }).lift(exp, true) 
+        fatc.findFunctionApp(typeEnv, fa, ts1) // Note: don't lift here.
+    })
     // Function applications
     case FunctionApp(f, args) => 
-      typeCheck(typeEnv, f).map{ case (te1, ff) =>
-        fatc.checkFunctionApp(te1, ff, args)
-      }.lift(exp, true)
+      typeCheck(typeEnv, f).lift(exp).map{ case (te1, ff) =>
+        fatc.checkFunctionApp(te1, ff, args).lift(exp, true)
+      }//.lift(exp, true)
     // Block
     case BlockExp(stmts, e) => 
       // Create a new scope for this block, but return to the outer scope at
