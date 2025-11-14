@@ -185,7 +185,7 @@ case class ListLiteral(elems: List[Exp]) extends Exp
 // ================================================================
 
 /** A qualifier for a list comprehension of a "for" statement. */
-trait Qualifier
+trait Qualifier extends HasExtent
 /** A generator, "name <- exp". */
 case class Generator(name: String, exp: Exp) extends Qualifier
 // IMPROVE: more general forms of pattern matching?

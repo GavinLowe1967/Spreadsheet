@@ -103,6 +103,8 @@ object Execution{
       }
       if(error != null) error else ListValue(vs.reverse)
 
+    case ListComprehension(e, qs) => evalListComp(env, e, qs)
+
     case fa @ FunctionApp(f, args) => eval(env, f) match{
       case fv : FunctionValue =>
         // Evaluate args, but stop if an error occurs
@@ -142,6 +144,37 @@ object Execution{
 
     case TypedExp(e, _) => eval(env, e)
   } // end of eval
+
+  private 
+  def evalListComp(env: Environment, e: Exp, qs: List[Qualifier]): Value =
+    if(qs.isEmpty) eval(env, e) match{
+      case ev: ErrorValue => ev; case v => ListValue(v)
+    }
+    else qs.head match{
+      case Generator(name, list) =>
+        eval(env, list) match{
+          case ListValue(vs) => 
+            // bind name to v for each v in vs; recurse; and combine results.
+            var vs1 = vs; var error: ErrorValue = null
+            var result = List[Value]()
+            while(vs1.nonEmpty && error == null){
+              val env1 = env.clone; env1.update(name,vs1.head)
+              evalListComp(env1, e, qs.tail) match{
+                case e: ErrorValue => error = e // exit loop
+                case ListValue(vs) => result = result ++ vs; vs1 = vs1.tail
+              }
+            } // end of while loop
+            if(error != null) error else ListValue(result)
+        }
+      case Filter(test) => 
+        eval(env, test) match{
+          case BoolValue(b) => 
+            if(b) evalListComp(env, e, qs.tail) else ListValue(List())
+          case err: ErrorValue => err
+        }
+    }
+
+  /* IMPROVE: the use of a List is inefficient */
 
   // ==================================================================
 
@@ -262,6 +295,36 @@ object Execution{
         case err: ErrorValue => handleError(err)
       }
     }
+
+/*
+  private type QualifierValue =  Either[List[Environment], ErrorValue] 
+
+  /** Evaluate q, giving the resulting list of environments if successful. */
+  private def evalQualifier(env: Environment, q: Qualifier): QualifierValue = 
+    q match{
+      case Generator(name, list) => eval(env, list) match{
+        case ListValue(vs) => // bind name to v for each v in vs
+          Left(
+            for(v <- vs)
+            yield{ val env1 = env.clone; env1.update(name,v); env1 }
+          )
+        case err: ErrorValue => Right(err)
+      }
+      case Filter(test) => eval(env, test) match{
+        case BoolValue(b) => Left(if(b) List(env) else List())
+        case err: ErrorValue => Right(err)
+      }
+    }
+
+  private 
+  def evalQualifiers(env: Environment, qs: List[Qualifier]): QualifierValue =
+    if(qs.isEmpty) Left(List())
+    else evalQualifier(env, qs.head) match{
+      case Left(envs) => envs.flatMap(env1 => evalQualifiers(env1, qs.tail))
+
+      case Right(error) => Right(error)
+    }
+ */
 
   // ========= Testing hooks
 

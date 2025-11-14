@@ -104,7 +104,7 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
             unify(te1, tl, etl).map{ case (te2, `etl`) =>
               typeCheckUnify(te2, right, etr).map{ case (te3, `etr`) =>
                 Ok((te3, rt)) }
-            }
+            }.lift(left,true)
           }
           else // tl should match a first field of a member of ts
             close(te1,tl).map{ case (te2,`tl`) => ts.filter(_._1 == tl) match{

@@ -7,6 +7,12 @@ Current
 - Parsing -- done
 - Typechecking
 - Evaluation
+  + Evaluate a Qualifier to Either[List[TypeEnv], ErrorValue]
+  + Evaluate a List[Qualifier] to the same result.
+  
+Note: I don't think we can share code with the execution of for loops.  In a
+  list comprension, an error gives an error overall; but that's not true in a
+  for loop.
 
 Priorities
 ==========
@@ -28,6 +34,8 @@ Priorities
 
 Low Priority
 ============
+
+*Re-merge DeclarationTypeChecker and TypeChecker
 
 * Allow function application without parentheses. 
 

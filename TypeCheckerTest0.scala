@@ -229,6 +229,18 @@ printErrors = false
     assertEq(tcp("2 < 3 : Int"), BoolType)
   }
 
+  def listComprehensionTests() = {
+    assertEq(tcp("[x*x | x <- [1,2,3], x < 3]"), ListType(IntType))
+    assertEq(tcp("[x*y | x <- [1,2,3], y <- [1,2,4], x < y]"), ListType(IntType))
+    assertEq(tcp("[1 to x | x <- [4,5,6]]"), ListType(ListType(IntType)))
+//printErrors = true
+    assertFail(tcp("[x | x <- 5]"))
+    assertFail(tcp("[x | x <- 3 to 7.0]"))
+    assertFail(tcp("[x | x <- [2,4,5], x < 3.4]"))
+    assertFail(tcp("[x && true | x <- [2,3,4]]"))
+printErrors = false
+  }
+
 
   /** Tests on expressions. */
   def expTests() = {
@@ -237,6 +249,7 @@ printErrors = false
     cellMatchTests() // Cell match expressions
     untypedCellTests() // tests on untyped cell reads
     typedTests() // Tests on explicitly typed expressions.
+    listComprehensionTests()
     // Repeated names 
     assertFail(tcpss("val x = 4; val x = 5"))
     assertFail(tcpss("val x = 4; def x(): Int = 5"))

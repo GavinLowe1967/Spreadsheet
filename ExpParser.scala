@@ -56,10 +56,11 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
     )
 
   /** A generator in a list comprehension or "for" expression. */
-  def generator = name ~ (lit("<-") ~> expr) > toPair(Generator)
+  def generator = withExtent(name ~ (lit("<-") ~> expr) > toPair(Generator))
 
   /** A parser for a single qualifier in a list comprehension. */
-  private def qualifier: Parser[Qualifier] = generator | expr > Filter
+  private def qualifier: Parser[Qualifier] = 
+    /*withExtent*/(generator | expr > Filter)
 
   /** A parser for one or more qualifiers. */
   private def qualifiers: Parser[List[Qualifier]] = 

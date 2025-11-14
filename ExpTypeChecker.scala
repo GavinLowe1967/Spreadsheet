@@ -124,6 +124,10 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
         typeCheckAndClose(te1, e).map{ case (te2, te) => Ok((te2.endScope, te)) }
       }.lift(exp)
       // Typed expressions
+    case ListComprehension(e, qs) => 
+      checkQualifiers(typeEnv, qs).map{ te1 =>
+        typeCheck(te1, e).map{ case (te2,t) => Ok(te2, ListType(t)) }
+      }.lift(exp)
     case TypedExp(e, t) => 
       // Check t is not an unknown type parameter (or typo).
       if(t match{ case TypeParam(n) => !typeEnv.contains(n); case _ => false })
@@ -149,8 +153,10 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
   def typeCheckUnifyAndClose(typeEnv: TypeEnv, exp: Exp, eType: TypeT)
       : TypeCheckRes =
     typeCheck(typeEnv, exp).map{ case (te1,t1) =>
-      unify(te1, t1, eType).map{ case (te2,t2) => close(te2, t2) }
-    }.lift(exp, true) // add line number here
+      unify(te1, t1, eType).map{ 
+        case (te2,t2) => close(te2, t2)
+      }.lift(exp, true) // add line number here
+    }
 
   // ========== Lists
 
@@ -175,19 +181,18 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
     Reply.fold(checkQualifier, typeEnv, qs)
 
   /** Typecheck q, returning an updated TypeEnv if successful. */
-  private def checkQualifier(typeEnv: TypeEnv, q: Qualifier): Reply[TypeEnv] =
-    q match{
-      case Generator(name, list) =>
-        // list should be a ListType
-        typeCheckAndClose(typeEnv, list).map{
-          case (te1, ListType(t)) => Ok(te1+(name,t)) // bind name
-          case (_, t1) =>
-            FailureR(s"Expected List, found ${t1.asString}").lift(list)
-        }
-      case Filter(test) =>
-        typeCheckUnifyAndClose(typeEnv, test, BoolType).map{
-          case (te, BoolType) => Ok(te)
-        }
-    }
+  private 
+  def checkQualifier(typeEnv: TypeEnv, q: Qualifier): Reply[TypeEnv] = q match{
+    case Generator(name, list) =>   // list should be a ListType
+      typeCheckAndClose(typeEnv, list).map{
+        case (te1, ListType(t)) => Ok(te1+(name,t)) // bind name
+        case (_, t1) =>
+          FailureR(s"Expected List, found ${t1.asString}").lift(list,true)
+      }.lift(q)
+    case Filter(test) =>
+      typeCheckUnifyAndClose(typeEnv, test, BoolType).map{
+        case (te, BoolType) => Ok(te)
+      }
+  }
   
 }
