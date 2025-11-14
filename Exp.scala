@@ -182,6 +182,18 @@ case class IfExp(test: Exp, thenClause: Exp, elseClause: Exp) extends Exp
 
 case class ListLiteral(elems: List[Exp]) extends Exp
 
+// ================================================================
+
+/** A qualifier for a list comprehension of a "for" statement. */
+trait Qualifier
+/** A generator, "name <- exp". */
+case class Generator(name: String, exp: Exp) extends Qualifier
+// IMPROVE: more general forms of pattern matching?
+/** A filter, "if exp". */
+case class Filter(exp: Exp) extends Qualifier
+
+case class ListComprehension(term: Exp, qualifiers: List[Qualifier])
+
 // ==================================================================
 
 /** The application of a function represented by `f` to `args`. */

@@ -5,12 +5,15 @@ import TypeChecker0.TypeCheckRes
 import TypeChecker._; 
 import TypeEnv._
 import TypeChecker.TestHooks._
-import Parser.parseAll; import ExpParser.expr
+import Parser.parseAll
 import StatementParser.TestHooks.{statement,statements}
 // import NameExp.Name // Names of identifiers (Strings)
 
 /** Helper functions for tests on the type checker. */
 object TypeCheckerTest0{
+  // The parser for expressions. 
+  val expr = DeclarationParser.expParser.expr
+
   // Checking of expressions
   val typeCheckAndClose = DeclarationTypeChecker.etc.typeCheckAndClose _
 

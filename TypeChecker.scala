@@ -42,7 +42,7 @@ object TypeChecker{
 
   /** Typecheck a "for" statement. */
   private
-  def checkFor(typeEnv: TypeEnv, binders: List[Binder], stmts: List[Statement])
+  def checkFor(typeEnv: TypeEnv, binders: List[Qualifier], stmts: List[Statement])
       : Reply[TypeEnv] =
     if(binders.isEmpty) 
       // Typecheck stmts, and end the scope.

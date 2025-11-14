@@ -242,7 +242,7 @@ object Execution{
   /** Execute the for loop "for(binders) stmts". */
   private def performFor(
     env: Environment, handleError: ErrorValue => Unit,
-    binders: List[Binder], stmts: List[Statement])
+    binders: List[Qualifier], stmts: List[Statement])
       : Unit =
     if(binders.isEmpty) performAll(stmts, env.clone, handleError)
     else binders.head match{

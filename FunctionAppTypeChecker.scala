@@ -6,7 +6,7 @@ import FunctionType.TypeParameter // (TypeParamName, TypeParamConstraint)
 import TypeParam.TypeParamName // Names of type parameters (Strings)
 import NameExp.Name // Names of identifiers (Strings)
 import TypeT.showList
-import TypeChecker0._
+import TypeChecker0.{TypeCheckRes,nextTypeID}
 
 /** Type checking of function applications. */
 class FunctionAppTypeChecker(etc: ExpTypeCheckerT){

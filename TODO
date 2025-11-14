@@ -3,6 +3,54 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
+* List comprehensions.
+- Parsing
+- Typechecking
+- Evaluation
+
+Priorities
+==========
+
+
+* Improve syntax for function declarations and applications -- currying.
+
+* Haskell standard prelude.
+
+* Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
+  = #A3".
+
+* Allow assertions, error.
+
+* "println" statements.
+
+* Add "if" directives.
+
+
+Low Priority
+============
+
+* Allow function application without parentheses. 
+
+* Improve treatment of Strings:
+- Allow non-quoted strings in CSV
+- Think about escaped characters in non-quoted string cells.
+
+* Order relations on rows, columns
+
+* Look again at Unification.scala.  Are all branches tested?
+
+* Catch stack overflows.
+
+* In Environment, use null intead of Empty() (to save memory). 
+
+
+======================================================================
+======================================================================
+
+===================================== DONE
+
+
+* Split FunctionAppTypeChecker into separate file. -- done
 
 * Overloading.
 
@@ -106,48 +154,7 @@ c) Remove FunctionApp.setIndex
   unique instance in the FunctionApp object.  Consider cases like def
   f(x:Int,y:Int) = ...; def f(x:Float,y:Float) = ...; f(3,#A1).
 
-
-
-Priorities
-==========
-
-* Split FunctionAppTypeChecker into separate file.
-
-* Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
-  = #A3".
-
-* List comprehensions.
-
-* Allow assertions, error.
-
-* "println" statements.
-
-* Add "if" directives.
-
-* Haskell standard prelude.
-
-* Improve syntax for function declarations and applications -- currying.
-
-Low Priority
-============
-
-* Improve treatment of Strings:
-- Allow non-quoted strings in CSV
-- Think about escaped characters in non-quoted string cells.
-
-* Order relations on rows, columns
-
-* Look again at Unification.scala.  Are all branches tested?
-
-* Catch stack overflows.
-
-* In Environment, use null intead of Empty() (to save memory). 
-
-
-======================================================================
-
-===================================== DONE
-
+----------
 
 ** I think at present, the typechecker will pass a val declaration that makes
    a forward reference to a function def, but execution will fail.  e.g.

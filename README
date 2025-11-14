@@ -36,8 +36,9 @@ Parser.scala: general parsing combinators.
 Parser0.scala: base class of various parsers.  Includes TypeParser, CellParser
 and CSVParser, parsers for types, cells and CSV files, respectively.
 
-DeclarationParser.scala: parsing of declarations.  Includes ExpParser, parsing
-of expressions.
+ExpParser.scala: Parsing of expressions.
+
+DeclarationParser.scala: parsing of declarations.
 
 StatementParser.scala: parsing of statements. 
 
@@ -59,9 +60,11 @@ TypeEnv.scala: a type environment for type checking.
 Unification.scala: unification of types. 
 
 TypeChecker0.scala: some basics for the type checker, including
-BinOpTypeChecker (type checking of binary operations), CellReadTypeChecker
-(type checking of cell reads), and FunctionAppTypeChecker (type checking of
-function applications).
+ExpTypeCheckerT (interface of ExpTypeChecker to sub-typecheckers),
+BinOpTypeChecker (type checking of binary operations), and CellReadTypeChecker
+(type checking of cell reads).
+
+FunctionAppTypeChecker.scala: type checking of function applications.
 
 ExpTypeChecker: type checker for expressions.
 

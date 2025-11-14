@@ -4,7 +4,12 @@ import Parser._
 
 /** A parser for statements. */
 object StatementParser extends Parser0{
-  import ExpParser.{expr,cell}
+  // Parsing of expressions, cells.
+  private val expParser = DeclarationParser.expParser
+  private val expr = expParser.expr
+  private val cell = expParser.cell
+
+  // import ExpParser.{expr,cell}
   import DeclarationParser.declaration
 
   /** Parser for a directive, <cell> = <expr>. */
@@ -14,14 +19,14 @@ object StatementParser extends Parser0{
   // ===== "for" expressions
 
   /** A parser for a single binder in a "for" expression. */
-  private def binder: Parser[Binder] = (
+  private def qualifier: Parser[Qualifier] = (
     name ~ (lit("<-") ~> expr) > toPair(Generator) 
     | keyword("if") ~> expr > Filter
   )
 
   /** A parser for one or more binders, in parentheses. */
-  private def binders: Parser[List[Binder]] = 
-    inParens(repSepNonEmpty(binder, ";"))
+  private def qualifiers: Parser[List[Qualifier]] = 
+    inParens(repSepNonEmpty(qualifier, ";"))
 
   /** A parser for a single statement, or several statements in curly
     * brackets. */
@@ -32,7 +37,7 @@ object StatementParser extends Parser0{
 
   /** A parser for a "for" statement. */
   private def forLoop: Parser[ForStatement] = 
-    (keyword("for") ~> binders ~ block) > toPair(ForStatement) 
+    (keyword("for") ~> qualifiers ~ block) > toPair(ForStatement) 
 
   // Top-level parsers
 

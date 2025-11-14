@@ -1,7 +1,7 @@
 package spreadsheet
 
 /* This file contains some basics of the type checker, and type checkers
- * responsible for type checking particular syntactic forms.. */
+ * responsible for type checking particular syntactic forms. */
 
 import Unification.unify
 import TypeVar.TypeID // Type variables (Ints)

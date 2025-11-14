@@ -3,7 +3,7 @@ package spreadsheet
 import Parser._
 
 object ExpParserTest extends ParserTest0{
-  import ExpParser.expr
+  //import ExpParser.expr
 
   /** Test of expression parsers on atomic values. */
   private def expressions1() = {
