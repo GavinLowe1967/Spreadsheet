@@ -28,8 +28,11 @@ object TypeChecker{
             }
         }.lift(stmt)
 
-      case ForStatement(binders, stmts) => 
-        checkFor(typeEnv.newScope, binders, stmts).lift(stmt)
+      case ForStatement(qs, stmts) => 
+        etc.checkQualifiers(typeEnv.newScope, qs).map{ te1 =>
+          typeCheckStmtList(te1, stmts).map{ te2 => Ok(te2.endScope) }
+        }.lift(stmt)
+        // checkFor(typeEnv.newScope, binders, stmts).lift(stmt)
 
     } // end of "stmt match", typeCheckStmt
 
@@ -40,10 +43,14 @@ object TypeChecker{
       Reply.fold(typeCheckStmt, te1, stmts)
     }
 
-  /** Typecheck a "for" statement. */
-  private
-  def checkFor(typeEnv: TypeEnv, binders: List[Qualifier], stmts: List[Statement])
-      : Reply[TypeEnv] =
+  // /** Typecheck a "for" statement. */
+  // private
+  // def checkFor(typeEnv: TypeEnv, qs: List[Qualifier], stmts: List[Statement])
+  //     : Reply[TypeEnv] =
+  //   etc.checkQualifiers(typeEnv, qs).map{ te1 => 
+  //     typeCheckStmtList(te1, stmts).map{ te2 => Ok(te2.endScope) }
+  //   }
+/*
     if(binders.isEmpty) 
       // Typecheck stmts, and end the scope.
       typeCheckStmtList(typeEnv, stmts).map{ case te => Ok(te.endScope) }
@@ -63,6 +70,27 @@ object TypeChecker{
           }
       }
     }
+ */
+
+  // /** Typecheck qs, returning an updated TypeEnv if successful. */
+  // def checkQualifiers(typeEnv: TypeEnv, qs: List[Qualifier]): Reply[TypeEnv] = 
+  //   Reply.fold(checkQualifier, typeEnv, qs)
+
+  // /** Typecheck q, returning an updated TypeEnv if successful. */
+  // private def checkQualifier(typeEnv: TypeEnv, q: Qualifier): Reply[TypeEnv] =
+  //   q match{
+  //     case Generator(name, list) =>
+  //       // list should be a ListType
+  //       typeCheckAndClose(typeEnv, list).map{
+  //         case (te1, ListType(t)) => Ok(te1+(name,t)) // bind name
+  //         case (_, t1) =>
+  //           FailureR(s"Expected List, found ${t1.asString}").lift(list)
+  //       }
+  //     case Filter(test) =>
+  //       typeCheckUnifyAndClose(typeEnv, test, BoolType).map{
+  //         case (te, BoolType) => Ok(te)
+  //       }
+  //   }
 
   // ======================================================= Top level
 

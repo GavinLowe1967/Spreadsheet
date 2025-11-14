@@ -167,4 +167,27 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
     }
   // Note: this traverses the list from left to right, which makes for more
   // natural error messages when type checking fails.
+
+  // ========= Qualifiers
+
+  /** Typecheck qs, returning an updated TypeEnv if successful. */
+  def checkQualifiers(typeEnv: TypeEnv, qs: List[Qualifier]): Reply[TypeEnv] = 
+    Reply.fold(checkQualifier, typeEnv, qs)
+
+  /** Typecheck q, returning an updated TypeEnv if successful. */
+  private def checkQualifier(typeEnv: TypeEnv, q: Qualifier): Reply[TypeEnv] =
+    q match{
+      case Generator(name, list) =>
+        // list should be a ListType
+        typeCheckAndClose(typeEnv, list).map{
+          case (te1, ListType(t)) => Ok(te1+(name,t)) // bind name
+          case (_, t1) =>
+            FailureR(s"Expected List, found ${t1.asString}").lift(list)
+        }
+      case Filter(test) =>
+        typeCheckUnifyAndClose(typeEnv, test, BoolType).map{
+          case (te, BoolType) => Ok(te)
+        }
+    }
+  
 }
