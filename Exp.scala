@@ -192,7 +192,7 @@ case class Generator(name: String, exp: Exp) extends Qualifier
 /** A filter, "if exp". */
 case class Filter(exp: Exp) extends Qualifier
 
-case class ListComprehension(term: Exp, qualifiers: List[Qualifier])
+case class ListComprehension(term: Exp, qualifiers: List[Qualifier]) extends Exp
 
 // ==================================================================
 

@@ -9,7 +9,6 @@ object StatementParser extends Parser0{
   private val expr = expParser.expr
   private val cell = expParser.cell
 
-  // import ExpParser.{expr,cell}
   import DeclarationParser.declaration
 
   /** Parser for a directive, <cell> = <expr>. */
@@ -18,16 +17,6 @@ object StatementParser extends Parser0{
 
   // ===== "for" expressions
 
-  /** A parser for a single binder in a "for" expression. */
-  private def qualifier: Parser[Qualifier] = (
-    name ~ (lit("<-") ~> expr) > toPair(Generator) 
-    | keyword("if") ~> expr > Filter
-  )
-
-  /** A parser for one or more binders, in parentheses. */
-  private def qualifiers: Parser[List[Qualifier]] = 
-    inParens(repSepNonEmpty(qualifier, ";"))
-
   /** A parser for a single statement, or several statements in curly
     * brackets. */
   private def block: Parser[List[Statement]] = (
@@ -35,11 +24,20 @@ object StatementParser extends Parser0{
     | inBrackets(listOf(withExtent(statement)))
   )
 
+  /** A parser for a single qualifier in a "for" expression. */
+  private def qualifier: Parser[Qualifier] = (
+    expParser.generator | keyword("if") ~> expr > Filter
+  )
+
+  /** A parser for one or more qualifiers in parentheses. */
+  private def qualifiers: Parser[List[Qualifier]] = 
+    inParens(repSepNonEmpty(qualifier, ";"))
+
   /** A parser for a "for" statement. */
   private def forLoop: Parser[ForStatement] = 
-    (keyword("for") ~> qualifiers ~ block) > toPair(ForStatement) 
+    keyword("for") ~> (qualifiers ~ block) > toPair(ForStatement)
 
-  // Top-level parsers
+  // ===== Top-level parsers
 
   /** A parser for a statement. */
   private def statement: Parser[Statement] = withExtent(
@@ -49,7 +47,6 @@ object StatementParser extends Parser0{
   /** A parser for multiple statements. */
   private def statements: Parser[List[Statement]] = 
     listOf(statement) <~ atEnd
-//    repeatUntil(statement, separator, atEnd) > (_._1)
 
   /** Try to parse `input`, returning either the result or an error message. */
   def parseStatements(input: String): Either[List[Statement], String] = {

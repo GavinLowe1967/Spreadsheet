@@ -45,10 +45,25 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
   private def params: Parser[Option[List[Exp]]] =
     opt( consumeWhiteNoNL ~~ inParens(repSep(expr, ",")) > (_._2))
 
-  /** A parser for a list expression. */
-  private def list: Parser[ListLiteral] = (
-    (lit("[") ~> repSep(expr, ",")) <~ lit("]") > ListLiteral
-  )
+  // ===== Lists
+
+  /** A parser for a list expression, either a list literal or a list
+    * comprehension. */
+  private def list: Parser[Exp] = 
+    lit("[") ~> (
+      repSep(expr, ",") <~ lit("]") > ListLiteral
+      | (expr <~ lit("|")) ~ (qualifiers <~ lit("]")) > toPair(ListComprehension)
+    )
+
+  /** A generator in a list comprehension or "for" expression. */
+  def generator = name ~ (lit("<-") ~> expr) > toPair(Generator)
+
+  /** A parser for a single qualifier in a list comprehension. */
+  private def qualifier: Parser[Qualifier] = generator | expr > Filter
+
+  /** A parser for one or more qualifiers. */
+  private def qualifiers: Parser[List[Qualifier]] = 
+    repSepNonEmpty(qualifier, ",")
 
   // ===== Cell expressions
 

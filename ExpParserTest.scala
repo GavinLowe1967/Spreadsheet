@@ -184,6 +184,17 @@ object ExpParserTest extends ParserTest0{
     //println(p("42: Int\n"))
   }
 
+  /** Tests for list comprehensions. */
+  private def listComprehensions() = {
+    assert(p("[x+2 | x <- xs]") == ListComprehension(
+      BinOp(NameExp("x"), "+", IntExp(2)), List(Generator("x", NameExp("xs"))) 
+    ) )
+    assert(p("[x+2 | x <- xs, x > 3]") == ListComprehension(
+      BinOp(NameExp("x"), "+", IntExp(2)), 
+      List(Generator("x", NameExp("xs")), 
+        Filter(BinOp(NameExp("x"), ">", IntExp(3))) )
+    ) )
+  }
 
   /** Tests of expression parsers. */
   def apply() = {
@@ -191,7 +202,8 @@ object ExpParserTest extends ParserTest0{
     cellExpressionTests()
     expressions2() // binary operators
     expressions3() // blocks, if statements, list expressions
-    typedExpressions()
+    typedExpressions() // explicitly typed expressions
+    listComprehensions() // list comprehensions
     println("Expression tests done")
   }
 
