@@ -1,5 +1,7 @@
 package spreadsheet
 
+import scala.collection.mutable.ArrayBuffer
+
 /** Object responsible for evaluating expressions and executing statements. */
 object Execution{
   /** Check value `v` read from cell `name` has type `eType`.  If so, return
@@ -103,7 +105,10 @@ object Execution{
       }
       if(error != null) error else ListValue(vs.reverse)
 
-    case ListComprehension(e, qs) => evalListComp(env, e, qs)
+    case ListComprehension(e1, qs) => // evalListComp(env, e, qs)
+      val ab = new ArrayBuffer[Value]
+      val error = processListComp(env, e1, qs, ab)
+      if(error != null) e.liftError(error) else ListValue(ab.toList)
 
     case fa @ FunctionApp(f, args) => eval(env, f) match{
       case fv : FunctionValue =>
@@ -113,7 +118,7 @@ object Execution{
         while(error == null && iter.hasNext){
           val arg = iter.next()
           eval(env, arg) match{
-            case err: ErrorValue => error = e.liftError(err, true)
+            case err: ErrorValue => error = e.liftError(err)
             case v =>  vs ::= v
           }
         }
@@ -145,6 +150,7 @@ object Execution{
     case TypedExp(e, _) => eval(env, e)
   } // end of eval
 
+/*
   private 
   def evalListComp(env: Environment, e: Exp, qs: List[Qualifier]): Value =
     if(qs.isEmpty) eval(env, e) match{
@@ -165,6 +171,7 @@ object Execution{
               }
             } // end of while loop
             if(error != null) error else ListValue(result)
+          case ev: ErrorValue => ??? // FIXME
         }
       case Filter(test) => 
         eval(env, test) match{
@@ -173,8 +180,39 @@ object Execution{
           case err: ErrorValue => err
         }
     }
+ */
 
   /* IMPROVE: the use of a List is inefficient */
+
+  /** Evaluate a list comprehension with term e and qualifiers qs.  Add
+    * resulting values to ab if there are no errors.  Return an error if there
+    * is one; otherwise return null. */
+  private def processListComp(
+    env: Environment, e: Exp, qs: List[Qualifier], ab: ArrayBuffer[Value])
+      : ErrorValue =
+    if(qs.isEmpty) eval(env, e) match{
+      case ev: ErrorValue => ev; case v => ab += v; null
+    }
+    else qs.head match{
+      case Generator(name, list) =>
+        eval(env, list) match{
+          case ListValue(vs) => 
+            // bind name to each element of vs; recurse; and combine results.
+            var vs1 = vs; var error: ErrorValue = null
+            while(vs1.nonEmpty && error == null){
+              val env1 = env.clone; env1.update(name, vs1.head); vs1 = vs1.tail
+              error = processListComp(env1, e, qs.tail, ab)
+            }
+            error
+          case err: ErrorValue => err
+        }
+      case Filter(test) => 
+        eval(env, test) match{
+          case BoolValue(b) => 
+            if(b) processListComp(env, e, qs.tail, ab) else null
+          case err: ErrorValue => err
+        }
+    }
 
   // ==================================================================
 

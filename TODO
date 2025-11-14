@@ -5,11 +5,12 @@ Current
 
 * List comprehensions.
 - Parsing -- done
-- Typechecking
-- Evaluation
+- Typechecking -- done
+- Evaluation -- done
   + Evaluate a Qualifier to Either[List[TypeEnv], ErrorValue]
   + Evaluate a List[Qualifier] to the same result.
-  
+TODO: Add to TopLevelTest (examples in test1.dir)  
+
 Note: I don't think we can share code with the execution of for loops.  In a
   list comprension, an error gives an error overall; but that's not true in a
   for loop.
