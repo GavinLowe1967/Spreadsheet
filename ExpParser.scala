@@ -49,11 +49,33 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
 
   /** A parser for a list expression, either a list literal or a list
     * comprehension. */
+/*
   private def list: Parser[Exp] = 
+    // lit("[") ~> expr ~ (
+    //   (lit(",") ~> repSep(expr, ",")) <~ lit("]") > Left
+    //   | lit("|") ~ (qualifiers <~ lit("]")) > Right
+    // ) > { case (e,Left(es) => ListLiter
     lit("[") ~> (
       repSep(expr, ",") <~ lit("]") > ListLiteral
       | (expr <~ lit("|")) ~ (qualifiers <~ lit("]")) > toPair(ListComprehension)
     )
+ */
+  private def list: Parser[Exp] = 
+    lit("[") ~> (
+      lit("]") > (_ => ListLiteral(List[Exp]())) 
+        | expr ~ list1 > { 
+          case (e, Left(es)) => ListLiteral(e::es)
+          case (e, Right(qs)) => ListComprehension(e,qs)
+        }
+    )
+
+  /** A parser for either a list literal or list comprehension, following the
+    * initial expression. */
+  private def list1: Parser[Either[List[Exp], List[Qualifier]]] = (
+    lit("]") > (_ => Left(List())) // singleton list
+    | lit(",") ~> repSep(expr, ",") <~ lit("]") > (Left(_)) // 2+ elements
+    | lit("|") ~> (qualifiers <~ lit("]")) > (Right(_)) // list comp
+  )
 
   /** A generator in a list comprehension or "for" expression. */
   def generator = withExtent(name ~ (lit("<-") ~> expr) > toPair(Generator))
@@ -70,9 +92,8 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
 
   /** A parser for an expression such as "Cell(B,3)" of "#B3". */
   def cell: Parser[(Exp,Exp)] = (
-    keyword("Cell") ~! inParens((expr <~ lit(",")) ~ expr) > { case (x,y) => y }
-    // Don't allow backtracking, or this could be parsed as a function
-    // application.
+    keyword("Cell") ~ inParens((expr <~ lit(",")) ~ expr) > { case (x,y) => y }
+      // Note: can't be interpreted as a function application
     | lit("#") ~> colName ~~ posInt > 
       { case (c,r) => (ColumnExp(c), RowExp(r)) }
   )
@@ -109,15 +130,14 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
 
   /** A parser for either a CellExp, a CellMatchExp or an UntypedCellExp. */
   private def cellExp: Parser[Exp] = 
-    cell ~~! opt(Parser.consumeWhite ~~> cellRHS) > { case ((ce,re), rhs) =>  
+    cell ~~ opt(Parser.consumeWhite ~~> cellRHS) > { case ((ce,re), rhs) =>  
       rhs match{
         case Some(Left(t)) => CellExp(ce, re, t)
         case Some(Right(bs)) => CellMatchExp(ce, re, bs)
         case None => UntypedCellExp(ce, re)
       }
     }
-  // Note: don't consume whitespace when cellRHS fails.  Don't allow
-  // backtracking above, or "#A1" gets passed as "#A" with the extra lost,
+  // Note: don't consume whitespace when cellRHS fails.
 
 
   // ===== Expressions not using an infix or if at the top level. 

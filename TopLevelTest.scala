@@ -61,7 +61,9 @@ object TopLevelTest{
     // }
     (B,7,BoolValue(true)), (B,8, BoolValue(true)),
     // for(r <- 2 to 2; r <- #5+r to #6+r) Cell(#C, r) = 6
-    (C,7,IntValue(6)), (C,8,IntValue(6))  
+    (C,7,IntValue(6)), (C,8,IntValue(6)),
+    // List comprehensions
+    (A,9,BoolValue(true)), (B,9,IntValue(21))
   )
 
   /** Lit of cells where type errors are expected. */

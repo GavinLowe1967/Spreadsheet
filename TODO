@@ -15,6 +15,8 @@ Note: I don't think we can share code with the execution of for loops.  In a
   list comprension, an error gives an error overall; but that's not true in a
   for loop.
 
+*** Check that "Cell" can't be parsed as a function application.
+
 Priorities
 ==========
 

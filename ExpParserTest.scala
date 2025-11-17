@@ -45,12 +45,16 @@ object ExpParserTest extends ParserTest0{
   private def cellExpressionTests() = {
     assert(p("Cell(#HW, #23): Int") == 
       CellExp(ColumnExp("HW"), RowExp(23), IntType))
+    assert(p("#HW23: Int") == 
+      CellExp(ColumnExp("HW"), RowExp(23), IntType))
 
     assert(p("Cell(#B,#2)") == UntypedCellExp(ColumnExp("B"), RowExp(2)))
+    assert(p("#B2") == UntypedCellExp(ColumnExp("B"), RowExp(2)))
     // Following all now allowed
     //assertParseFail("1+Cell(#A,#2)"); 
     // assertParseFail("Cell(#C,#2)+4"); assertParseFail("#D2+1)")
     // assertParseFail("f(#E3)")
+    assertParseFail("Cell(3)")
  
     val matchExp = 
       "#A3 match{ case n: Int => 3; case x:Float=>4 \n "+
@@ -194,6 +198,12 @@ object ExpParserTest extends ParserTest0{
       List(Generator("x", NameExp("xs")), 
         Filter(BinOp(NameExp("x"), ">", IntExp(3))) )
     ) )
+
+    assert(p("[(Cell(c,#6):Int) | c <- [#A, #D] ]") == ListComprehension(
+      CellExp(NameExp("c"), RowExp(6), IntType),
+      List(Generator("c", ListLiteral(List(ColumnExp("A"), ColumnExp("D")))))
+    ))
+
   }
 
   /** Tests of expression parsers. */

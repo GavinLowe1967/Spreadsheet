@@ -66,3 +66,8 @@ for(r <- 2 to 2; r <- #5+r to #6+r) Cell(#C, r) = 6
 
 // Test of empty blocks.
 for(x <- #0 until #10){ }
+
+// List comprehensions
+val xs = [x+y | x <- [1,2,3], y <- [4,7], x != 2]
+#A9 = xs == [5,8,7,10] // true
+#B9 = sum([Cell(c,#6):Int | c <- #A to #D]) // 21
