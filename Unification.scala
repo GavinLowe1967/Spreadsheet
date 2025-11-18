@@ -108,9 +108,11 @@ object Unification{
       case (_, TypeParam(tp)) =>  fail
 
       case (FunctionType(tc1,d1,r1), FunctionType(tc2,d2,r2)) =>  
-// TODO: is the following true?
-        assert(tc1.isEmpty && tc2.isEmpty) // ???????????
-        //println(s"Unifying $t1\n and $t2\n")
+// TODO: is the following true?  I'm not convinced, if a function returns a
+// polymorphic function.
+// e.g. def const[A,B](x: A): B => A = { def constX[C](y: C): A = x; constX }
+        //assert(tc1.isEmpty && tc2.isEmpty) // ???????????
+        // println(s"Unifying $t1\n and $t2\n")
         unifyList(typeEnv, d1, d2).map{ case (te1, dd) =>
           unify(te1, r1, r2).map{ case (te2, rr) =>
             Ok((te2, FunctionType(List(), dd, rr)))

@@ -71,3 +71,4 @@ for(x <- #0 until #10){ }
 val xs = [x+y | x <- [1,2,3], y <- [4,7], x != 2]
 #A9 = xs == [5,8,7,10] // true
 #B9 = sum([Cell(c,#6):Int | c <- #A to #D]) // 21
+

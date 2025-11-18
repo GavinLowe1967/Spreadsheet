@@ -72,7 +72,17 @@ DeclarationTypeChecker.scala: type checker for declarations.
 
 TypeChecker.scala: the type checker.
 
-TypeCheckerTest*.scala: tests.
+TypeCheckerTest.scala: tests.
+
+TypeCheckerTest0.scala: basic testing framework functions, and
+TypeCheckTestExpr (for expressions).
+
+TypeCheckerTest1.scala: basic tests on scripts: declarations, cell reads and
+writes, lists.
+
+TypeCheckerTest2.scala: tests on polymorphism, higher-order functions.
+
+TypeCheckerTest3.scala: tests on for loops, overloading, and currying. 
 
 Evaluation and execution
 ========================

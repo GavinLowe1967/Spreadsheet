@@ -40,10 +40,14 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
     }
   )
 
-  /** Parser for the arguments of a function, with no preceding newline.
-    * Note: should be sequenced to its left-hand argument using `~~`. */
-  private def params: Parser[Option[List[Exp]]] =
-    opt( consumeWhiteNoNL ~~ inParens(repSep(expr, ",")) > (_._2))
+  // /** Parser for the arguments of a function, with no preceding newline.
+  //   * Note: should be sequenced to its left-hand argument using `~~`. */
+  // private def params: Parser[Option[List[Exp]]] =
+  //   opt( consumeWhiteNoNL ~~> inParens(repSep(expr, ",")) )
+
+  /** Parser for arguments of a function, possibly in several sets. */
+  private def paramsList: Parser[List[List[Exp]]] =
+    repeat1( consumeWhiteNoNL ~~> inParens(repSep(expr, ",")) )
 
   // ===== Lists
 
@@ -63,10 +67,10 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
   private def list: Parser[Exp] = 
     lit("[") ~> (
       lit("]") > (_ => ListLiteral(List[Exp]())) 
-        | expr ~ list1 > { 
-          case (e, Left(es)) => ListLiteral(e::es)
-          case (e, Right(qs)) => ListComprehension(e,qs)
-        }
+      | expr ~ list1 > { // Consume first Exp here.  
+        case (e, Left(es)) => ListLiteral(e::es)
+        case (e, Right(qs)) => ListComprehension(e,qs)
+      }
     )
 
   /** A parser for either a list literal or list comprehension, following the
@@ -74,7 +78,7 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
   private def list1: Parser[Either[List[Exp], List[Qualifier]]] = (
     lit("]") > (_ => Left(List())) // singleton list
     | lit(",") ~> repSep(expr, ",") <~ lit("]") > (Left(_)) // 2+ elements
-    | lit("|") ~> (qualifiers <~ lit("]")) > (Right(_)) // list comp
+    | lit("|") ~> (qualifiers <~ lit("]")) > (Right(_)) // list comprehension
   )
 
   /** A generator in a list comprehension or "for" expression. */
@@ -156,15 +160,17 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
 
 // IMPROVE: do we need the "withExtent" both above and below?
 
+
+
   /** A parser for expressions that use no infix operators or "if" statement
     * outside of parentheses. */
   private def factor0: Parser[Exp] = withExtent( 
     number
     | string > StringExp | cellExp | bool
     // Name or application of named function
-    | name1 ~~ params > {
-      case (n, None) => n; case (n, Some(ps)) => FunctionApp(n, ps)
-    }
+    | name1 ~~ paramsList  > { case (n,args) => args.foldLeft(n)(FunctionApp) }
+    //   case (n, None) => n; case (n, Some(ps)) => FunctionApp(n, ps)
+    // }
     // TODO: allow more general definitions of the function.
       // Row and column literals
     | lit("#") ~~ (int > RowExp | colName > ColumnExp) > { _._2 }  

@@ -29,9 +29,9 @@ object TypeCheckerTest{
     if(doAll){
       println("===exptests===")
       // printErrors = true
-      // -- TypeCheckerTest0
+      // ------                    TypeCheckerTest0.scala
       TypeCheckerTestExpr.expTests()
-      // -- TypeCheckerTest1.scala
+      // --------                  TypeCheckerTest1.scala
       println("===singleDecTests===")
       TypeCheckerTest1.singleDecTests()
       println("===scriptTests===")
@@ -42,17 +42,20 @@ object TypeCheckerTest{
       TypeCheckerTest1.cellWriteTests()
       println("===listTests===")
       TypeCheckerTest1.listTests()
+      // -----                      TypeCheckerTest2.scala
       println("===polyTests===")
       polyTests()
       println("===typeConstraintTests===")
       typeConstraintTests()
       println("===higherOrderTests===")
       higherOrderTests()
-      // TypeCheckerTest2.scala
+      // ------                      TypeCheckerTest3.scala
       println("===forLoopTests===")
       forLoopTests()
       println("===overloadingtests===")
       overloadingTests()
+      println("===curryingtests===")
+      curryingTests()
     }
     println("Done")
   }

@@ -3,25 +3,31 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
-* List comprehensions.
-- Parsing -- done
-- Typechecking -- done
-- Evaluation -- done
-  + Evaluate a Qualifier to Either[List[TypeEnv], ErrorValue]
-  + Evaluate a List[Qualifier] to the same result.
-TODO: Add to TopLevelTest (examples in test1.dir)  
+* Improve syntax for function declarations and applications -- currying.
 
-Note: I don't think we can share code with the execution of for loops.  In a
-  list comprension, an error gives an error overall; but that's not true in a
-  for loop.
+1. Parsing of curried function applications -- done.
 
-*** Check that "Cell" can't be parsed as a function application.
+2. Test type checking of above, e.g. cases like const.  With
+
+def const[A,B](x: A): B => A = { def constX(y: B): A = x; constX }
+val const3 = const(3)
+
+I think we should have cont3: [B] B => Int; at present, it's t => Int for t a
+TypeVar.  I think in FunctionAppTypeChecker.subTypeParams, we should not
+include type parameters that don't appear in domain. *** Continue here.
+
+* Look at Unification.unify, case two FunctionTypes
+
+Consider
+      "def const[A,B](x: A): B => A = { def constX[C](y: C): A = x; constX }\n"
+
+3. Parsing of curried function declarations.  Translate into uncurried form,
+e.g. def f[A,B](x: A)(y: B): C = e --> 
+def f[A,B](x: A): B => C = { def f'(y: B) = e; f' }.
 
 Priorities
 ==========
 
-
-* Improve syntax for function declarations and applications -- currying.
 
 * Haskell standard prelude.
 
@@ -60,6 +66,21 @@ Low Priority
 
 ===================================== DONE
 
+
+* List comprehensions.
+- Parsing -- done
+- Typechecking -- done
+- Evaluation -- done
+  + Evaluate a Qualifier to Either[List[TypeEnv], ErrorValue]
+  + Evaluate a List[Qualifier] to the same result.
+- Add to TopLevelTest (examples in test1.dir) -- done
+
+Note: I don't think we can share code with the execution of for loops.  In a
+  list comprension, an error gives an error overall; but that's not true in a
+  for loop.
+
+*** Check that "Cell" can't be parsed as a function application. -- done
+========
 
 * Split FunctionAppTypeChecker into separate file. -- done
 

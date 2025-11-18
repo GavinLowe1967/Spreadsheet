@@ -33,6 +33,10 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     if(domain.length != args.length)
       FailureR(s"Expected ${domain.length} arguments, found "+args.length)
     else{
+      val unusedTParams = 
+        tParams.filter{ case(p,c) => domain.forall(!_.typeParams.contains(p)) }
+      if(unusedTParams.nonEmpty) 
+        println(s"Unused type parameters $unusedTParams in $ft")
       // Create fresh type variables to replace tParams in domain and range
       val (te1, domain1, range1) =
         subTypeParams(typeEnv.newScope, tParams, domain, range)

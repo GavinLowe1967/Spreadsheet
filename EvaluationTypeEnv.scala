@@ -38,8 +38,10 @@ class EvaluationTypeEnv(
   /** A string representing type t, with relevant constraints. */
   def showType(t: TypeT): String = t match{
     case TypeVar(tId) => apply(tId).asStringE
-    case TypeParam(tp) => typeParamMap(tp) match{
-      case AnyTypeConstraint => tp; case c => s"$tp <: "+c.asString
+    case TypeParam(tp) => typeParamMap.get(tp) match{
+      case None => tp+"**not in environment**"
+      case Some(AnyTypeConstraint) => tp
+      case Some(c) => s"$tp <: "+c.asString
     }
     case ListType(underlying) => s"List[${showType(underlying)}]"
     case _ => t.asString
