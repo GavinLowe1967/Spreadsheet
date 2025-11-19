@@ -98,24 +98,20 @@ object TypeCheckerTest3{
       assert(te("add3") == FunctionType(List(), List(IntType), IntType))
     }
 
-    val constS1 = constS+"val const3 = const(3); val constTrue = const(true)\n"
-// The following fails!  const3 has a type in terms of a type variable; but 
-// maybe it should be a type parameter. Evaluation of const3 unifies that 
-// variable with IntType, so evaluation of constTrue fails.
-    println(tcpss(constS1+"val x = const3(4); val y = const3(true)"))
-
+    val constS1 = constS+"val const3 = const(4); val constTrue = const(true)\n"
     tcpss(constS1) match{ case Ok(te) => 
       assert(te("const") == FunctionType(
         List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
         List(TypeParam("A")),
-        FunctionType(List(),List(TypeParam("B")),TypeParam("A")) ))
-      te("const3") match{ case FunctionType(List(),List(TypeVar(t)),IntType) => 
-        te("constTrue") match{
-          case FunctionType(List(),List(TypeVar(t1)),BoolType) => 
-            assert(t1 != t)
-        }
-      }
+        FunctionType(List(), List(TypeParam("B")), TypeParam("A")) ))
+      assert(te("const3") == FunctionType(
+        List(("B",AnyTypeConstraint)), List(TypeParam("B")), IntType ) )
+      assert(te("constTrue") == FunctionType(
+        List(("B",AnyTypeConstraint)), List(TypeParam("B")), BoolType ) )
     }
+
+// Should the following work?  It's not clear.
+    println(tcpss(constSC))
   }
 
 }

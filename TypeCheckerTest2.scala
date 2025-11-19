@@ -56,6 +56,7 @@ object TypeCheckerTest2{
         assert(te("mkEmpty") == FunctionType(
           List(("A",AnyTypeConstraint)), List(), ListType(TypeParam("A"))
         ))
+        //println(te("xs")) // ListType(TypeParam(A))        
         te("xs") match{ 
           case ListType(TypeVar(tv)) => assert(te(tv) == AnyTypeConstraint) }
     }

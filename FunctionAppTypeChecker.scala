@@ -33,21 +33,38 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     if(domain.length != args.length)
       FailureR(s"Expected ${domain.length} arguments, found "+args.length)
     else{
-      val unusedTParams = 
-        tParams.filter{ case(p,c) => domain.forall(!_.typeParams.contains(p)) }
-      if(unusedTParams.nonEmpty) 
-        println(s"Unused type parameters $unusedTParams in $ft")
+      val unusedTParams = ft.unusedTParams
+      // if(unusedTParams.nonEmpty) 
+      //   println(s"Unused type parameters $unusedTParams in $ft")
       // Create fresh type variables to replace tParams in domain and range
       val (te1, domain1, range1) =
-        subTypeParams(typeEnv.newScope, tParams, domain, range)
+        subTypeParams(typeEnv.newScope, 
+if(true) ft.usedTParams else tParams,
+          domain, range)
       // Generate a new name, and bind it to range1 in the environment;
       // then unify the types of args with domain1, so the new name gets
       // updated to the appropriate return type.
       val name = newName(); val te2 = te1 + (name, range1)
       typeCheckListUnify(te2, args, domain1).map{ te3 =>
-        Ok((te3.endScope, te3(name)))  // extract type of name
+        val (te4, res) = subTypeParamsInResult(te3, unusedTParams, te3(name))
+// Add unusedTParames to FunctionType results
+        Ok((te4.endScope, res))
+        //Ok((te3.endScope, te3(name)))  // extract type of name
       }
     }
+  }
+
+  /** Create a remapping from the type parameters in tParams to fresh TypeVars,
+    * as a list, together with corresponding constraints on those TypeVars. */
+  private def mkRemapping(tParams: List[TypeParameter])
+      : (List[(TypeParamName, TypeVar)], List[(TypeID, TypeConstraint)]) = {
+    var updates = List[(TypeParamName, TypeVar)]();
+    var constraints = List[(TypeID, TypeConstraint)]()
+    for((p,c) <- tParams){
+      val tId = nextTypeID(); updates ::= (p, TypeVar(tId))
+      constraints ::= (tId,c)
+    }
+    (updates, constraints)
   }
 
   /** Replace each type parameter in tParams with a fresh type variable,
@@ -57,15 +74,27 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     tParams: List[TypeParameter], domain: List[TypeT], range: TypeT)
       : (TypeEnv, List[TypeT], TypeT) = {
     // Create fresh type variables to replace tParams in domain and range
-    var updates = List[(TypeParamName, TypeVar)]();
-    var constraints = List[(TypeID, TypeConstraint)]()
-    for((p,c) <- tParams){
-      val tId = nextTypeID(); updates ::= (p, TypeVar(tId))
-      constraints ::= (tId,c)
-    }
+    val (updates, constraints) = mkRemapping(tParams)
+    // var updates = List[(TypeParamName, TypeVar)]();
+    // var constraints = List[(TypeID, TypeConstraint)]()
+    // for((p,c) <- tParams){
+    //   val tId = nextTypeID(); updates ::= (p, TypeVar(tId))
+    //   constraints ::= (tId,c)
+    // }
     // The instantiated domain and range
     val (domain1,range1) = Substitution.remapBy(updates, domain, range)
     (typeEnv.addConstraints(constraints), domain1, range1)
+  }
+
+  /** Substitute type parameters in result from tParams with fresh type
+    * variables. */
+  private def subTypeParamsInResult(typeEnv: TypeEnv, 
+    tParams: List[TypeParameter], result: TypeT)
+      : (TypeEnv, TypeT) = {
+    val (updates, constraints) = mkRemapping(tParams)
+    val typeMap = Substitution.mkTypeMap(updates)
+    (typeEnv.addConstraints(constraints), 
+      Substitution.remapInResult(tParams, typeMap, result))
   }
 
   /** Type check each element of es, unifying its type with the corresponding
