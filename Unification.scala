@@ -80,17 +80,10 @@ object Unification{
             Ok(typeEnv.replace(tId2, t1) + (tId1, cc), t1)
         }
 
-      //case (TypeVar(tId1), TypeParam(tp)) => println("***"); fail
-        // The above happens in cases like "def mkEmpty[A](x: A): List[A] =
-        // []", which leads to an attempt to unify ListType(TypeVar(tId1))
-        // against ListType(TypeParam("A")), which recurses here.
-
       case (TypeVar(tId1), _) => // t2 a concrete type.  Try to replace t1 by t2
         replaceInTypeEnv(typeEnv, tId1, t2, fail)
         
       case ( _, TypeVar(tId2)) =>           // Try to replace t2 by t1
-        // if(t1.isInstanceOf[ListType]) 
-        //   println(s"\nunify($t1, $t2 <: ${typeEnv(tId2)})")
         assert(!t1.isInstanceOf[TypeVar])
         replaceInTypeEnv(typeEnv, tId2, t1, fail)
 
@@ -102,22 +95,21 @@ object Unification{
         // ListType(tt1) and ListType(tt2).
 
       case (ct @ CellTypeVar(tv), t: CellType) => 
-        // println(s"$tv $t"); 
         Ok((typeEnv + (ct,t), t))
 
       case (_, TypeParam(tp)) =>  fail
 
       case (FunctionType(tc1,d1,r1), FunctionType(tc2,d2,r2)) =>  
-// TODO: is the following true?  I'm not convinced, if a function returns a
-// polymorphic function.
-// e.g. def const[A,B](x: A): B => A = { def constX[C](y: C): A = x; constX }
-        //assert(tc1.isEmpty && tc2.isEmpty) // ???????????
-        // println(s"Unifying $t1\n and $t2\n")
+        assert(tc2.isEmpty)
+        if(tc1.nonEmpty) println(s"Unifying $t1\n and $t2\n")
         unifyList(typeEnv, d1, d2).map{ case (te1, dd) =>
           unify(te1, r1, r2).map{ case (te2, rr) =>
             Ok((te2, FunctionType(List(), dd, rr)))
           }
         }
+// FIXME: I think if tc1.nonEmpty, we have to replace by TypeVars.  Test case:
+// def const[A,B](x: A): B => A = { def constX[C](y: C): A = x; constX }
+// Also improve error messages in this case. 
 
       case (_,_) => fail
     }

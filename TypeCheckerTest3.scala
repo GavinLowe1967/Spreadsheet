@@ -91,6 +91,9 @@ object TypeCheckerTest3{
       "def const[A,B](x: A): B => A = { def constX(y: B): A = x; constX }\n"
     val constSC = 
       "def const[A,B](x: A): B => A = { def constX[C](y: C): A = x; constX }\n"
+    val sndS = "def snd[A,B](x: A): B => B = { def id(y: B): B = y; id}\n"
+    val applyS = 
+      "def apply[A,B](f: A => B): A => B = {def ff(x: A): B = f(x); ff }\n"
 
     tcpss(addS+"val add3 = add(3)") match{ case Ok(te) =>
       assert(te("add") == FunctionType(
@@ -109,9 +112,38 @@ object TypeCheckerTest3{
       assert(te("constTrue") == FunctionType(
         List(("B",AnyTypeConstraint)), List(TypeParam("B")), BoolType ) )
     }
+// FIXME: get following to work
+    println(tcpss(constSC)); println()
 
-// Should the following work?  It's not clear.
-    println(tcpss(constSC))
+    tcpss(sndS+"val sx = snd(4); val x = sx(3); val y = sx(4.0)") match{ 
+      case Ok(se) =>
+        assert(se("snd") == FunctionType(
+          List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
+          List(TypeParam("A")),
+          FunctionType(List(),List(TypeParam("B")),TypeParam("B")) ))
+        assert(se("sx") == FunctionType(
+          List(("B",AnyTypeConstraint)), List(TypeParam("B")), TypeParam("B") ))
+        assert(se("x") == IntType && se("y") == FloatType)
+    }
+
+    val applyS1 = 
+      applyS+constS+"val c = apply(const); val c3 = c(3); val x = c3(5)"
+    // val y = c3(true)
+    //println(tcpss(applyS1))
+    tcpss(applyS1) match{ case Ok(te) =>
+      assert(te("apply") == FunctionType(
+        List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
+        List(FunctionType(List(), List(TypeParam("A")), TypeParam("B"))),
+        FunctionType(List(), List(TypeParam("A")), TypeParam("B")) ))
+      println("c : "+te("c")) 
+        // case FunctionType(List(), List(TypeVar(ta)), 
+        //     FunctionType(List(), List(TypeVar(tb)), TypeVar(ta)) ) =>
+// FIXME: I think those should be TypeVars
+      println("c3: "+
+te("c3"))
+      assert(te("x") == IntType)
+    }
+
   }
 
 }

@@ -14,14 +14,32 @@ val const3 = const(3)
 
 I think we should have cont3: [B] B => Int; at present, it's t => Int for t a
 TypeVar.  I think in FunctionAppTypeChecker.subTypeParams, we should not
-include type parameters that don't appear in domain. *** Continue here.
+include type parameters that don't appear in domain. -- done
 
-* Look at Unification.unify, case two FunctionTypes
+3. A. Consider
 
-Consider
-      "def const[A,B](x: A): B => A = { def constX[C](y: C): A = x; constX }\n"
+"def const[A,B](x: A): B => A = { def constX[C](y: C): A = x; constX }\n"
 
-3. Parsing of curried function declarations.  Translate into uncurried form,
+This comes down to unifying
+FunctionType(List((C,AnyTypeConstraint)),List(TypeParam(C)),TypeParam(A)) and
+FunctionType(List(),List(TypeParam(B)),TypeParam(A)).  I think we need to
+replace C by a TypeVar here. 
+
+B. Consider val c = apply(const).  Ths gives
+FunctionType(List(), List(TypeVar(ta)), 
+     FunctionType(List(), List(TypeVar(tb)), TypeVar(ta)) )
+But I think those TypeVars should be TypeParams, [A,B] A => (B => A).  The
+TypeParams in the type of const are replaced by TypeVars in
+FunctionAppTypeChecker.mkInstance.  IF we don't do this, we his problems with,
+e.g., applyToThree(id), which comes down to unifying
+FunctionType(List((A,AnyTypeConstraint)),List(TypeParam(A)),TypeParam(A)) 
+and FunctionType(List(),List(IntType),TypeVar(215)), much as in A.
+
+*** Possible way forward.  Do the point in A.  This needs more thought.  What
+happens if we then remove the use of mkInstance?  
+
+
+LATER: Parsing of curried function declarations.  Translate into uncurried form,
 e.g. def f[A,B](x: A)(y: B): C = e --> 
 def f[A,B](x: A): B => C = { def f'(y: B) = e; f' }.
 
@@ -40,6 +58,7 @@ Priorities
 
 * Add "if" directives.
 
+* Improve error messages in Unification.unify, the case of FunctionTypes.
 
 Low Priority
 ============
