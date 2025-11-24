@@ -4,7 +4,7 @@ package spreadsheet
  * responsible for type checking particular syntactic forms. */
 
 import Unification.unify
-import TypeVar.TypeID // Type variables (Ints)
+import TypeVar.{TypeID,nextTypeID} // Type variables (Ints)
 
 object TypeChecker0{
   /** The result of typechecking an expression. */
@@ -28,7 +28,7 @@ object TypeChecker0{
   private var next = 0
 
   /** Get a new type identifier. */
-  def nextTypeID() : TypeID = TypeVar.getNext()
+  //def nextTypeID() : TypeID = TypeVar.getNext()
 }
 
 import TypeChecker0._

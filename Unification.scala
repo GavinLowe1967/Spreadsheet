@@ -115,7 +115,8 @@ object Unification{
     }
   }
 
-  /** Unify corresponding elements of the lists ts1 and ts2. */
+  /** Unify corresponding elements of the lists ts1 and ts2, giving the list of
+    * resulting types. */
   private def unifyList(typeEnv: TypeEnv, ts1: List[TypeT], ts2: List[TypeT])
       : Reply[(TypeEnv, List[TypeT])] =
     if(ts1.isEmpty){ assert(ts2.isEmpty); Ok((typeEnv, List())) }

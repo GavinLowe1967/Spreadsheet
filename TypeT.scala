@@ -40,7 +40,7 @@ object TypeVar{
   /** The next identifier to use for a type variable. */
   private var next = 0
 
-  def getNext(): TypeID = { next += 1; next-1 }
+  def nextTypeID(): TypeID = { next += 1; next-1 }
 }
 
 /** The type for an untyped cell expression. */

@@ -1,19 +1,17 @@
+// The input and output columns.
 val In = #A; val Out = #B
 
-// The factorial function
-def fact(n: Int) : Int = if(n <= 1) 1 else n*fact(n-1)
+// The factorial of n.
+def fact(n: Int): Int = if(n <= 1) 1 else n*fact(n-1)
 
-// The sum in column c of rows [r..end).
-def sumCol(c: Column, r: Row, end: Row): Int = 
-  if(r == end) 0 else sumCol(c, r+1, end) + Cell(c,r)
-  // Need type with if(r == end) 0 else Cell(c,r):Int + sumCol(c, r+1, end)
+// The sum of xs.
+def sum(xs: List[Int]): Int = if(xs == []) 0 else head(xs) + sum(tail(xs)) 
 
 // Row for the first empty cell in column c from row r.
 def firstEmptyInCol(c: Column, r: Row): Row =
-  //Cell(c,r) match{ case Empty => r; case _ => firstEmptyInCol(c, r+1) }
   Cell(c,r) match{ case Empty => r; case _: Int => firstEmptyInCol(c, r+1) }
 
-// Row for the first empty cell in In
+// Row for the first empty cell in In.
 val firstEmpty = firstEmptyInCol(In, #0)
 
 // Write factorials of entries in In into Out.
@@ -21,6 +19,11 @@ for(r <- #0 until firstEmpty) Cell(Out,r) = fact(Cell(In,r))
 
 // Write the total.
 Cell(In, firstEmpty+1) = "Total:"
-Cell(Out, firstEmpty+1) = sumCol(Out, #0, firstEmpty)
+Cell(Out, firstEmpty+1) = sum([Cell(Out,r): Int | r <- #0 until firstEmpty])
 
 
+// sumCol(Out, #0, firstEmpty)
+// // The sum in column c of rows [r..end).
+// def sumCol(c: Column, r: Row, end: Row): Int = 
+//   if(r == end) 0 else sumCol(c, r+1, end) + Cell(c,r)
+//   // Need type with if(r == end) 0 else Cell(c,r):Int + sumCol(c, r+1, end)

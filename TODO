@@ -46,6 +46,7 @@ def f[A,B](x: A): B => C = { def f'(y: B) = e; f' }.
 Priorities
 ==========
 
+** In the factorial script, those cells with a factorial don't 
 
 * Haskell standard prelude.
 

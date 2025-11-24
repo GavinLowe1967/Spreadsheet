@@ -1,12 +1,12 @@
 package spreadsheet
 
 import Unification.unify
-import TypeVar.TypeID // Type variables (Ints)
+import TypeVar.{TypeID,nextTypeID} // Type variables (Ints)
 import FunctionType.TypeParameter // (TypeParamName, TypeParamConstraint)
 import TypeParam.TypeParamName // Names of type parameters (Strings)
 import NameExp.Name // Names of identifiers (Strings)
 import TypeT.showList
-import TypeChecker0.{TypeCheckRes,nextTypeID}
+import TypeChecker0.{TypeCheckRes}
 
 /** Type checking of function applications. */
 class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
@@ -36,55 +36,20 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       val unusedTParams = ft.unusedTParams
       // Create fresh type variables to replace tParams in domain and range
       val (te1, domain1, range1) =
-        subTypeParams(typeEnv.newScope, ft.usedTParams, domain, range)
+        Substitution.replaceTypeParamsByTypeVars(
+          typeEnv.newScope, ft.usedTParams, domain, range)
       // Generate a new name, and bind it to range1 in the environment;
       // then unify the types of args with domain1, so the new name gets
       // updated to the appropriate return type.
       val name = newName(); val te2 = te1 + (name, range1)
       typeCheckListUnify(te2, args, domain1).map{ te3 =>
         // Extract type of name, and add unusedTParams to FunctionType results
-        val (te4, res) = subTypeParamsInResult(te3, unusedTParams, te3(name))
+        val (te4, res) = Substitution.subTypeParamsInResult(te3, unusedTParams, te3(name))
         Ok((te4.endScope, res))
       }
     }
   }
 
-  /** Create a remapping from the type parameters in tParams to fresh TypeVars,
-    * as a list, together with corresponding constraints on those TypeVars. */
-  private def mkRemapping(tParams: List[TypeParameter])
-      : (List[(TypeParamName, TypeVar)], List[(TypeID, TypeConstraint)]) = {
-    var updates = List[(TypeParamName, TypeVar)]();
-    var constraints = List[(TypeID, TypeConstraint)]()
-    for((p,c) <- tParams){
-      val tId = nextTypeID(); updates ::= (p, TypeVar(tId))
-      constraints ::= (tId,c)
-    }
-    (updates, constraints)
-  }
-
-  /** Replace each type parameter in tParams with a fresh type variable,
-    * substituting in domain and range, and adding suitable constraints to
-    * typeEnv). */
-  private def subTypeParams(typeEnv: TypeEnv, 
-    tParams: List[TypeParameter], domain: List[TypeT], range: TypeT)
-      : (TypeEnv, List[TypeT], TypeT) = {
-    // Create fresh type variables to replace tParams in domain and range
-    val (updates, constraints) = mkRemapping(tParams)
-    // The instantiated domain and range
-    val (domain1,range1) = Substitution.remapBy(updates, domain, range)
-    (typeEnv.addConstraints(constraints), domain1, range1)
-  }
-
-  /** Substitute type parameters in result from tParams with fresh type
-    * variables. */
-  private def subTypeParamsInResult(
-    typeEnv: TypeEnv, tParams: List[TypeParameter], result: TypeT)
-      : (TypeEnv, TypeT) = {
-    val (updates, constraints) = mkRemapping(tParams)
-    val typeMap = Substitution.mkTypeMap(updates)
-    (typeEnv.addConstraints(constraints), 
-      Substitution.remapInResult(tParams, typeMap, result))
-  }
 
   /** Type check each element of es, unifying its type with the corresponding
     * element of ts. 
@@ -110,7 +75,8 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   private def mkInstance(typeEnv: TypeEnv, t: TypeT): (TypeEnv, TypeT) = t match{
     case FunctionType(tParams, domain, range) => 
       // println("mkInstance: "+t)
-      val (te, domain1, range1) = subTypeParams(typeEnv, tParams, domain, range)
+      val (te, domain1, range1) = 
+        Substitution.replaceTypeParamsByTypeVars(typeEnv, tParams, domain, range)
       (te, FunctionType(List(), domain1, range1))
     case _ => (typeEnv, t)
   }

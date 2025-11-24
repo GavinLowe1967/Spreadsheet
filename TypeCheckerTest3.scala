@@ -107,9 +107,9 @@ object TypeCheckerTest3{
         List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
         List(TypeParam("A")),
         FunctionType(List(), List(TypeParam("B")), TypeParam("A")) ))
-      assert(te("const3") == FunctionType(
+      assert(te("const3") == FunctionType( // forall B, B => Int
         List(("B",AnyTypeConstraint)), List(TypeParam("B")), IntType ) )
-      assert(te("constTrue") == FunctionType(
+      assert(te("constTrue") == FunctionType( // forall B, B => Bool
         List(("B",AnyTypeConstraint)), List(TypeParam("B")), BoolType ) )
     }
 // FIXME: get following to work

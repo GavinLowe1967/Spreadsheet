@@ -1,6 +1,6 @@
 package spreadsheet
 
-import TypeVar.TypeID // Type variables (Ints)
+import TypeVar.{TypeID,nextTypeID} // Type variables (Ints)
 import TypeParam.TypeParamName // Names of type parameters (Strings)
 import NameExp.Name // Names of identifiers (Strings)
 import TypeT.showList
@@ -21,7 +21,7 @@ trait DeclarationTypeCheckerT{
 class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
   import FunctionType.TypeParameter // (TypeParamName, TypeParamConstraint)
   import Unification.unify
-  import TypeChecker0.{TypeCheckRes,close,nextTypeID}
+  import TypeChecker0.{TypeCheckRes,close}
 
   /** The object used to typecheck binary operations. */
   private val botc = new BinOpTypeChecker(this)

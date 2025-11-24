@@ -39,6 +39,7 @@ class Environment(
 
   /** Set the value of cell(c,r) to v, and record that it was calculated. */
   def setCell(c: Int, r: Int, v: Cell) = {
+//println(s"setCell: $c $r $v ${v.source}")
     require(isEmpty(c,r) || v.isInstanceOf[MultipleWriteError])
     calculatedCells(c)(r) = v 
   }
@@ -46,6 +47,7 @@ class Environment(
   /** Get the value in cell (c,r), prioritising a calculated value. */
   def getCell1(c: Int, r: Int): Cell = {
     val v = calculatedCells(c)(r)
+//println(s"getCell1: $c $r $v ${v.source}")
     if(v.nonEmpty) v else userCells(c)(r)
   }
 
@@ -60,7 +62,10 @@ class Environment(
     if(uc.nonEmpty){
       if(cc.isEmpty) uc else{ assert(cc.isInstanceOf[MultipleWriteError]); cc } 
     }
-    else cc
+    else{
+//println(s"getForSelection $c $r $cc ${cc.source}")
+      cc
+    }
   }
 
   /** Reset, corresponding to starting to rerun the script. */

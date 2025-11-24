@@ -25,7 +25,7 @@ trait Cell extends Value{
     case CellWriteSource(_,_,d) =>
       val e = d.getExtent
       forError+s"\nFrom cell write at line ${e.lineNumber}:\n"+e.asString
-    case _ => forError
+    case _ => /* println(s"$this $forError");*/ forError
   }
 
   /** How this is represented in a CSV file. */

@@ -55,7 +55,7 @@ object Execution{
         val v1 = applyToCell(column, row, checkCellType(uce.getType))
         e.liftValue(v1, true)
 
-      case _ => eval0(env, e).withSource(e.getExtent)
+      case _ => eval0(env, e)
     }
   }
 
@@ -229,8 +229,10 @@ object Execution{
     env: Environment, handleError: ErrorValue => Unit, 
     c: Int, r: Int, expr: Exp, d: Directive) 
   = {
+    //println(s"writeCell($c $r $expr $d)")
     val v1 = eval(env, expr).asInstanceOf[Cell].withCellWriteSource(c,r,d) 
     if(env.isEmpty(c,r)){
+      //println(s"$v1 ${v1.source}")
       env.setCell(c,r,v1)
       v1 match{ case ev: ErrorValue => handleError(ev); case _ => {} }
     }

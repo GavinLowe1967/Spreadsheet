@@ -1,7 +1,7 @@
 package spreadsheet
 
 import scala.collection.mutable.HashMap
-import TypeVar.TypeID
+import TypeVar.{TypeID,nextTypeID}
 import TypeParam.TypeParamName 
 import FunctionType.TypeParameter
 
@@ -35,20 +35,35 @@ object Substitution{
     case _ => t
   }
 
-  /** Make a TypeMap based on pairs. */
-  def mkTypeMap(pairs: List[(TypeParamName, TypeVar)]) = new TypeMap ++ pairs
+  /** Create a remapping from the type parameters in tParams to fresh TypeVars,
+    * as a list, together with corresponding constraints on those TypeVars. */
+  private def mkRemapping(tParams: List[TypeParameter])
+      : (TypeMap, List[(TypeID, TypeConstraint)]) = {
+    val typeMap = new TypeMap
+    var constraints = List[(TypeID, TypeConstraint)]()
+    for((p,c) <- tParams){
+      val tId = nextTypeID(); typeMap += ((p, TypeVar(tId)))
+      constraints ::= (tId,c)
+    }
+    (typeMap, constraints)
+  }
 
-  /** Remap (ts,t), replacing type parameters by type variables according to
-    * pairs. */
-  def remapBy(pairs: List[(TypeParamName, TypeVar)], ts: List[TypeT], t: TypeT)
-      : (List[TypeT], TypeT) = {
-    val typeMap = mkTypeMap(pairs) // new TypeMap ++ pairs
-    (ts.map(remapBy(typeMap, _)), remapBy(typeMap, t))
+  /** Given a type domainT => rangeT for a function, replace the type parameters
+    * in typParams by fresh type variables, adding corresponding constraints
+    * to typeEnv. */
+  def replaceTypeParamsByTypeVars(typeEnv: TypeEnv, tParams: List[TypeParameter],
+                    domain: List[TypeT], range: TypeT)
+      : (TypeEnv, List[TypeT], TypeT) = {
+    // Create fresh type variables to replace tParams in domain and range
+    val (typeMap, constraints) = mkRemapping(tParams)
+    (typeEnv.addConstraints(constraints), domain.map(remapBy(typeMap, _)),
+       remapBy(typeMap, range))
   }
 
   /** Remap, in t, the type parameters in tParams according to pairs.  tParams
     * are added as type parameters in any FunctionTypes, and not recursively
     * remapped.  Pre: tParams is the domain of typeMap */ 
+  private 
   def remapInResult(tParams: List[TypeParameter], typeMap: TypeMap, t: TypeT)
       : TypeT = t match{
     case TypeParam(tp) => 
@@ -59,6 +74,16 @@ object Substitution{
       assert(params.forall{ case (tp,_) => !typeMap.contains(tp) })
       FunctionType(params++tParams, domain, range)
     case _ => t
+  }
+
+  /** Substitute type parameters in result from tParams with fresh type
+    * variables. */
+  def subTypeParamsInResult(
+    typeEnv: TypeEnv, tParams: List[TypeParameter], result: TypeT)
+      : (TypeEnv, TypeT) = {
+    val (typeMap, constraints) = mkRemapping(tParams)
+    (typeEnv.addConstraints(constraints), 
+      remapInResult(tParams, typeMap, result))
   }
 }
 
