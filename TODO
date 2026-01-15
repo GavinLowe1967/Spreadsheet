@@ -23,7 +23,7 @@ include type parameters that don't appear in domain. -- done
 This comes down to unifying
 FunctionType(List((C,AnyTypeConstraint)),List(TypeParam(C)),TypeParam(A)) and
 FunctionType(List(),List(TypeParam(B)),TypeParam(A)).  I think we need to
-replace C by a TypeVar here. 
+replace C by a TypeVar here.  -- DONE
 
 B. Consider val c = apply(const).  Ths gives
 FunctionType(List(), List(TypeVar(ta)), 
@@ -46,7 +46,6 @@ def f[A,B](x: A): B => C = { def f'(y: B) = e; f' }.
 Priorities
 ==========
 
-** In the factorial script, those cells with a factorial don't 
 
 * Haskell standard prelude.
 

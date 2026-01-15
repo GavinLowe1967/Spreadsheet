@@ -99,16 +99,25 @@ object Unification{
 
       case (_, TypeParam(tp)) =>  fail
 
-      case (FunctionType(tc1,d1,r1), FunctionType(tc2,d2,r2)) =>  
+      case (f1 @ FunctionType(tc1,d1,r1), FunctionType(tc2,d2,r2)) =>  
         assert(tc2.isEmpty)
         if(tc1.nonEmpty) println(s"Unifying $t1\n and $t2\n")
+        val (te1, d11, r11) = 
+          Substitution.replaceTypeParamsByTypeVars(
+            typeEnv, f1.usedTParams /*tc1*/, d1, r1)
+        //if(tc1.nonEmpty) println(s"$d11 $r11")
+        unifyList(te1, d11, d2).map{ case (te2, dd) =>
+          unify(te2, r11, r2).map{ case (te3, rr) =>
+            Ok((te3, FunctionType(List(), dd, rr)))
+          }
+        }
+/*
         unifyList(typeEnv, d1, d2).map{ case (te1, dd) =>
           unify(te1, r1, r2).map{ case (te2, rr) =>
             Ok((te2, FunctionType(List(), dd, rr)))
           }
         }
-// FIXME: I think if tc1.nonEmpty, we have to replace by TypeVars.  Test case:
-// def const[A,B](x: A): B => A = { def constX[C](y: C): A = x; constX }
+ */
 // Also improve error messages in this case. 
 
       case (_,_) => fail

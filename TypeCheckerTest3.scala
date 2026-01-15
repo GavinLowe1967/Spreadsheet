@@ -102,18 +102,26 @@ object TypeCheckerTest3{
     }
 
     val constS1 = constS+"val const3 = const(4); val constTrue = const(true)\n"
-    tcpss(constS1) match{ case Ok(te) => 
-      assert(te("const") == FunctionType(
-        List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
-        List(TypeParam("A")),
-        FunctionType(List(), List(TypeParam("B")), TypeParam("A")) ))
+    val constType = FunctionType(
+      List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
+      List(TypeParam("A")),
+      FunctionType(List(), List(TypeParam("B")), TypeParam("A")) )
+    tcpss(constS1) match{ case Ok(te) =>
+      assert(te("const") == constType)
       assert(te("const3") == FunctionType( // forall B, B => Int
         List(("B",AnyTypeConstraint)), List(TypeParam("B")), IntType ) )
       assert(te("constTrue") == FunctionType( // forall B, B => Bool
         List(("B",AnyTypeConstraint)), List(TypeParam("B")), BoolType ) )
     }
-// FIXME: get following to work
-    println(tcpss(constSC)); println()
+
+    tcpss(constSC+"val const3 = const(4); val constTrue = const(true)") match{
+      case Ok(te) =>
+        assert(te("const") == constType)
+        assert(te("const3") == FunctionType( // forall B, B => Int
+          List(("B",AnyTypeConstraint)), List(TypeParam("B")), IntType ) )
+        assert(te("constTrue") == FunctionType( // forall B, B => Bool
+          List(("B",AnyTypeConstraint)), List(TypeParam("B")), BoolType ) )
+    }
 
     tcpss(sndS+"val sx = snd(4); val x = sx(3); val y = sx(4.0)") match{ 
       case Ok(se) =>
@@ -135,12 +143,11 @@ object TypeCheckerTest3{
         List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
         List(FunctionType(List(), List(TypeParam("A")), TypeParam("B"))),
         FunctionType(List(), List(TypeParam("A")), TypeParam("B")) ))
-      println("c : "+te("c")) 
+      println("c: "+te("c")) 
         // case FunctionType(List(), List(TypeVar(ta)), 
         //     FunctionType(List(), List(TypeVar(tb)), TypeVar(ta)) ) =>
 // FIXME: I think those should be TypeVars
-      println("c3: "+
-te("c3"))
+      println("c3: "+te("c3"))
       assert(te("x") == IntType)
     }
 

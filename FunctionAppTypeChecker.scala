@@ -44,12 +44,12 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       val name = newName(); val te2 = te1 + (name, range1)
       typeCheckListUnify(te2, args, domain1).map{ te3 =>
         // Extract type of name, and add unusedTParams to FunctionType results
-        val (te4, res) = Substitution.subTypeParamsInResult(te3, unusedTParams, te3(name))
+        val (te4, res) = 
+          Substitution.subTypeParamsInResult(te3, unusedTParams, te3(name))
         Ok((te4.endScope, res))
       }
     }
   }
-
 
   /** Type check each element of es, unifying its type with the corresponding
     * element of ts. 
