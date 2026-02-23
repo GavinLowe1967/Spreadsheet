@@ -93,7 +93,7 @@ object TypeCheckerTest3{
       "def const[A,B](x: A): B => A = { def constX[C](y: C): A = x; constX }\n"
     val sndS = "def snd[A,B](x: A): B => B = { def id(y: B): B = y; id}\n"
     val applyS = 
-      "def apply[A,B](f: A => B): A => B = {def ff(x: A): B = f(x); ff }\n"
+      "def apply[A,B](f: A => B): A => B = { def ff(x: A): B = f(x); ff }\n"
 
     tcpss(addS+"val add3 = add(3)") match{ case Ok(te) =>
       assert(te("add") == FunctionType(
@@ -101,7 +101,10 @@ object TypeCheckerTest3{
       assert(te("add3") == FunctionType(List(), List(IntType), IntType))
     }
 
-    val constS1 = constS+"val const3 = const(4); val constTrue = const(true)\n"
+    // Test on first const definition
+    val constS1 = 
+      constS+"val const3 = const(4); val constTrue = const(true)\n"+
+        "val x = const3(3.4); val y = const3(false)\n"
     val constType = FunctionType(
       List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
       List(TypeParam("A")),
@@ -112,16 +115,23 @@ object TypeCheckerTest3{
         List(("B",AnyTypeConstraint)), List(TypeParam("B")), IntType ) )
       assert(te("constTrue") == FunctionType( // forall B, B => Bool
         List(("B",AnyTypeConstraint)), List(TypeParam("B")), BoolType ) )
+      assert(te("x") == IntType && te("y") == IntType)
     }
 
-    tcpss(constSC+"val const3 = const(4); val constTrue = const(true)") match{
+    // Test on second const definition. 
+    val constS2 = 
+      constSC+"val const3 = const(4); val constTrue = const(true)\n"+
+        "val x = const3(3.4); val y = const3(false)\n"
+    tcpss(constS2) match{
       case Ok(te) =>
         assert(te("const") == constType)
         assert(te("const3") == FunctionType( // forall B, B => Int
           List(("B",AnyTypeConstraint)), List(TypeParam("B")), IntType ) )
         assert(te("constTrue") == FunctionType( // forall B, B => Bool
           List(("B",AnyTypeConstraint)), List(TypeParam("B")), BoolType ) )
+      assert(te("x") == IntType && te("y") == IntType)
     }
+
 
     tcpss(sndS+"val sx = snd(4); val x = sx(3); val y = sx(4.0)") match{ 
       case Ok(se) =>
@@ -134,22 +144,34 @@ object TypeCheckerTest3{
         assert(se("x") == IntType && se("y") == FloatType)
     }
 
+println("======================================")
+
     val applyS1 = 
-      applyS+constS+"val c = apply(const); val c3 = c(3); val x = c3(5)"
-    // val y = c3(true)
+      applyS+constS+"val c = apply(const); val c3 = c(3); val x = c3(5);"+
+        "val y = c3(true); val cT = c(true); val t = cT(5)"
     //println(tcpss(applyS1))
     tcpss(applyS1) match{ case Ok(te) =>
       assert(te("apply") == FunctionType(
         List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
         List(FunctionType(List(), List(TypeParam("A")), TypeParam("B"))),
         FunctionType(List(), List(TypeParam("A")), TypeParam("B")) ))
-      println("c: "+te("c")) 
-        // case FunctionType(List(), List(TypeVar(ta)), 
-        //     FunctionType(List(), List(TypeVar(tb)), TypeVar(ta)) ) =>
-// FIXME: I think those should be TypeVars
-      println("c3: "+te("c3"))
-      assert(te("x") == IntType)
+      // println("c: "+te("c")) 
+      assert(te("c") == FunctionType(
+        List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
+        List(TypeParam("A")),
+        FunctionType(List(),List(TypeParam("B")),TypeParam("A")) ))
+      //println("c3: "+te("c3"))
+      assert(te("c3") == FunctionType(
+        List(("B",AnyTypeConstraint)), List(TypeParam("B")), IntType) )
+      assert(te("x") == IntType && te("y") == IntType)
+      assert(te("cT") == FunctionType(
+        List(("B",AnyTypeConstraint)), List(TypeParam("B")),BoolType) )
+
+      assert(te("t") == BoolType)
     }
+
+println("======================================")
+
 
   }
 

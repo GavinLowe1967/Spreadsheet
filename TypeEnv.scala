@@ -17,11 +17,11 @@ import TypeEnv._
   * @param constraints A mapping from type identifiers to constraints.
   * @param typeParamMap A mapping from TypeParamName to TypeConstraint
   * @param untypedCells The UntypedCellExps for which we are seeking the type.
-  * param cellTypeVarTypes map showing types for some UntypecCellExps.
+  * param cellTypeVarTypes map showing types for some UntypedCellExps.
   * @param stack The frames for outer scopes. 
   * Note: type environments are treated immutably. */
 class TypeEnv(
-  private val nameMap: NameMap, // = HashMap[Name, TypeT]
+  private val nameMap: NameMap, // = HashMap[Name, List[TypeT]]
   private val constraints: Constraints, // = HashMap[TypeID, TypeConstraint]
   private val typeParamMap: TypeParamMap, // HashMap[TypeParamName, TypeParamConstraint]
   private val untypedCells: List[UntypedCellExp],
@@ -178,6 +178,12 @@ class TypeEnv(
     // "def f[A](x: A, y: A): A = x; val y = f(3, true)"
     val newConstraints = constraints + (tId -> SingletonTypeConstraint(t))
     make(nameMap = newNameMap, constraints = newConstraints)
+  }
+
+  def map(f: TypeT => TypeT): TypeEnv = {
+    val newNameMap = nameMap.map{ case (n,ts) => (n,ts.map(f)) }
+    make(nameMap = newNameMap)
+// FIXME: also apply elsewhere
   }
 
   // ========= Scoping functions

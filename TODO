@@ -29,15 +29,63 @@ B. Consider val c = apply(const).  Ths gives
 FunctionType(List(), List(TypeVar(ta)), 
      FunctionType(List(), List(TypeVar(tb)), TypeVar(ta)) )
 But I think those TypeVars should be TypeParams, [A,B] A => (B => A).  The
-TypeParams in the type of const are replaced by TypeVars in
-FunctionAppTypeChecker.mkInstance.  IF we don't do this, we his problems with,
-e.g., applyToThree(id), which comes down to unifying
-FunctionType(List((A,AnyTypeConstraint)),List(TypeParam(A)),TypeParam(A)) 
-and FunctionType(List(),List(IntType),TypeVar(215)), much as in A.
+TypeParams in the type of apply are replaced by TypeVars by
+replaceTypeParamsByTypeVars in FunctionAppTypeChecker.checkFunctionApp1.
+The TypeParams in the type of const are replaced by TypeVars by mkInstance in
+typeCheckListUnify. 
+
+
 
 *** Possible way forward.  Do the point in A.  This needs more thought.  What
 happens if we then remove the use of mkInstance?  
 
+In the apply(const) example
+FunctionAppTypeChecker.checkFunctionApp(...) -> 
+FunctionAppTypeChecker.checkFunctionApp1(...) -> 
+FunctionAppTypeChecker.typeCheckListUnify(..., List(const), 
+ List( tf = FunctionType(List(), List(TypeVar(271)), TypeVar(272)) ) )
+const: FunctionType(
+  List((A,AnyTypeConstraint), (B,AnyTypeConstraint)),
+  List(TypeParam(A)), FunctionType(List(),List(TypeParam(B)),TypeParam(A))
+) -> ta = FunctionType(
+  List(), List(TypeVar(273)), 
+  FunctionType(List(),List(TypeVar(274)),TypeVar(273))
+)
+unify(ta, tf) gives (in constraints)
+{ 271 -> 273, 272 -> FunctionType(List(),List(TypeVar(274)),TypeVar(273)) }
+but we'd like those to be A and B.
+The type of apply(const) is given as FunctionType(
+  List(),List(TypeVar(273)),FunctionType(List(),List(TypeVar(274)),TypeVar(273)))
+but we'd like FunctionType(
+  List((A,AnyTypeConstraint), (B,AnyTypeConstraint)),
+  List(TypeParam(A)), FunctionType(List(),List(TypeParam(B)),TypeParam(A))
+)
+If we remove the use of mkInstance, we get
+FunctionType(
+  List(), List(TypeVar(269)), 
+  FunctionType(List(),List(TypeParam(B)),TypeVar(269))
+)
+Why?  Because unify replaces those parameters. 
+1. Try getting rid of that latter.
+
+Log of changes:
+- FATC.typecheckListUnify -- use of mkInstance
+- Unification.unify -- ise of replaceTypeParamsByTypeVars -- undone
+- Substitution.remapTypeVarsBackToTypeParams in Unification.unify
+
+*** Try re-instating mkInstance, and then rename back. 
+
+If we don't do this, we hit problems with,
+e.g., applyToThree(id), which comes down to unifying
+FunctionType(List((A,AnyTypeConstraint)),List(TypeParam(A)),TypeParam(A)) 
+and FunctionType(List(),List(IntType),TypeVar(215)).  This should give FunctionType(List(),List(IntType),TypeVar(IntType)). 
+** Think about unification of function arguments.
+
+2. If that doesn't work, what happens if we reverse the use of mkInstance
+after unification?
+
+
+-----------------
 
 LATER: Parsing of curried function declarations.  Translate into uncurried form,
 e.g. def f[A,B](x: A)(y: B): C = e --> 

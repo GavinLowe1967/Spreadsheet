@@ -1,5 +1,7 @@
 package spreadsheet
 
+import Substitution.{ inverse, remapTypeVarsBackToTypeParams}
+
 /** Unification of types. */
 object Unification{
 
@@ -101,14 +103,21 @@ object Unification{
 
       case (f1 @ FunctionType(tc1,d1,r1), FunctionType(tc2,d2,r2)) =>  
         assert(tc2.isEmpty)
-        if(tc1.nonEmpty) println(s"Unifying $t1\n and $t2\n")
-        val (te1, d11, r11) = 
+        // if(tc1.nonEmpty) println(s"Unifying $t1\n and $t2\n")
+        val (te1, d11, r11, typeMap) = // (typeEnv, d1, r1)
           Substitution.replaceTypeParamsByTypeVars(
             typeEnv, f1.usedTParams /*tc1*/, d1, r1)
         //if(tc1.nonEmpty) println(s"$d11 $r11")
         unifyList(te1, d11, d2).map{ case (te2, dd) =>
+//if(tc1.nonEmpty) println(s"$d11 $d2 -> $dd")
           unify(te2, r11, r2).map{ case (te3, rr) =>
-            Ok((te3, FunctionType(List(), dd, rr)))
+            val ft1 = FunctionType(List(), dd, rr)
+            val typeParams = tc1 // IMPROVE typeMap.keys.toList
+            val ft2 = remapTypeVarsBackToTypeParams(
+              inverse(typeMap), typeParams, ft1)
+//println(s"f1 = $f1 -> \n ft1 = $ft1 -> \n $ft2; typeMap = $typeMap")
+            Ok((te3, ft2))
+// FIXME: use typeMap
           }
         }
 /*
