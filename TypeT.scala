@@ -1,7 +1,7 @@
 package spreadsheet
 
 import TypeVar.TypeID
-import TypeParam.TypeParamName
+import TypeParam.{TypeParamName, TypeParamMap}
 
 /** The trait representing all type expressions. */
 trait TypeT{
@@ -9,6 +9,11 @@ trait TypeT{
 
   /** The type parameters included in this type. */
   def typeParams: List[TypeParamName]
+
+  /** Rename the type parameters according to f.  Also rename newly bound type
+    * parameters that name-clash with a member of tps to fresh values.  Here
+    * dom f is a subset of tps. */
+  def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]): TypeT
 }
 
 object TypeT{
@@ -29,6 +34,7 @@ object TypeT{
 case class TypeVar(tv: TypeID) extends TypeT{
   def asString = s"t$tv"                   
   def typeParams = List()
+  def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = this
 }
 
 // =========
@@ -47,6 +53,7 @@ object TypeVar{
 case class CellTypeVar(tv: TypeID) extends TypeT{
   def asString = s"t$tv"                   
   def typeParams = List()
+  def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = this
 }
 
 // ==================================================================
@@ -55,10 +62,30 @@ case class CellTypeVar(tv: TypeID) extends TypeT{
 case class TypeParam(name: String) extends TypeT{
   def asString = name 
   def typeParams = List(name)
+  def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) =
+    f.get(name) match{
+      case Some(n1) => TypeParam(n1); case None => this 
+    }
 }
 
 object TypeParam{
   type TypeParamName = String
+
+  type TypeParamMap = 
+    scala.collection.immutable.Map[TypeParamName, TypeParamName]
+
+  /** Map to control production of new names for type parameters.  If
+    * `newNameMap(name) = n` then the most recent fresh name for `name` was
+    * `name`#`n`. */
+  private val newNameMap = 
+    new scala.collection.mutable.HashMap[TypeParamName, Int]
+
+  /** Get a fresh name corresponding to `name`. */
+  def getNewName(name: TypeParamName): TypeParamName = {
+    val n = newNameMap.get(name) match{ case Some(m) => m+1; case None => 0 }
+    newNameMap += name -> n
+    s"$name#$n"
+  }
 }
 
 // ==================================================================
@@ -69,6 +96,7 @@ trait EqType extends TypeT
 /** Marker trait for base types, i.e. atomic. */
 trait BaseType extends TypeT{
   def typeParams = List()
+  def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = this
 }
 
 /** A marker trait for types that can appear in cells of the spreadsheet. */
@@ -113,7 +141,11 @@ case object ErrorType extends CellType{
 /** The type of lists with underlying type `underlying`. */
 case class ListType(underlying: TypeT) extends TypeT{
   def asString = { val u = underlying.asString; s"List[$u]" }
+
   def typeParams = underlying.typeParams
+
+  def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = 
+    ListType(underlying.renameTypeParams(f, tps))
 }
 
 // ==================================================================

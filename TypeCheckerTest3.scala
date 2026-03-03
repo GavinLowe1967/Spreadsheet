@@ -144,34 +144,68 @@ object TypeCheckerTest3{
         assert(se("x") == IntType && se("y") == FloatType)
     }
 
-println("======================================")
+//println("======================================")
 
     val applyS1 = 
       applyS+constS+"val c = apply(const); val c3 = c(3); val x = c3(5);"+
         "val y = c3(true); val cT = c(true); val t = cT(5)"
-    //println(tcpss(applyS1))
     tcpss(applyS1) match{ case Ok(te) =>
       assert(te("apply") == FunctionType(
         List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
         List(FunctionType(List(), List(TypeParam("A")), TypeParam("B"))),
         FunctionType(List(), List(TypeParam("A")), TypeParam("B")) ))
-      // println("c: "+te("c")) 
       assert(te("c") == FunctionType(
         List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
         List(TypeParam("A")),
         FunctionType(List(),List(TypeParam("B")),TypeParam("A")) ))
-      //println("c3: "+te("c3"))
       assert(te("c3") == FunctionType(
         List(("B",AnyTypeConstraint)), List(TypeParam("B")), IntType) )
       assert(te("x") == IntType && te("y") == IntType)
       assert(te("cT") == FunctionType(
         List(("B",AnyTypeConstraint)), List(TypeParam("B")),BoolType) )
-
       assert(te("t") == BoolType)
     }
 
 println("======================================")
 
+    val s2 = 
+      // foo(f)(x) = y
+      "def foo[A,B,C](f: A => C): B => A => C = { "+
+        "def ff(x: B): A => C = f; ff }\n "+
+        "def g[A](y: A): Int = 3; val h = foo(g)"
+    tcpss(s2) match{ case Ok(te) => 
+      assert(te("foo") == FunctionType(
+        List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint),
+          ("C",AnyTypeConstraint)),
+        List(FunctionType(List(), List(TypeParam("A")), TypeParam("C"))),
+        FunctionType(List(), List(TypeParam("B")),
+          FunctionType(List(), List(TypeParam("A")), TypeParam("C")))
+      ))
+      assert(te("g") == FunctionType(
+        List(("A",AnyTypeConstraint)), List(TypeParam("A")), IntType ))
+      //println(te("g"))
+      assert(te("h") == FunctionType(
+        List(("A", AnyTypeConstraint), ("B", AnyTypeConstraint)),
+        List(TypeParam("B")),
+        FunctionType(List(), List(TypeParam("A")), IntType)
+      ))
+      // Should be [A,B] B => A => Int
+      println(te("h"))
+    }
+
+println("======================================")
+
+// Following currently produces name capture, leading to exception thrown in
+// Substitution.remapInResult for type A => A => Int.
+
+
+    val s3 = 
+      // foo(f)(x) = y
+      "def foo[A,B,C](f: B => C): A => B => C = { "+
+        "def ff(x: A): B => C = f; ff }\n "+
+        "def g[A](y: A): Int = 3; val h = foo(g)"
+    println(tcpss(s3))
+    // Should have h: [A1,A]: A1 => A => Int for fresh name A1
 
   }
 

@@ -1,6 +1,6 @@
 package spreadsheet
 
-import Substitution.{ inverse, remapTypeVarsBackToTypeParams}
+import Substitution.{replaceTypeParamsByTypeVars, inverse, reverseRemapBy}
 
 /** Unification of types. */
 object Unification{
@@ -103,30 +103,24 @@ object Unification{
 
       case (f1 @ FunctionType(tc1,d1,r1), FunctionType(tc2,d2,r2)) =>  
         assert(tc2.isEmpty)
-        // if(tc1.nonEmpty) println(s"Unifying $t1\n and $t2\n")
-        val (te1, d11, r11, typeMap) = // (typeEnv, d1, r1)
-          Substitution.replaceTypeParamsByTypeVars(
-            typeEnv, f1.usedTParams /*tc1*/, d1, r1)
-        //if(tc1.nonEmpty) println(s"$d11 $r11")
+//if(false){
+        // Replace type parameters
+        val (te1, d11, r11, typeMap) =
+          replaceTypeParamsByTypeVars(typeEnv, f1.usedTParams, d1, r1)
         unifyList(te1, d11, d2).map{ case (te2, dd) =>
-//if(tc1.nonEmpty) println(s"$d11 $d2 -> $dd")
           unify(te2, r11, r2).map{ case (te3, rr) =>
+            // Replace type parameters
             val ft1 = FunctionType(List(), dd, rr)
-            val typeParams = tc1 // IMPROVE typeMap.keys.toList
-            val ft2 = remapTypeVarsBackToTypeParams(
-              inverse(typeMap), typeParams, ft1)
-//println(s"f1 = $f1 -> \n ft1 = $ft1 -> \n $ft2; typeMap = $typeMap")
+            val ft2 = reverseRemapBy(inverse(typeMap), tc1, ft1)
             Ok((te3, ft2))
-// FIXME: use typeMap
           }
         }
-/*
-        unifyList(typeEnv, d1, d2).map{ case (te1, dd) =>
-          unify(te1, r1, r2).map{ case (te2, rr) =>
-            Ok((te2, FunctionType(List(), dd, rr)))
-          }
-        }
- */
+//}
+// else{
+//        unifyList(typeEnv, d1, d2).map{ case (te2, dd) =>
+//          unify(te2, r1, r2)
+//        }
+// }
 // Also improve error messages in this case. 
 
       case (_,_) => fail

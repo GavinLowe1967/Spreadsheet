@@ -73,7 +73,17 @@ object Substitution{
     case ListType(underlying) => 
       ListType(remapInResult(tParams, typeMap, underlying))
     case FunctionType(params, domain, range) =>
-      assert(params.forall{ case (tp,_) => !typeMap.contains(tp) })
+      // Following false
+      // assert(params.forall{ case (tp,_) => !typeMap.contains(tp) },
+      //   s"t = $t;\nparams = $params;\ntypeMap = $typeMap")
+// TODO: rename any names in paras \inter tParams to fresh names.  Then recurse 
+// on domain and range.
+      // if(true || params.nonEmpty) println(t)
+      // var tm = typeMap
+      // for((n,_) <- params) tm = tm.removed(n)
+      // FunctionType(params, domain.map(remapInResult(tParams, tm, _)), 
+      //   remapInResult(tParams, tm, range))
+
       FunctionType(params++tParams, domain, range)
     case _ => t
   }
@@ -91,46 +101,36 @@ object Substitution{
   // ========= Reverse mapping
 
   /** Maps from type variables to type parameters. */
-  private type ReverseTypeMap = HashMap[TypeVar, TypeParamName]
+  type ReverseTypeMap = HashMap[TypeVar, TypeParamName]
+
+  def union(m1: ReverseTypeMap, m2: ReverseTypeMap): ReverseTypeMap = {
+    // Check m1 and m2 agree on common TypeVars
+    for((tv,tp) <- m2) m1.get(tv) match{
+      case Some(tp1) => assert(tp == tp1); case None => {}
+    }
+    m1 ++ m2
+  }
+
+  val emptyMap: ReverseTypeMap = new ReverseTypeMap
 
   /** Remap t according to rtMap, adding tParams as type parameters. */
-  private def reverseRemapBy(
+  def reverseRemapBy(
     rtMap: ReverseTypeMap, tParams: List[TypeParameter], t: TypeT
   ): TypeT = t match{
     case tv: TypeVar => 
       rtMap.get(tv) match{ case Some(tp) => TypeParam(tp); case None => t }
     case ListType(u) => ListType(reverseRemapBy(rtMap, tParams, u))
     case FunctionType(params, domain, range) =>
-      // FIXME: remove repetitions? 
-      FunctionType(params++tParams, domain.map(reverseRemapBy(rtMap, List(), _)),
-        reverseRemapBy(rtMap, List(), range)) 
+      // remove repetitions
+      val captured = params.filter{ case (n,_) => tParams.exists{ case (n1,_) => n1 == n } }
+// FIXME: if params contains any element of tParams, rename that to avoid capture.
+      if(captured.nonEmpty) println(s"reverseRemapBy $t\n$tParams\n$captured")
+      val tParams1 = tParams.filter(x => !params.contains(x))
+      FunctionType(params++tParams1, 
+        domain.map(reverseRemapBy(rtMap, List(), _)),
+        reverseRemapBy(rtMap, List(), range))
     case t => t
   }
-
-/*
-  /** Normalise t, adding type parameters in the top-level FunctionType. */
-  private def normalise(t: TypeT): TypeT = t match{
-    case TypeParam(_) => ??? // I think this shouldn't happen
-    case ListType(u) => ListType(normalise(u))
-    case FunctionType(params, domain, range) => ???
-    case t => t
-  }
-
-  /** Find all type parameters in t, and separate them out.  This is called when
-    * t is part of a FunctionType ft; the type parameters need to be added to
-    * ft. */
-  private def normalise1(t: TypeT): (TypeT, Set[TypeParamName]) = t match{
-    case TypeParam(tp) => (t, Set(tp))
-    case ListType(u) => val (u1, ps) = normalise1(u); (ListType(u1), ps)
-    case FunctionType(params, domain, range) => 
-      val dd = domain.map(normalise1); val (rt,rps) = normalise1(range)
-      val dps: Set[TypeParamName] = Set.concat(dd.map(_._2))
-      val ps = Set.from(params).union(dps).union(rps)
-      (FunctionType(List(), dd.map(_._1), rt), ps)
-  }
- */
-
-
 
   /** The inverse of map.  Assumes that map is injective. */
   def inverse[A,B](map: HashMap[A,B]): HashMap[B,A] = {
@@ -139,14 +139,6 @@ object Substitution{
     for((x,y) <- map){ assert(!newMap.contains(y)); newMap += y -> x }
     newMap
   }
-
-  /** Remap type variables back to type parameters by the inverse of map, adding
-    * tParams as type parameters. */ 
-  def remapTypeVarsBackToTypeParams(
-    map: ReverseTypeMap, tParams: List[TypeParameter], t: TypeT
-  ): TypeT =
-    reverseRemapBy(map, tParams, t)
-// IMPROVE: we don't need this function -- use reverseMapBy directly
 
 }
 

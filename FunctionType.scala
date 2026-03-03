@@ -1,6 +1,7 @@
 package spreadsheet
 
 import FunctionType._
+import TypeParam.{TypeParamName, TypeParamMap}
 
 /** The type of functions from `domain` to `range`. 
   * @param params A list of free type identities, paired with a constraint upon
@@ -12,8 +13,21 @@ case class FunctionType(
     domain.map(_.asString).mkString("(", ",", ")")+" => "+range.asString
 
   def typeParams = {
-    assert(params.isEmpty)    // IMPROVE ???
-    domain.flatMap(_.typeParams) ++ range.typeParams
+    // assert(params.isEmpty)    // IMPROVE ???
+    (params.map(_._1) ++ domain.flatMap(_.typeParams) ++ range.typeParams
+    ).distinct
+  }
+
+  def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = {
+    // Extend f to map any new parameter names that clash with an element of
+    // tps to a new name.
+    val f1 = f ++ (
+      for((n,_) <- params; if tps.contains(n))
+      yield n -> TypeParam.getNewName(n) )
+    FunctionType(
+      params.map{ case (v,c) => (f1.getOrElse(v, v), c) },
+      domain.map(_.renameTypeParams(f,tps)), range.renameTypeParams(f,tps)
+    )
   }
 
   /** Type parameters that are used not in domain. */

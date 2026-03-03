@@ -2,13 +2,13 @@ package spreadsheet
 
 import Unification.unify
 import TypeVar.{TypeID,nextTypeID} // Type variables (Ints)
-import FunctionType.TypeParameter // (TypeParamName, TypeParamConstraint)
-import TypeParam.TypeParamName // Names of type parameters (Strings)
+import FunctionType.TypeParameter  // (TypeParamName, TypeParamConstraint)
+import TypeParam.TypeParamName   // Names of type parameters (Strings)
 import NameExp.Name // Names of identifiers (Strings)
 import TypeT.showList
 import TypeChecker0.{TypeCheckRes}
 import Substitution.{
-  replaceTypeParamsByTypeVars, TypeMap, inverse, remapTypeVarsBackToTypeParams}
+  replaceTypeParamsByTypeVars, TypeMap, ReverseTypeMap, inverse, union, emptyMap, reverseRemapBy}
 
 /** Type checking of function applications. */
 class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
@@ -27,11 +27,13 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       case _ => FailureR("Non-function applied as function")
     }
 
+// FIXME: rename any type parameters in args that clash with names in ft
+
   /** Typecheck the application of a function of type ft to args. */
   private 
   def checkFunctionApp1(typeEnv: TypeEnv, ft: FunctionType, args: List[Exp])
       : TypeCheckRes = {
-// println(s"checkFunctionApp1(\n\t$ft,\n\t$args)")
+println(s"checkFunctionApp1(\n\t$ft,\n\t$args)")
     val FunctionType(tParams, domain, range) = ft
     if(domain.length != args.length)
       FailureR(s"Expected ${domain.length} arguments, found "+args.length)
@@ -45,11 +47,13 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       // then unify the types of args with domain1, so the new name gets
       // updated to the appropriate return type.
       val name = newName(); val te2 = te1 + (name, range1)
-      typeCheckListUnify(te2, args, domain1).map{ te3 =>
+      typeCheckListUnify(te2, args, domain1).map{ case (te3,invMap) =>
 // println(s"${te3(name)}")
         // Extract type of name, and add unusedTParams to FunctionType results
+        val tParams = (for((_,tp) <- invMap) yield (tp,AnyTypeConstraint)).toList
+        val result = reverseRemapBy(invMap, tParams, te3(name))
         val (te4, res) = 
-          Substitution.subTypeParamsInResult(te3, unusedTParams, te3(name))
+          Substitution.subTypeParamsInResult(te3, unusedTParams, result /* te3(name) */)
 // TODO: Add tParams in res 
         Ok((te4.endScope, res))
       }
@@ -63,25 +67,38 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     * expected types ts.  */
   private 
   def typeCheckListUnify(typeEnv: TypeEnv, es: List[Exp], ts: List[TypeT])
-      : Reply[TypeEnv] = 
-    if(es.isEmpty){ assert(ts.isEmpty); Ok(typeEnv) }
+      : Reply[(TypeEnv, ReverseTypeMap)] = 
+    if(es.isEmpty){ assert(ts.isEmpty); Ok((typeEnv, emptyMap)) }
     else etc.typeCheck(typeEnv, es.head).map{ case (te1,t1) => 
+      // Rename type variables to avoid name clashes
+// FIXME: Should we be avoiding other names?
+      val t11 = t1 // .renameTypeParams(Map[TypeParamName,TypeParamName](), 
+        // ts.head.typeParams.toSet)
+if(t11 != t1) println(s"typeCheckListUnify:\n${es.head}: $t1 (${ts.head}) ->\n  $t11")
+// IMPROVE
       // If t1 is a FunctionType, instantiate type parameters
-      val (te2,t2,typeMap) = mkInstance(te1,t1) 
-// println(s"typeCheckListUnify:\n\t${es.head}: $t1\n\t -> $t2;\n\t unifying with ${ts.head} \n via $typeMap")
+// FIXME: need to avoid name capture.
+      val (te2,t2,typeMap) = mkInstance(te1,t11) 
+println(s"typeCheckListUnify:\n\t${es.head}: $t1\n\t -> $t2;\n\t unifying with ${ts.head} \n via $typeMap")
       // Unify with formal parameter type in ts, and recurse.
       unify(te2, t2, ts.head).lift(es.head, true).map{ case (te3, _) => 
         // Replace type parameters
         val te4 =
-          if(typeMap == null) te3 
+// IMPROVE
+          if(true || typeMap == null) te3 
           else{
+            println(s"te3 = $te3\n")
             assert(t1.isInstanceOf[FunctionType])
             val FunctionType(tParams,_,_) = t1
-            val invMap = inverse(typeMap); //val tParams = t1.params // ypeMap.keys.toList
-            //println(s"tParams = $tParams; t1 = $t1")
-            te3.map(remapTypeVarsBackToTypeParams(invMap,tParams, _))
+            val invMap = inverse(typeMap)
+            assert(typeMap.keys.toSet == tParams.map(_._1).toSet, 
+              s"typeMap = $typeMap\ntParams == $tParams")
+            te3.map(reverseRemapBy(invMap, tParams, _))
           }
-        typeCheckListUnify(te4, es.tail, ts.tail)
+        typeCheckListUnify(te4, es.tail, ts.tail).map{ case (te5, invMap) =>
+          val invMap1 = if(typeMap == null) emptyMap else inverse(typeMap)
+          Ok((te5, union(invMap, invMap1)))
+        }
       }
     }
 
