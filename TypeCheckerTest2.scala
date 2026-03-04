@@ -277,7 +277,8 @@ object TypeCheckerTest2{
     tcpss( script0+"val y = applyToThree(id)") match{ case Ok(te) =>
       assert(te("y") == IntType)}
     // ===== applyX (returning Int)
-    tcpss(script0+"val y = applyX(three, true)") match{ case Ok(te) => 
+//println("=======================================================")
+    tcpss(applyXS+threeS+"val y = applyX(three, true)") match{ case Ok(te) => 
       assert(te("y") == IntType)
     }
   }

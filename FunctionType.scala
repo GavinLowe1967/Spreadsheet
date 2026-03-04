@@ -26,7 +26,7 @@ case class FunctionType(
       yield n -> TypeParam.getNewName(n) )
     FunctionType(
       params.map{ case (v,c) => (f1.getOrElse(v, v), c) },
-      domain.map(_.renameTypeParams(f,tps)), range.renameTypeParams(f,tps)
+      domain.map(_.renameTypeParams(f1,tps)), range.renameTypeParams(f1,tps)
     )
   }
 

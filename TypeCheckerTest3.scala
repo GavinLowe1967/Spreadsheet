@@ -154,19 +154,39 @@ object TypeCheckerTest3{
         List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
         List(FunctionType(List(), List(TypeParam("A")), TypeParam("B"))),
         FunctionType(List(), List(TypeParam("A")), TypeParam("B")) ))
-      assert(te("c") == FunctionType(
-        List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
-        List(TypeParam("A")),
-        FunctionType(List(),List(TypeParam("B")),TypeParam("A")) ))
-      assert(te("c3") == FunctionType(
-        List(("B",AnyTypeConstraint)), List(TypeParam("B")), IntType) )
+      //println(te("c"))
+      te("c") match{
+        case FunctionType(
+          List((a ,AnyTypeConstraint), (b ,AnyTypeConstraint)),
+          List(TypeParam(a1)),
+          FunctionType(List(),List(TypeParam(b1)),TypeParam(a2)) 
+        ) => assert(a1 == a && a2 == a && b1 == b)
+      }
+      // assert(te("c") == FunctionType(
+      //   List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
+      //   List(TypeParam("A")),
+      //   FunctionType(List(),List(TypeParam("B")),TypeParam("A")) ))
+      //println(te("c3"))
+      te("c3") match{
+        case FunctionType(
+          List((b,AnyTypeConstraint)), List(TypeParam(b1)), IntType
+        ) => assert(b == b1) 
+      }
+      // assert(te("c3") == FunctionType(
+      //   List(("B",AnyTypeConstraint)), List(TypeParam("B")), IntType) )
       assert(te("x") == IntType && te("y") == IntType)
-      assert(te("cT") == FunctionType(
-        List(("B",AnyTypeConstraint)), List(TypeParam("B")),BoolType) )
+      //println(te("cT"))
+      te("cT") match{
+        case FunctionType(
+          List((b,AnyTypeConstraint)), List(TypeParam(b1)), BoolType
+        ) => assert(b == b1) 
+      }
+      // assert(te("cT") == FunctionType(
+      //   List(("B",AnyTypeConstraint)), List(TypeParam("B")),BoolType) )
       assert(te("t") == BoolType)
     }
 
-println("======================================")
+// println("======================================")
 
     val s2 = 
       // foo(f)(x) = y
@@ -183,14 +203,20 @@ println("======================================")
       ))
       assert(te("g") == FunctionType(
         List(("A",AnyTypeConstraint)), List(TypeParam("A")), IntType ))
-      //println(te("g"))
-      assert(te("h") == FunctionType(
-        List(("A", AnyTypeConstraint), ("B", AnyTypeConstraint)),
-        List(TypeParam("B")),
-        FunctionType(List(), List(TypeParam("A")), IntType)
-      ))
+      // println(te("h"))
+      te("h") match{ 
+        case FunctionType(
+          List((a, AnyTypeConstraint), ("B", AnyTypeConstraint)),
+          List(TypeParam("B")),
+          FunctionType(List(), List(TypeParam(a1)), IntType)
+        ) => assert(a1 == a)
+      }
+      // assert(te("h") == FunctionType(
+      //   List(("A", AnyTypeConstraint), ("B", AnyTypeConstraint)),
+      //   List(TypeParam("B")),
+      //   FunctionType(List(), List(TypeParam("A")), IntType)
+      // ))
       // Should be [A,B] B => A => Int
-      println(te("h"))
     }
 
 println("======================================")
@@ -204,7 +230,24 @@ println("======================================")
       "def foo[A,B,C](f: B => C): A => B => C = { "+
         "def ff(x: A): B => C = f; ff }\n "+
         "def g[A](y: A): Int = 3; val h = foo(g)"
-    println(tcpss(s3))
+    //println(tcpss(s3))
+    tcpss(s3) match{ case Ok(te) => 
+      assert(te("foo") == FunctionType(
+        List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint),
+          ("C",AnyTypeConstraint)),
+        List(FunctionType(List(), List(TypeParam("B")), TypeParam("C"))),
+        FunctionType(List(), List(TypeParam("A")),
+          FunctionType(List(), List(TypeParam("B")), TypeParam("C")))
+      ))
+      //println(te("h"))
+      te("h") match{ 
+        case FunctionType(
+          List((a,AnyTypeConstraint), ("A",AnyTypeConstraint)),
+          List(TypeParam("A")),
+          FunctionType(List(), List(TypeParam(a1)), IntType)
+        ) => assert(a1 == a)
+      }
+    }
     // Should have h: [A1,A]: A1 => A => Int for fresh name A1
 
   }

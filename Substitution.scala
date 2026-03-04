@@ -19,6 +19,8 @@ object Substitution{
   /** Type of substitutions of type parameters by type variables. */
   type TypeMap = HashMap[TypeParamName, TypeVar]
 
+  val emptyTypeMap = new TypeMap
+
   /** Remap t according to typeMap, replacing TypeParams by TypeVars. */
   def remapBy(typeMap: TypeMap, t: TypeT): TypeT = t match{
     case TypeParam(tp) => 
@@ -111,7 +113,7 @@ object Substitution{
     m1 ++ m2
   }
 
-  val emptyMap: ReverseTypeMap = new ReverseTypeMap
+  val emptyRevMap: ReverseTypeMap = new ReverseTypeMap
 
   /** Remap t according to rtMap, adding tParams as type parameters. */
   def reverseRemapBy(
@@ -122,9 +124,9 @@ object Substitution{
     case ListType(u) => ListType(reverseRemapBy(rtMap, tParams, u))
     case FunctionType(params, domain, range) =>
       // remove repetitions
-      val captured = params.filter{ case (n,_) => tParams.exists{ case (n1,_) => n1 == n } }
+      val captured = tParams.filter{ case (n,_) => t.typeParams.contains(n) }
 // FIXME: if params contains any element of tParams, rename that to avoid capture.
-      if(captured.nonEmpty) println(s"reverseRemapBy $t\n$tParams\n$captured")
+      if(captured.nonEmpty) println(s"reverseRemapBy $t\n$tParams\ncaptured = $captured")
       val tParams1 = tParams.filter(x => !params.contains(x))
       FunctionType(params++tParams1, 
         domain.map(reverseRemapBy(rtMap, List(), _)),
@@ -133,11 +135,14 @@ object Substitution{
   }
 
   /** The inverse of map.  Assumes that map is injective. */
-  def inverse[A,B](map: HashMap[A,B]): HashMap[B,A] = {
+  def inverse[A,B](map: TypeMap): ReverseTypeMap = {
     assert(map != null)
-    val newMap = new HashMap[B,A]
-    for((x,y) <- map){ assert(!newMap.contains(y)); newMap += y -> x }
-    newMap
+    if(map eq emptyTypeMap) emptyRevMap
+    else{
+      val newMap = new ReverseTypeMap 
+      for((x,y) <- map){ assert(!newMap.contains(y)); newMap += y -> x }
+      newMap
+    }
   }
 
 }
