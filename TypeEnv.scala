@@ -93,6 +93,9 @@ class TypeEnv(
   def addConstraints(pairs: List[(TypeID, TypeConstraint)]): TypeEnv = 
     make(constraints = constraints ++ pairs)
 
+  /** Get the constraint associated with tid. */
+  def getConstraint(tid: TypeID): TypeConstraint = constraints(tid)
+
 /*
   /** Is t an equality type? */
   def isEqType(t: TypeT): Boolean = t match{

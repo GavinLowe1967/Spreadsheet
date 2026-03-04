@@ -157,10 +157,12 @@ object TypeCheckerTest3{
       //println(te("c"))
       te("c") match{
         case FunctionType(
-          List((a ,AnyTypeConstraint), (b ,AnyTypeConstraint)),
+          List((a, AnyTypeConstraint), (b, AnyTypeConstraint)),
           List(TypeParam(a1)),
-          FunctionType(List(),List(TypeParam(b1)),TypeParam(a2)) 
-        ) => assert(a1 == a && a2 == a && b1 == b)
+          FunctionType(List(), List(TypeParam(b1)), TypeParam(a2)) 
+        ) => assert(a1 == a2 && Set(a,b) == Set(a1,b1) && a != b)
+          // Note: the ordering of the type parameters is
+          // implementation-dependent.
       }
       // assert(te("c") == FunctionType(
       //   List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),

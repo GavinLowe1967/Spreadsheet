@@ -16,15 +16,16 @@ object Substitution{
     case _ => t1
   }
 
-  /** Type of substitutions of type parameters by type variables. */
-  type TypeMap = HashMap[TypeParamName, TypeVar]
+  /** Type of substitutions of type parameters by type variables.  Also store
+    * the constraint associated with each type parameter. */
+  type TypeMap = HashMap[TypeParamName, (TypeVar, TypeParamConstraint)]
 
   val emptyTypeMap = new TypeMap
 
   /** Remap t according to typeMap, replacing TypeParams by TypeVars. */
   def remapBy(typeMap: TypeMap, t: TypeT): TypeT = t match{
     case TypeParam(tp) => 
-      typeMap.get(tp) match{ case Some(t1) => t1; case None => t }
+      typeMap.get(tp) match{ case Some((t1,_)) => t1; case None => t }
 
     case ListType(underlying) => ListType(remapBy(typeMap, underlying))
 
@@ -43,7 +44,7 @@ object Substitution{
     val typeMap = new TypeMap
     var constraints = List[(TypeID, TypeConstraint)]()
     for((p,c) <- tParams){
-      val tId = nextTypeID(); typeMap += ((p, TypeVar(tId)))
+      val tId = nextTypeID(); typeMap += ((p, (TypeVar(tId), c)))
       constraints ::= (tId,c)
     }
     (typeMap, constraints)
@@ -71,7 +72,7 @@ object Substitution{
       : TypeT = t match{
     case TypeParam(tp) => 
       typeMap.get(tp) match{ 
-        case Some(t1) => /*println(s"$tp -> $t1");*/ t1; case None => t 
+        case Some((t1,_)) => /*println(s"$tp -> $t1");*/ t1; case None => t 
       }
     case ListType(underlying) => 
       ListType(remapInResult(tParams, typeMap, underlying))
@@ -97,7 +98,7 @@ object Substitution{
   // ========= Reverse mapping
 
   /** Maps from type variables to type parameters. */
-  type ReverseTypeMap = HashMap[TypeVar, TypeParamName]
+  type ReverseTypeMap = HashMap[TypeVar, (TypeParamName, TypeParamConstraint)]
 
   /** An empty ReverseTypeMap. */
   val emptyRevMap: ReverseTypeMap = new ReverseTypeMap
@@ -117,7 +118,7 @@ object Substitution{
     rtMap: ReverseTypeMap, tParams: List[TypeParameter], t: TypeT)
       : TypeT = t match{
     case tv: TypeVar => 
-      rtMap.get(tv) match{ case Some(tp) => TypeParam(tp); case None => t }
+      rtMap.get(tv) match{ case Some((tp,_)) => TypeParam(tp); case None => t }
     case ListType(u) => ListType(reverseRemapBy(rtMap, tParams, u))
     case FunctionType(params, domain, range) =>
       assert(tParams.forall{ case (n,_) =>
@@ -133,7 +134,7 @@ object Substitution{
     if(map eq emptyTypeMap) emptyRevMap
     else{
       val newMap = new ReverseTypeMap 
-      for((x,y) <- map){ assert(!newMap.contains(y)); newMap += y -> x }
+      for((x,(y,c)) <- map){ assert(!newMap.contains(y)); newMap += y -> (x,c) }
       newMap
     }
   }

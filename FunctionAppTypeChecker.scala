@@ -51,9 +51,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
         case (te3,invMap) =>
           // Extract type of name.  Need to apply invMap to reverse renaming 
           // done in typeCheckListUnify.
-// FIXME: wrong constraints
-          val tParams = 
-            (for((_,tp) <- invMap) yield (tp,AnyTypeConstraint)).toList
+          val tParams = invMap.toList.map(_._2) // type parameters
           val res0 = reverseRemapBy(invMap, tParams, te3(name))
           // Add unusedTParams to FunctionType results, and replace other type
           // parametres by fresh type variables..
