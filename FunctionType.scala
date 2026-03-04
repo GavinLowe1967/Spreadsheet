@@ -36,8 +36,6 @@ case class FunctionType(
 
   /** Type parameters that are used in domain. */
   val usedTParams = params.filter(tp => !unusedTParams.contains(tp))
-// IMPROVE: do we need both?
-
 }
 
 object FunctionType{

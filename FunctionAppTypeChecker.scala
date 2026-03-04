@@ -50,12 +50,13 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       typeCheckListUnify(te2, args, domain1, ft.typeParams.toSet).map{ 
         case (te3,invMap) =>
           // Extract type of name.  Need to apply invMap to reverse renaming 
-          // done in typeCleckListUnify.
+          // done in typeCheckListUnify.
 // FIXME: wrong constraints
           val tParams = 
             (for((_,tp) <- invMap) yield (tp,AnyTypeConstraint)).toList
           val res0 = reverseRemapBy(invMap, tParams, te3(name))
-          // Add unusedTParams to FunctionType results.
+          // Add unusedTParams to FunctionType results, and replace other type
+          // parametres by fresh type variables..
           val (te4, res) =
             Substitution.subTypeParamsInResult(te3, unusedTParams, res0)
           Ok((te4.endScope, res))
@@ -64,7 +65,9 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   }
 
   /** Type check each element of es, unifying its type with the corresponding
-    * element of ts.  Avoid name clashes with names in fnTParams.
+    * element of ts.  Avoid name clashes with names in fnTParams.  If
+    * successful, return resulting environment and map to map type variables
+    * back to type parameters.
     * Pre: es.length == ts.length.
     * Used to check actual parameters es of a function application against the
     * expected types ts.  */
@@ -74,12 +77,10 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       : Reply[(TypeEnv, ReverseTypeMap)] = 
     if(es.isEmpty){ assert(ts.isEmpty); Ok((typeEnv, emptyRevMap)) }
     else etc.typeCheck(typeEnv, es.head).map{ case (te1,t1) => 
-      // Rename type variables to avoid name clashes
-      val t11 = 
-        t1.renameTypeParams(Map[TypeParamName,TypeParamName](), fnTParams)
-         //ts.head.typeParams.toSet)
+      // Rename type variables to avoid name clashes.
+      val t11 = t1.renameTypeParams(TypeParam.newTypeParamMap, fnTParams)
 //if(t11 != t1) println(s"**typeCheckListUnify:\n${es.head}: $t1 (${ts.head}) ->\n  $t11")
-      val (te2,t2,typeMap) = mkInstance(te1,t11) 
+      val (te2, t2, typeMap) = mkInstance(te1,t11) 
 //println(s"typeCheckListUnify:\n\t${es.head}: $t1\n\t -> $t2;\n\t unifying with ${ts.head} \n via $typeMap")
       // Unify with formal parameter type in ts, and recurse.
       unify(te2, t2, ts.head).lift(es.head, true).map{ case (te3, _) => 
@@ -93,9 +94,9 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   /** If t is a FunctionType, make an instance of it, replacing each type
     * parameter by a fresh type variable, and add suitable constraints to
     * typeEnv. */
-  private def mkInstance(typeEnv: TypeEnv, t: TypeT): (TypeEnv, TypeT, TypeMap) = t match{
+  private def mkInstance(typeEnv: TypeEnv, t: TypeT)
+      : (TypeEnv, TypeT, TypeMap) = t match{
     case FunctionType(tParams, domain, range) => 
-      // println("mkInstance: "+t)
       val (te, domain1, range1, typeMap) = 
         replaceTypeParamsByTypeVars(typeEnv, tParams, domain, range)
       (te, FunctionType(List(), domain1, range1), typeMap)

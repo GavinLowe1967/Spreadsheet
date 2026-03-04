@@ -30,7 +30,6 @@ object Substitution{
 
     case FunctionType(params, domain, range) =>
       assert(params.forall{ case (tp,_) => !typeMap.contains(tp) })
-// FIXME: other types
       FunctionType(params, domain.map(remapBy(typeMap, _)), 
         remapBy(typeMap, range))
 
@@ -38,7 +37,7 @@ object Substitution{
   }
 
   /** Create a remapping from the type parameters in tParams to fresh TypeVars,
-    * as a list, together with corresponding constraints on those TypeVars. */
+    * together with corresponding constraints on those TypeVars. */
   private def mkRemapping(tParams: List[TypeParameter])
       : (TypeMap, List[(TypeID, TypeConstraint)]) = {
     val typeMap = new TypeMap
@@ -71,27 +70,22 @@ object Substitution{
   def remapInResult(tParams: List[TypeParameter], typeMap: TypeMap, t: TypeT)
       : TypeT = t match{
     case TypeParam(tp) => 
-      typeMap.get(tp) match{ case Some(t1) => t1; case None => t }
+      typeMap.get(tp) match{ 
+        case Some(t1) => /*println(s"$tp -> $t1");*/ t1; case None => t 
+      }
     case ListType(underlying) => 
       ListType(remapInResult(tParams, typeMap, underlying))
     case FunctionType(params, domain, range) =>
-      // Following false
+      // println(s"t = $t\ntParams = $tParams")
       // assert(params.forall{ case (tp,_) => !typeMap.contains(tp) },
       //   s"t = $t;\nparams = $params;\ntypeMap = $typeMap")
-// TODO: rename any names in paras \inter tParams to fresh names.  Then recurse 
-// on domain and range.
-      // if(true || params.nonEmpty) println(t)
-      // var tm = typeMap
-      // for((n,_) <- params) tm = tm.removed(n)
-      // FunctionType(params, domain.map(remapInResult(tParams, tm, _)), 
-      //   remapInResult(tParams, tm, range))
-
+      assert(params.forall{ case (n,_) => !tParams.map(_._1).contains(n) })
       FunctionType(params++tParams, domain, range)
     case _ => t
   }
 
   /** Substitute type parameters in result from tParams with fresh type
-    * variables. */
+    * variables.  Add tParams as parameters of any FunctionType.  */
   def subTypeParamsInResult(
     typeEnv: TypeEnv, tParams: List[TypeParameter], result: TypeT)
       : (TypeEnv, TypeT) = {
@@ -105,6 +99,10 @@ object Substitution{
   /** Maps from type variables to type parameters. */
   type ReverseTypeMap = HashMap[TypeVar, TypeParamName]
 
+  /** An empty ReverseTypeMap. */
+  val emptyRevMap: ReverseTypeMap = new ReverseTypeMap
+
+  /** Union of m1 and m2.  Pre: they agree on common TypeVars. */
   def union(m1: ReverseTypeMap, m2: ReverseTypeMap): ReverseTypeMap = {
     // Check m1 and m2 agree on common TypeVars
     for((tv,tp) <- m2) m1.get(tv) match{
@@ -113,23 +111,18 @@ object Substitution{
     m1 ++ m2
   }
 
-  val emptyRevMap: ReverseTypeMap = new ReverseTypeMap
 
   /** Remap t according to rtMap, adding tParams as type parameters. */
   def reverseRemapBy(
-    rtMap: ReverseTypeMap, tParams: List[TypeParameter], t: TypeT
-  ): TypeT = t match{
+    rtMap: ReverseTypeMap, tParams: List[TypeParameter], t: TypeT)
+      : TypeT = t match{
     case tv: TypeVar => 
       rtMap.get(tv) match{ case Some(tp) => TypeParam(tp); case None => t }
     case ListType(u) => ListType(reverseRemapBy(rtMap, tParams, u))
     case FunctionType(params, domain, range) =>
-      // remove repetitions
-      val captured = tParams.filter{ case (n,_) => t.typeParams.contains(n) }
-// FIXME: if params contains any element of tParams, rename that to avoid capture.
-      if(captured.nonEmpty) println(s"reverseRemapBy $t\n$tParams\ncaptured = $captured")
-      val tParams1 = tParams.filter(x => !params.contains(x))
-      FunctionType(params++tParams1, 
-        domain.map(reverseRemapBy(rtMap, List(), _)),
+      assert(tParams.forall{ case (n,_) =>
+        !t.typeParams.contains(n) && !params.contains(n) })
+      FunctionType(params++tParams, domain.map(reverseRemapBy(rtMap, List(), _)),
         reverseRemapBy(rtMap, List(), range))
     case t => t
   }

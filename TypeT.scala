@@ -71,8 +71,12 @@ case class TypeParam(name: String) extends TypeT{
 object TypeParam{
   type TypeParamName = String
 
-  type TypeParamMap = 
-    scala.collection.immutable.Map[TypeParamName, TypeParamName]
+  import scala.collection.immutable.Map
+
+  /** Maps to rename TypeParams, for use in renameTypeParams. */
+  type TypeParamMap = Map[TypeParamName, TypeParamName]
+
+  val newTypeParamMap = Map[TypeParamName,TypeParamName]()
 
   /** Map to control production of new names for type parameters.  If
     * `newNameMap(name) = n` then the most recent fresh name for `name` was
