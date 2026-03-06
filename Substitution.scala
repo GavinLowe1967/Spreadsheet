@@ -112,6 +112,14 @@ object Substitution{
     m1 ++ m2
   }
 
+  /** Remap t according to rtMap, adding type parameters in the range of
+    * rtMap. */
+  def reverseRemapBy(rtMap: ReverseTypeMap, t: TypeT): TypeT = {
+    val tParams = rtMap.toList.sortBy{ case ((TypeVar(tv),_)) => tv }.map(_._2)
+    // Note: the "sortBy" sorts the type parameters back to their original
+    // order.
+    reverseRemapBy(rtMap, tParams, t)
+  }
 
   /** Remap t according to rtMap, adding tParams as type parameters. */
   def reverseRemapBy(
@@ -121,8 +129,9 @@ object Substitution{
       rtMap.get(tv) match{ case Some((tp,_)) => TypeParam(tp); case None => t }
     case ListType(u) => ListType(reverseRemapBy(rtMap, tParams, u))
     case FunctionType(params, domain, range) =>
-      assert(tParams.forall{ case (n,_) =>
-        !t.typeParams.contains(n) && !params.contains(n) })
+      // val tParams1 = rtMap.toList.map(_._2); assert(tParams1 == tParams)
+
+      assert(tParams.forall{ case (n,_) => !t.typeParams.contains(n) })
       FunctionType(params++tParams, domain.map(reverseRemapBy(rtMap, List(), _)),
         reverseRemapBy(rtMap, List(), range))
     case t => t

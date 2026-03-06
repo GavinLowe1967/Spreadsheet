@@ -132,7 +132,6 @@ object TypeCheckerTest3{
       assert(te("x") == IntType && te("y") == IntType)
     }
 
-
     tcpss(sndS+"val sx = snd(4); val x = sx(3); val y = sx(4.0)") match{ 
       case Ok(se) =>
         assert(se("snd") == FunctionType(
@@ -206,25 +205,16 @@ object TypeCheckerTest3{
       assert(te("g") == FunctionType(
         List(("A",AnyTypeConstraint)), List(TypeParam("A")), IntType ))
       // println(te("h"))
-      te("h") match{ 
+      te("h") match{ // [A,B] B => A => Int
         case FunctionType(
           List((a, AnyTypeConstraint), ("B", AnyTypeConstraint)),
           List(TypeParam("B")),
           FunctionType(List(), List(TypeParam(a1)), IntType)
         ) => assert(a1 == a)
       }
-      // assert(te("h") == FunctionType(
-      //   List(("A", AnyTypeConstraint), ("B", AnyTypeConstraint)),
-      //   List(TypeParam("B")),
-      //   FunctionType(List(), List(TypeParam("A")), IntType)
-      // ))
-      // Should be [A,B] B => A => Int
     }
 
 println("======================================")
-
-// Following currently produces name capture, leading to exception thrown in
-// Substitution.remapInResult for type A => A => Int.
 
 
     val s3 = 
@@ -242,7 +232,7 @@ println("======================================")
           FunctionType(List(), List(TypeParam("B")), TypeParam("C")))
       ))
       //println(te("h"))
-      te("h") match{ 
+      te("h") match{ // [A1,A]: A1 => A => Int for fresh name A1
         case FunctionType(
           List((a,AnyTypeConstraint), ("A",AnyTypeConstraint)),
           List(TypeParam("A")),

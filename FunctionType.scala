@@ -12,11 +12,9 @@ case class FunctionType(
   def asString = 
     domain.map(_.asString).mkString("(", ",", ")")+" => "+range.asString
 
-  def typeParams = {
-    // assert(params.isEmpty)    // IMPROVE ???
+  def typeParams = 
     (params.map(_._1) ++ domain.flatMap(_.typeParams) ++ range.typeParams
     ).distinct
-  }
 
   def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = {
     // Extend f to map any new parameter names that clash with an element of
