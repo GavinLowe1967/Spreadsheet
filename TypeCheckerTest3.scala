@@ -216,7 +216,6 @@ object TypeCheckerTest3{
 
 println("======================================")
 
-
     val s3 = 
       // foo(f)(x) = y
       "def foo[A,B,C](f: B => C): A => B => C = { "+
@@ -241,6 +240,38 @@ println("======================================")
       }
     }
     // Should have h: [A1,A]: A1 => A => Int for fresh name A1
+
+    val twiceS = 
+      "def twice[A](f: A => A): A => A = { def ff(x: A): A = f(f(x)); ff }\n"+
+        "val twtw = twice(twice)\n"+applyS+
+        "val twap = twice(apply)\n"+
+        "def double(x: Int): Int = 2*x; val twapd = twap(double)"
+    //println(tcpss(twiceS))
+    tcpss(twiceS) match{ case Ok(te) => 
+      assert(te("twice") == FunctionType(
+        List(("A",AnyTypeConstraint)),
+        List(FunctionType(List(), List(TypeParam("A")), TypeParam("A"))),
+        FunctionType(List(), List(TypeParam("A")),TypeParam("A")) ))
+      //println(te("twtw"))
+      te("twtw") match{ // [A] (A => A) => (A => A)
+        case FunctionType(
+          List((a,AnyTypeConstraint)),
+          List(FunctionType(List(), List(TypeParam(a1)), TypeParam(a2))),
+          FunctionType(List(), List(TypeParam(a3)),TypeParam(a4))
+        ) =>  assert(a1 == a && a2 == a && a3 == a && a4 == a)
+      }
+      //println(te("twap"))
+      te("twap") match{ // [A1,B] (A1 => B) => (A1 => B) 
+        case FunctionType(
+          List((a,AnyTypeConstraint), ("B",AnyTypeConstraint)),
+          List(FunctionType(List(),List(TypeParam(a1)),TypeParam("B"))),
+          FunctionType(List(),List(TypeParam(a2)),TypeParam("B"))
+        ) => assert(a1 == a && a2 == a)
+      }
+      assert(te("twapd") == FunctionType(List(), List(IntType), IntType))
+    }
+
+
 
   }
 

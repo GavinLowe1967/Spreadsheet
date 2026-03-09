@@ -11,6 +11,7 @@ object Unification{
 
   import TypeVar.TypeID // Type variables (Ints)
 
+/*
   /** Replace tId by t in typeEnv, if it is consistent with the constraints in
     * typeEnv. Otherwise return fail. */
   private def replaceInTypeEnv(
@@ -18,14 +19,19 @@ object Unification{
       : Reply[(TypeEnv, TypeT)] = {
     if(verbose) println(s"replaceInTypeEnv($tId, $t)")
     assert(!t.isInstanceOf[TypeVar])
-    updateEnvToSatisfy(typeEnv, t, typeEnv(tId), fail).map{ te => 
-      Ok(te.replace(tId, t), t)
+    typeEnv(tId) match{
+      case SingletonTypeConstraint(t2) => unify(typeEnv, t, t2) // order?
+      case c => 
+        updateEnvToSatisfy(typeEnv, t, c, fail).map{ te =>
+          Ok(te.replace(tId, t), t)
+        }
     }
   }
+ */
 
   /** Test whether t can satisfy the constraint c.  If needs be, add constraints
     * to TypeVars within t.  Return the resulting environment if successful;
-    * otherwise return fail. */
+    * otherwise return fail.  Pre: c is not a SingletonTypeConstraint. */
   private def updateEnvToSatisfy(
     typeEnv: TypeEnv, t: TypeT, c: TypeConstraint, fail: => FailureR)
       : Reply[TypeEnv] = {
@@ -38,6 +44,7 @@ object Unification{
       case _ : FunctionType => c match{
         case AnyTypeConstraint => Ok(typeEnv)
         case EqTypeConstraint => fail
+        // case SingletonTypeConstraint(t1) => println(s"t = $t\nt1 = $t1"); ???
       }
       case TypeVar(tId) => 
         // This can happen by recursing via ListType(TypeVar(_)), e.g. the
@@ -83,11 +90,25 @@ object Unification{
         }
 
       case (TypeVar(tId1), _) => // t2 a concrete type.  Try to replace t1 by t2
-        replaceInTypeEnv(typeEnv, tId1, t2, fail)
+        typeEnv(tId1) match{
+          case SingletonTypeConstraint(t11) => unify(typeEnv, t11, t2)
+          case c => 
+            updateEnvToSatisfy(typeEnv, t2, c, fail).map{ te =>
+              Ok(te.replace(tId1, t2), t2)
+            }
+        }
+        // replaceInTypeEnv(typeEnv, tId1, t2, fail)
         
       case ( _, TypeVar(tId2)) =>           // Try to replace t2 by t1
         assert(!t1.isInstanceOf[TypeVar])
-        replaceInTypeEnv(typeEnv, tId2, t1, fail)
+        typeEnv(tId2) match{
+          case SingletonTypeConstraint(t22) => unify(typeEnv, t1, t22)
+          case c => 
+            updateEnvToSatisfy(typeEnv, t1, c, fail).map{ te =>
+              Ok(te.replace(tId2, t1), t1)
+            }
+        }
+        // replaceInTypeEnv(typeEnv, tId2, t1, fail)
 
       case (ListType(tt1), ListType(tt2)) => 
         unify(typeEnv, tt1, tt2, ListType(_)).map{ 
