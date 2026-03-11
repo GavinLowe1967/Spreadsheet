@@ -28,8 +28,6 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       case _ => FailureR("Non-function applied as function")
     }
 
-// FIXME: rename any type parameters in args that clash with names in ft
-
   /** Typecheck the application of a function of type ft to args. */
   private 
   def checkFunctionApp1(typeEnv: TypeEnv, ft: FunctionType, args: List[Exp])
@@ -39,24 +37,52 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     if(domain.length != args.length)
       FailureR(s"Expected ${domain.length} arguments, found "+args.length)
     else{
-      val unusedTParams = ft.unusedTParams
+      //val unusedTParams = ft.unusedTParams
       // Create fresh type variables to replace tParams in domain and range
       val (te1, domain1, range1, typeMap) =
         Substitution.replaceTypeParamsByTypeVars(
           typeEnv.newScope, ft.usedTParams, domain, range)
-      // Generate a new name, and bind it to range1 in the environment;
-      // then unify the types of args with domain1, so the new name gets
-      // updated to the appropriate return type.
-      val name = newName(); val te2 = te1 + (name, range1)
-      typeCheckList(te2, ft.typeParams.toSet, args).map{ case (te3, argTs) =>
-        unifyList(te3, argTs, domain1).map{ case (te4, invMap) =>
-          // Extract type of name.  Need to apply invMap to reverse renaming 
-          // done in unifyList.
-          val res0 = reverseRemapBy(invMap, te4(name))
-          val (te5, res) = subTypeParamsInResult(te4, unusedTParams, res0)
-          Ok((te5.endScope, res))
-        }
+      checkFunctionApp2(te1, domain1, range1, ft.typeParams.toSet, args).map{
+        case (te2, res0) => 
+          val (te3, res) = subTypeParamsInResult(te2, ft.unusedTParams, res0)
+          Ok((te3.endScope, res))
       }
+    }
+  }
+
+      // // Generate a new name, and bind it to range1 in the environment;
+      // // then unify the types of args with domain1, so the new name gets
+      // // updated to the appropriate return type.
+      // val name = newName(); val te2 = te1 + (name, range1)
+      // typeCheckList(te2, ft.typeParams.toSet, args).map{ case (te3, argTs) =>
+      //   unifyList(te3, argTs, domain1).map{ case (te4, invMap) =>
+      //     // Extract type of name.  Need to apply invMap to reverse renaming 
+      //     // done in unifyList.
+      //     val res0 = reverseRemapBy(invMap, te4(name))
+      //     val (te5, res) = subTypeParamsInResult(te4, unusedTParams, res0)
+      //     Ok((te5.endScope, res))
+
+  /** Type check function of type domain => range to arguments args.  If
+    * successful, return the resulting environment and the type of the
+    * application.  `typeParams` is the type parameters bound in the type of
+    * the function.  */
+  private def checkFunctionApp2(
+    typeEnv: TypeEnv, domain: List[TypeT], range: TypeT, 
+    typeParams: Set[TypeParamName], args: List[Exp])
+      : TypeCheckRes = {
+    // Generate a new name, and bind it to range in the environment;
+    // then unify the types of args with domain, so the new name gets
+    // updated to the appropriate return type.
+    val name = newName(); val te1 = typeEnv + (name, range)
+    typeCheckList(te1, typeParams, args).map{ case (te2, argTs) =>
+      unifyList(te2, argTs, domain).map{ case (te3, invMap) =>
+        // Extract type of name.  Need to apply invMap to reverse renaming
+        // done in unifyList.
+        Ok((te3, reverseRemapBy(invMap, te3(name))))
+      }
+    }
+  }
+
 /*
       typeCheckListUnify(te2, args, domain1, ft.typeParams.toSet).map{ 
         case (te3, invMap) =>
@@ -71,8 +97,6 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
           Ok((te4.endScope, res))
       }
  */
-    }
-  }
 
   /** Type check each element of args.  Rename bound type parameters to avoid
     * clashes with elements of fnTParams.  If successful, return resulting

@@ -1,6 +1,5 @@
 package spreadsheet
 
-import scala.collection.mutable.HashMap
 import TypeVar.{TypeID,nextTypeID}
 import TypeParam.TypeParamName 
 import FunctionType.TypeParameter
@@ -16,11 +15,16 @@ object Substitution{
     case _ => t1
   }
 
+  /* We substitute TypeParams with TypeVars, but store the TypeParamConstraint
+   * associated with the TypeParam. */
+
+  private type TypeVarParamConstraint = (TypeVar, TypeParamConstraint)
+
   /** Type of substitutions of type parameters by type variables.  Also store
     * the constraint associated with each type parameter. */
-  type TypeMap = HashMap[TypeParamName, (TypeVar, TypeParamConstraint)]
+  type TypeMap = Map[TypeParamName, TypeVarParamConstraint]
 
-  val emptyTypeMap = new TypeMap
+  val emptyTypeMap = Map[TypeParamName, TypeVarParamConstraint]()
 
   /** Remap t according to typeMap, replacing TypeParams by TypeVars. */
   def remapBy(typeMap: TypeMap, t: TypeT): TypeT = t match{
@@ -41,13 +45,13 @@ object Substitution{
     * together with corresponding constraints on those TypeVars. */
   private def mkRemapping(tParams: List[TypeParameter])
       : (TypeMap, List[(TypeID, TypeConstraint)]) = {
-    val typeMap = new TypeMap
+    var pairs = List[(TypeParamName, TypeVarParamConstraint)]() 
     var constraints = List[(TypeID, TypeConstraint)]()
     for((p,c) <- tParams){
-      val tId = nextTypeID(); typeMap += ((p, (TypeVar(tId), c)))
+      val tId = nextTypeID(); pairs ::= ((p, (TypeVar(tId), c)))
       constraints ::= (tId,c)
     }
-    (typeMap, constraints)
+    (Map.from(pairs), constraints)
   }
 
   /** Given a type domain => range for a function, replace the type parameters
@@ -71,15 +75,10 @@ object Substitution{
   def remapInResult(tParams: List[TypeParameter], typeMap: TypeMap, t: TypeT)
       : TypeT = t match{
     case TypeParam(tp) => 
-      typeMap.get(tp) match{ 
-        case Some((t1,_)) => /*println(s"$tp -> $t1");*/ t1; case None => t 
-      }
+      typeMap.get(tp) match{ case Some((t1,_)) => t1; case None => t }
     case ListType(underlying) => 
       ListType(remapInResult(tParams, typeMap, underlying))
     case FunctionType(params, domain, range) =>
-      // println(s"t = $t\ntParams = $tParams")
-      // assert(params.forall{ case (tp,_) => !typeMap.contains(tp) },
-      //   s"t = $t;\nparams = $params;\ntypeMap = $typeMap")
       assert(params.forall{ case (n,_) => !tParams.map(_._1).contains(n) })
       FunctionType(params++tParams, domain, range)
     case _ => t
@@ -98,10 +97,10 @@ object Substitution{
   // ========= Reverse mapping
 
   /** Maps from type variables to type parameters. */
-  type ReverseTypeMap = HashMap[TypeVar, (TypeParamName, TypeParamConstraint)]
+  type ReverseTypeMap = Map[TypeVar, TypeParameter] 
 
   /** An empty ReverseTypeMap. */
-  val emptyRevMap: ReverseTypeMap = new ReverseTypeMap
+  val emptyRevMap: ReverseTypeMap = Map[TypeVar, TypeParameter]()
 
   /** Union of m1 and m2.  Pre: they agree on common TypeVars. */
   def union(m1: ReverseTypeMap, m2: ReverseTypeMap): ReverseTypeMap = {
@@ -129,22 +128,20 @@ object Substitution{
       rtMap.get(tv) match{ case Some((tp,_)) => TypeParam(tp); case None => t }
     case ListType(u) => ListType(reverseRemapBy(rtMap, tParams, u))
     case FunctionType(params, domain, range) =>
-      // val tParams1 = rtMap.toList.map(_._2); assert(tParams1 == tParams)
-
       assert(tParams.forall{ case (n,_) => !t.typeParams.contains(n) })
       FunctionType(params++tParams, domain.map(reverseRemapBy(rtMap, List(), _)),
         reverseRemapBy(rtMap, List(), range))
     case t => t
   }
 
-  /** The inverse of map.  Assumes that map is injective. */
+  /** The inverse of map.  Assumes that map is injective on parameter names. */
   def inverse[A,B](map: TypeMap): ReverseTypeMap = {
     assert(map != null)
     if(map eq emptyTypeMap) emptyRevMap
     else{
-      val newMap = new ReverseTypeMap 
-      for((x,(y,c)) <- map){ assert(!newMap.contains(y)); newMap += y -> (x,c) }
-      newMap
+      // Check type parameter names in range are distinct.
+      val ys = map.toList.map{ case (x,(y,c)) => y }; assert(ys.distinct == ys)
+      Map.from(for((x,(y,c)) <- map) yield y -> (x,c))
     }
   }
 

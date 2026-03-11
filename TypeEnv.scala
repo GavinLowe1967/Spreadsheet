@@ -96,18 +96,6 @@ class TypeEnv(
   /** Get the constraint associated with tid. */
   def getConstraint(tid: TypeID): TypeConstraint = constraints(tid)
 
-/*
-  /** Is t an equality type? */
-  def isEqType(t: TypeT): Boolean = t match{
-    case TypeVar(tv) => true // ???, FIXME.  Arises from "[] == [3]"
-    case TypeParam(name) =>
-      constraintForTypeParam(name).implies(EqTypeConstraint)
-    case _: EqType => true
-    case _: CellTypeVar => ??? // true
-    case ListType(underlying) => isEqType(underlying)
-    case FunctionType(_,_,_) => false
-  }
- */
   /** Try to extend this so that t is an equality type. */
   def mkEqType(t: TypeT): Reply[TypeEnv] = {
     def fail = FailureR(s"Expected equality type, found ${t.asString}")
@@ -183,12 +171,13 @@ class TypeEnv(
     make(nameMap = newNameMap, constraints = newConstraints)
   }
 
+/*
   def map(f: TypeT => TypeT): TypeEnv = {
     val newNameMap = nameMap.map{ case (n,ts) => (n,ts.map(f)) }
     make(nameMap = newNameMap)
-// FIXME: also apply elsewhere
+// *** also apply elsewhere
   }
-
+ */
   // ========= Scoping functions
 
   /** Record that a new scope is being entered. */
