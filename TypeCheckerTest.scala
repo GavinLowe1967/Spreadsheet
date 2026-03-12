@@ -56,6 +56,7 @@ object TypeCheckerTest{
       overloadingTests()
       println("===curryingtests===")
       curryingTests()
+      curryingTests2()
     }
     println("Done")
   }

@@ -274,7 +274,8 @@ object Execution{
         case _ => env.update(name, v); true
       }
 
-    case fd @ FunctionDeclaration(name, tParams, params, rt, body) => 
+    case fd @ FunctionDeclaration(name, tParams, List(params), rt, body) => 
+// FIXME: allow curried functions
       // Build a Scala function to capture the FunctionDeclaration
       def f(args: List[Value]): Value = {
         require(args.length == params.length)

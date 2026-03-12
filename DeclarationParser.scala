@@ -43,7 +43,7 @@ object DeclarationParser extends Parser0 with DeclarationParserT{
   /** A parser for a function declaration 
     * "def <name>(<params>): <type> = <expr>". */
   private def funDec: Parser[FunctionDeclaration] = 
-    (keyword("def") ~> name ~~ typeParams ~ inParens(params)) ~ 
+    (keyword("def") ~> name ~~ typeParams ~ inParens(params).+) ~ 
       (ofType ~ (lit("=") ~> expr)) >
     { case (((n,tps),ps), (rt,e)) => FunctionDeclaration(n, tps, ps, rt, e) }
  

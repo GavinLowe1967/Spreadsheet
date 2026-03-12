@@ -37,11 +37,13 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
           Ok(te1 + (name, t))
         })
 
-      case FunctionDeclaration(name, tparams, params, rt, body) =>
+      case fd @ FunctionDeclaration(name, tparams, paramss, rt, body) =>
+        val params = paramss.flatten
         // name should already be bound to an appropriate FunctionType, by
         // typeCheckStmtList
         val Some(ts) = typeEnv.get(name)
-        require(ts.contains(FunctionType(tparams, params.map(_._2), rt)))
+        //val List(params) = paramss // FIXME
+        require(ts.contains(fd.mkFunctionType)) // FunctionType(tparams, paramss, rt)))
         // Check names of params, tparams are disjoint
         (findRepetition(params.map(_._1)) match{
           case Some(p) => FailureR(s"Repeated parameter $p")
@@ -68,8 +70,8 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
 
   /** Check that the definitions `defs` for function `name` is allowed: if there
     * is more than one definition, that none is polymorphic, and that they
-    * have disjoint types.  If not, return appropriate FailureR; return null
-    * if ok. */
+    * have disjoint types: we require them to differ in the first list of
+    * parameters.  If not, return appropriate FailureR; return null if ok. */
   private 
   def checkOverloadingAllowed(name: String, defs: List[FunctionDeclaration])
       : Reply[TypeEnv] = {
@@ -81,12 +83,12 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
           s"Function $name with multiple definitions has polymorphic\n"+
             s"instance at line ${poly.head.lineNumber}.") 
       else{
-        // Search for definitions with same argument types.
+        // Search for definitions with same first argument types.  
         var i = 0; var result: Reply[TypeEnv] = null
         while(i < len-1 && result == null){
-          val paramTs: List[TypeT] = defs(i).paramTs; var j = i+1
+          val paramTs = defs(i).paramTs.head; var j = i+1
           while(j < len && result == null){
-            if(defs(j).paramTs == paramTs)
+            if(defs(j).paramTs.head == paramTs)
               result = FailureR(
                 s"Function $name has multiple definitions with\n"+
                   "parameters of type "+TypeT.showList(paramTs)

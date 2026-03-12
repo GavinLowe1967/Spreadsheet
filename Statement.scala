@@ -27,10 +27,19 @@ case class ValueDeclaration(name: String, exp: Exp) extends Declaration
 
 // =======================================================
 
+object FunctionDeclaration{
+  /** A list of formal parameters of a function declaration.  A curried function
+    * declaration will have a List of ParameterLists. */
+  type ParameterList = List[(String, TypeT)]
+}
+
+import FunctionDeclaration.ParameterList
+
+
 /** The declaration of a function "def name[tparams](args): rt = exp". */
 case class FunctionDeclaration(
   name: String, tParams: List[FunctionType.TypeParameter], 
-  params: List[(String, TypeT)], rt: TypeT, body: Exp)
+  params: List[ParameterList], rt: TypeT, body: Exp)
     extends Declaration{
   private var index = -1
 
@@ -41,10 +50,17 @@ case class FunctionDeclaration(
   def getName = NameExp.getName(name, index)
 
   /** The types of the parameters of this. */
-  def paramTs = params.map(_._2)
+  def paramTs: List[List[TypeT]] = params.map(_.map(_._2))
 
   /** A FunctionType object representing the type of this function. */
-  def mkFunctionType = FunctionType(tParams, paramTs, rt)
+  def mkFunctionType = // FunctionType(tParams, paramTs, rt)
+    FunctionType(tParams, params.head.map(_._2), mkFunctionType1(params.tail))
+
+  /** Make the type of a curried function with parameters ps and result type
+    * rt. */
+  private def mkFunctionType1(ps: List[ParameterList]): TypeT = 
+    if(ps.isEmpty) rt 
+    else FunctionType(List(), ps.head.map(_._2), mkFunctionType1(ps.tail))
 }
 
 // =======================================================

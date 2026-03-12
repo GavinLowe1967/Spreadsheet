@@ -8,9 +8,72 @@ Current
 1. Parsing of curried function applications -- done.
 
 2. Test type checking of above, e.g. cases like const.  With
-
 def const[A,B](x: A): B => A = { def constX(y: B): A = x; constX }
-val const3 = const(3)
+val const3 = const(3)         -- done
+
+3. Change FunctionDeclaration (Statement.scala) to take List of parameter
+lists.  Initially, adapt other code to assume singleton list. -- done
+
+4. Parsing of curried function declarations -- done
+
+4a. Check names are distinct in typeCheckDecl -- done. TEST
+
+5. Adapt FunctionDeclaration.mkFunctionType appropriately.  (Called from
+DeclarationtypeChecker.updateEnv.) -- done TEST
+
+6. Type checking of declarations.  In typeCheckDecl
+(DeclarationTypeChecker.scala), flatten the parameters, and continue as
+before.  Also in checkOverloadingAllowed -- needs TESTING
+
+7. In Execution.perform, build nested FunctionValue. 
+
+??  Translate into uncurried form,
+e.g. def f[A,B](x: A)(y: B): C = e --> 
+def f[A,B](x: A): B => C = { def f'(y: B) = e; f' }.
+
+Priorities
+==========
+
+
+* Haskell standard prelude.
+
+* Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
+  = #A3".
+
+* Allow assertions, error.
+
+* "println" statements.
+
+* Add "if" directives.
+
+* Improve error messages in Unification.unify, the case of FunctionTypes.
+
+Low Priority
+============
+
+*Re-merge DeclarationTypeChecker and TypeChecker
+
+* Allow function application without parentheses. 
+
+* Improve treatment of Strings:
+- Allow non-quoted strings in CSV
+- Think about escaped characters in non-quoted string cells.
+
+* Order relations on rows, columns
+
+* Look again at Unification.scala.  Are all branches tested?
+
+* Catch stack overflows.
+
+* In Environment, use null intead of Empty() (to save memory). 
+
+
+======================================================================
+======================================================================
+
+===================================== DONE
+
+
 
 I think we should have cont3: [B] B => Int; at present, it's t => Int for t a
 TypeVar.  I think in FunctionAppTypeChecker.subTypeParams, we should not
@@ -85,54 +148,7 @@ and FunctionType(List(),List(IntType),TypeVar(215)).  This should give FunctionT
 after unification?
 
 
------------------
-
-LATER: Parsing of curried function declarations.  Translate into uncurried form,
-e.g. def f[A,B](x: A)(y: B): C = e --> 
-def f[A,B](x: A): B => C = { def f'(y: B) = e; f' }.
-
-Priorities
-==========
-
-
-* Haskell standard prelude.
-
-* Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
-  = #A3".
-
-* Allow assertions, error.
-
-* "println" statements.
-
-* Add "if" directives.
-
-* Improve error messages in Unification.unify, the case of FunctionTypes.
-
-Low Priority
-============
-
-*Re-merge DeclarationTypeChecker and TypeChecker
-
-* Allow function application without parentheses. 
-
-* Improve treatment of Strings:
-- Allow non-quoted strings in CSV
-- Think about escaped characters in non-quoted string cells.
-
-* Order relations on rows, columns
-
-* Look again at Unification.scala.  Are all branches tested?
-
-* Catch stack overflows.
-
-* In Environment, use null intead of Empty() (to save memory). 
-
-
-======================================================================
-======================================================================
-
-===================================== DONE
-
+=======================================================
 
 * List comprehensions.
 - Parsing -- done

@@ -35,9 +35,12 @@ case class FailureR(err: String) extends Reply[Nothing]{
   /** Add the source of `exp` to the message. */
   def lift(exp: HasExtent, lineNum: Boolean = false) = {
     val extent = exp.getExtent
-    assert(extent != null, s"Null extent in $exp")
-    val lnString = if(lineNum) " at line "+extent.lineNumber else ""
-    FailureR(err+lnString+"\nin "+extent.asString)
+    if(extent == null) FailureR(err) // can happen in nested FunctionApps
+    else{
+      // assert(extent != null, s"Null extent in $exp")
+      val lnString = if(lineNum) " at line "+extent.lineNumber else ""
+      FailureR(err+lnString+"\nin "+extent.asString)
+    }
   }
 
   /** Add the line numbers from e1 and e2. */

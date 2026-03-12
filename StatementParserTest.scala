@@ -51,15 +51,15 @@ object StatementParserTest extends ParserTest0{
   /** Tests on function declarations. */
   private def functions() = {
     assert(ps("def square(n: Int): Int = n*n") ==
-      FunctionDeclaration("square", List(), List(("n",IntType)), IntType,
+      FunctionDeclaration("square", List(), List(List(("n",IntType))), IntType,
         BinOp(NameExp("n"), "*", NameExp("n")) ))
     // Test with a newline in a strange place
     assert(ps("def square\n(n: Int): Int = n*n") ==
-      FunctionDeclaration("square", List(), List(("n",IntType)), IntType,
+      FunctionDeclaration("square", List(), List(List(("n",IntType))), IntType,
         BinOp(NameExp("n"), "*", NameExp("n")) ))
     assert(ps("def add(x: Int, y: Int) : Int = x+y") == 
       FunctionDeclaration("add", List(), 
-        List(("x", IntType), ("y", IntType)), IntType,
+        List(List(("x", IntType), ("y", IntType))), IntType,
         BinOp(NameExp("x"), "+", NameExp("y")) ))
     assert(ps("val c = #B \n") == ValueDeclaration("c", ColumnExp("B")))
 
@@ -67,28 +67,31 @@ object StatementParserTest extends ParserTest0{
       ListType(BoolType))
     assert(ps("def add[A](x: Int, y: Int) : Int = x+y") == 
       FunctionDeclaration("add", List(("A",AnyTypeConstraint)),
-        List(("x",IntType), ("y",IntType)), IntType, 
+        List(List(("x",IntType), ("y",IntType))), IntType, 
         BinOp(NameExp("x"), "+", NameExp("y")) ))
     assert(ps("def id[A](x: A) : A = x") == 
       FunctionDeclaration("id", List(("A",AnyTypeConstraint)),
-        List(("x",TypeParam("A"))), TypeParam("A"), NameExp("x")) )
+        List(List(("x",TypeParam("A")))), TypeParam("A"), NameExp("x")) )
     // Test with a newline in a strange place.
     assert(ps("def id\n[A](x: A) : A = x") == 
       FunctionDeclaration("id", List(("A",AnyTypeConstraint)),
-        List(("x",TypeParam("A"))), TypeParam("A"), NameExp("x")) )
+        List(List(("x",TypeParam("A")))), TypeParam("A"), NameExp("x")) )
 
     assert(ps("def apply[A, B](f: A => B, x: A) : B = f(x)") == 
       FunctionDeclaration("apply", 
         List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint) ),
-        List(("f", FunctionType(List(), List(TypeParam("A")), TypeParam("B"))), 
-          ("x", TypeParam("A"))),
+        List(List(
+          ("f", 
+            FunctionType(List(), List(TypeParam("A")), TypeParam("B")) ),
+          ("x", TypeParam("A"))
+        )),
         TypeParam("B"), 
         FunctionApp(NameExp("f"), List(NameExp("x")) ) ))
 
     assert(ps("def f[A <: Eq](x: A): Boolean = x == x") ==
       FunctionDeclaration(
         "f", List(("A",EqTypeConstraint)),
-        List(("x",TypeParam("A"))), BoolType, 
+        List(List(("x",TypeParam("A")))), BoolType, 
         BinOp(NameExp("x"), "==", NameExp("x")) ))
 
     assertFail(pe("{ def f(x: Int): Int = 5/x; f(0) }"))
@@ -98,6 +101,21 @@ object StatementParserTest extends ParserTest0{
     assert(pss("val y = #A3\nval x = 3") == List(
       ValueDeclaration("y", UntypedCellExp(ColumnExp("A"), RowExp(3))),
       ValueDeclaration("x", IntExp(3)) ))
+  }
+
+  /** Tests on curried function declarations. */
+  private def curriedFunctions() = {
+    assert(ps("def add(x: Int) (y: Int): Int = x+y") == 
+      FunctionDeclaration("add", List(), 
+        List( List(("x",IntType)), List(("y",IntType)) ), IntType,  
+        BinOp(NameExp("x"), "+", NameExp("y")) ))
+
+    assert(ps("def foo[A](x: A, y: Int) (z: Float) (b: Boolean): Int = 3") ==
+      FunctionDeclaration(
+        "foo", List(("A",AnyTypeConstraint)),
+        List( List(("x",TypeParam("A")), ("y",IntType)), 
+          List(("z",FloatType)), List(("b",BoolType)) ),
+        IntType, IntExp(3)) )
   }
 
   /** Tests on "for" statements. */
@@ -129,6 +147,7 @@ object StatementParserTest extends ParserTest0{
   def apply() = {
     statements1() // value declarations and cell writes.
     functions() // function declarations.
+    curriedFunctions() // curried function declarations
     forStatements() // for statements 
     println("Statement tests done")
   }

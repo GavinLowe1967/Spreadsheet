@@ -169,6 +169,7 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
     | string > StringExp | cellExp | bool
     // Name or application of named function
     | name1 ~~ paramsList  > { case (n,args) => args.foldLeft(n)(FunctionApp) }
+    // Note: in the above, inner FunctionApps don't receive an Extent.  
     //   case (n, None) => n; case (n, Some(ps)) => FunctionApp(n, ps)
     // }
     // TODO: allow more general definitions of the function.
