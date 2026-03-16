@@ -84,6 +84,8 @@ TypeCheckerTest2.scala: tests on polymorphism, higher-order functions.
 
 TypeCheckerTest3.scala: tests on for loops, overloading, and currying. 
 
+TypeCheckerTest4.scala: tests on a Haskell-style prelude.
+
 Evaluation and execution
 ========================
 

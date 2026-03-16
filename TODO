@@ -37,6 +37,8 @@ Priorities
 
 * Haskell standard prelude.
 
+* Make return type of functions optional in most cases.
+
 * Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
   = #A3".
 

@@ -1,5 +1,6 @@
 package spreadsheet
 
+import FunctionDeclaration.ParameterList
 import scala.collection.mutable.ArrayBuffer
 
 /** Object responsible for evaluating expressions and executing statements. */
@@ -274,7 +275,10 @@ object Execution{
         case _ => env.update(name, v); true
       }
 
-    case fd @ FunctionDeclaration(name, tParams, List(params), rt, body) => 
+    case fd @ FunctionDeclaration(name, tParams, paramss, rt, body) => 
+      assert(paramss.nonEmpty)
+      env.update(fd.getName, evalFn(env, paramss, body)); true
+/*
 // FIXME: allow curried functions
       // Build a Scala function to capture the FunctionDeclaration
       def f(args: List[Value]): Value = {
@@ -287,6 +291,7 @@ object Execution{
       env.update(fd.getName, FunctionValue(f _)); true
       // Note, if f is overloaded, the different instances are stored against
       // different names, given by fd.getName, as set during type checking.
+ */
 
     case ForStatement(binders, stmts) =>
       def he(ev: ErrorValue) = handleError(s.liftError(ev)) 
@@ -294,6 +299,24 @@ object Execution{
       // Note: always return true here.
   } // end of perform
 
+  /** The Value that represents the function that takes the elements of paramss
+    * in turn, and returns body.  This will be a FunctionValue if paramss is
+    * non-empty.  */
+  private def evalFn(env: Environment, paramss: List[ParameterList], body: Exp)
+      : Value = 
+    if(paramss.isEmpty) eval(env, body)
+    else{
+      val params0 = paramss.head
+      // Build a Scala function to capture the function of params0.
+      def f(args: List[Value]): Value = {
+        require(args.length == params0.length)
+        // Bind params to values of args in env
+        val env2 = env.clone
+        for(((x,_),v) <- params0.zip(args)) env2.update(x, v)
+        evalFn(env2, paramss.tail, body)
+      }
+      FunctionValue(f _)
+    }
 
   /** Execute the elements of `statements` in `env`, handling errors with
     * `handleError`.  Stop if an error occurs.

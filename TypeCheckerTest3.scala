@@ -291,58 +291,5 @@ object TypeCheckerTest3{
           FunctionType(List(), List(ListType(TypeParam("A"))),
             ListType(TypeParam("B")) ))) 
     }
-
-    val script = 
-      "def foldr[A,B](f: A => B => B)(e: B)(xs: List[A]): B = "+
-        "if(isEmpty(xs)) e else f(head(xs))(foldr(f)(e)(tail(xs)))\n"+
-        "def length[A](xs: List[A]): Int = { "+
-        "  def f(x:A)(n:Int): Int = n+1; foldr(f)(0)(xs) }\n" +
-        "val lengthp = { def f[A](x:A)(n:Int): Int = n+1; foldr(f)(0) }\n" +
-        "def append[A](xs: List[A])(ys: List[A]): List[A] = {" +
-        "  def c(x: A)(ys: List[A]): List[A] = x::ys; foldr(c)(ys)(xs) }\n" +
-        "def concat[A](xs: List[List[A]]): List[A] = foldr(append)([])(xs) \n" +
-        "val xs = concat([[3]]); val ys = concat([[2.3]])\n" +
-        "val concatp = foldr(append)([])\n" +
-        "val xsp = concatp([[3]])"
-    tcpss(script) match{ case Ok(te) => 
-      // foldr: [A,B] (A => B => B) => B => List[A] => B 
-      assert(te("foldr") == FunctionType(
-        List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
-        List(FunctionType(List(), List(TypeParam("A")), 
-          FunctionType(List(), List(TypeParam("B")), TypeParam("B")))),
-        FunctionType(List(), List(TypeParam("B")),
-          FunctionType(List(), List(ListType(TypeParam("A"))), TypeParam("B"))
-        )))
-      // length: [A] List[A] => Int
-      assert(te("length") == FunctionType(
-        List(("A",AnyTypeConstraint)), List(ListType(TypeParam("A"))), IntType))
-      // lengthp: [A1] List[A1] => Int
-      te("lengthp") match{
-        case FunctionType(
-          List((a,AnyTypeConstraint)), List(ListType(TypeParam(a1))), IntType
-        ) => assert(a == a1)
-      }
-      // append: [A] List[A] => List[A] => List[A]
-      assert(te("append") == FunctionType(
-        List(("A",AnyTypeConstraint)), List(ListType(TypeParam("A"))),
-        FunctionType(List(), List(ListType(TypeParam("A"))),
-          ListType(TypeParam("A")) ) ))
-      // concat :: [A] List[List[A]] => List[A]
-      assert(te("concat") == FunctionType(
-        List(("A",AnyTypeConstraint)), 
-        List(ListType(ListType(TypeParam("A")))), ListType(TypeParam("A"))))
-      assert(te("xs") == ListType(IntType) && te("ys") == ListType(FloatType)) 
-      // concatp has type in terms of a type variable
-      te("concatp") match{ 
-        case FunctionType(
-          List(), List(ListType(ListType(TypeVar(t)))), ListType(TypeVar(t1))
-        ) => assert(t1 == t)
-      }
-      assert(te("xsp") == ListType(IntType))
-      // Note: the "[]" in the definition of concatp has a specific type,
-      // which is constrained to be IntType by the definition of xsp; so we
-      // can't now apply is to [[2.3]], say.
-    }
-
   }
 }

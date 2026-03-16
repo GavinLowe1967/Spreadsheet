@@ -89,7 +89,7 @@ $(DIR)/TypeCheckerTest0.class: $(DIR)/TypeChecker.class	\
 
 $(DIR)/TypeCheckerTest1.class $(DIR)/TypeCheckerTest2.class $(DIR)/TypeCheckerTest3.class: $(DIR)/TypeCheckerTest0.class
 
-$(DIR)/TypeCheckerTest.class: $(DIR)/TypeCheckerTest1.class $(DIR)/TypeCheckerTest2.class $(DIR)/TypeCheckerTest3.class
+$(DIR)/TypeCheckerTest.class: $(DIR)/TypeCheckerTest1.class $(DIR)/TypeCheckerTest2.class $(DIR)/TypeCheckerTest3.class $(DIR)/TypeCheckerTest4.class
 
 # ===== Model
 
