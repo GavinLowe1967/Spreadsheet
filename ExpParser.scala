@@ -87,8 +87,6 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
     keyword("Cell") ~ inParens((expr <~ lit(",")) ~ expr) > { case (x,y) => y }
       // Note: can't be interpreted as a function application
     | cell0
-    // | lit("#") ~> colName ~~ posInt > 
-    //   { case (c,r) => (ColumnExp(c), RowExp(r)) }
   )
 
   /** Parse the name of a column: a non-empty sequence of uppercase letters.*/
@@ -134,10 +132,10 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
 
   // ===== Parameters of a function.
 
-  /** Parser for arguments of a function, possibly in several sets. 
-    * Note: should be sequenced to its left-hand argument using `~~`. */
-  private def paramsList: Parser[List[List[Exp]]] =
-    repeat1( consumeWhiteNoNL ~~> params )
+  /** A parser for an expression that can be used as an argument of a function
+    * without parentheses, and not otherwise captured within factor0. */
+  private def atomicParam: Parser[Exp] = 
+    string > StringExp | bool | rowOrColumn | list | block
 
   /** A single parameter list, or a single unparenthesised parameter. */
   private def params: Parser[List[Exp]] = (
@@ -147,12 +145,12 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
   )
   // Notes: we include only positive numbers above; negative numbers would
   // need parentheses.  The parsers name1 and cell0 are included in more
-  // general parsers within factor0.
+  // general parsers within factor0, so are not included in atomicParam.
 
-  /** A parser for an expression that can be used as an argument of a function
-    * without parentheses, and not otherwise captured within factor0. */
-  private def atomicParam: Parser[Exp] = 
-    string > StringExp | bool | rowOrColumn | list | block
+  /** Parser for arguments of a function, possibly in several sets. 
+    * Note: should be sequenced to its left-hand argument using `~~`. */
+  private def paramsList: Parser[List[List[Exp]]] =
+    repeat1( consumeWhiteNoNL ~~> params )
 
   // ===== Expressions not using an infix or if at the top level. 
 
@@ -175,17 +173,11 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
   private def factor0: Parser[Exp] = withExtent( 
     number | cellExp | atomicParam
     // Note: cellExp must precede the rowOrColumn within atomicParam 
-    // | string > StringExp | cellExp | bool
     // Name or application of named function
     | name1 ~~ paramsList  > { case (n,args) => args.foldLeft(n)(FunctionApp) }
     // Note: in the above, inner FunctionApps don't receive an Extent.  
-    //   case (n, None) => n; case (n, Some(ps)) => FunctionApp(n, ps)
-    // }
     // TODO: allow more general definitions of the function.
-      // Row and column literals
-    //| rowOrColumn // lit("#") ~~ (int > RowExp | colName > ColumnExp) > { _._2 }  
     | inParens(expr) // Note: sets extent to include parentheses.
-    //| list | block
     | failure("YYY") // IMPROVE
   )
 

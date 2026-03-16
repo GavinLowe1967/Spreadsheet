@@ -34,17 +34,17 @@ object TypeCheckerTest3{
       "def double(x: Int): Int = 2*x; def double(x: Float): Float = 2.0*x\n"
     val sumS = // ok, these definitions are wrong
       "def sum(xs: List[Int]): Int = 0; def sum(xs: List[Float]): Float = 0.0"
-    val applyS = "def apply[A,B](f: A => B, x: A): B = f(x)\n"
+    val applyS = "def apply[A,B](f: A => B, x: A): B = f x\n"
 //printErrors = true
     assertFail(tcpss("val x = 3; val x = 5"))
     assertFail(tcpss("val x = 3; def x(y: Int): Int = y+1"))
     assertFail(tcpss("def f(x: Int): Int = x+1; def f[A](x: A): A = x"))
     // "Forward reference to name f"
-    assertFail(tcpss("val x = f(3)\n val f = 5"))
-    assertFail(tcpss("val x = f(3)"))
+    assertFail(tcpss("val x = f 3\n val f = 5"))
+    assertFail(tcpss("val x = f 3"))
 
     // Application of double
-    tcpss(doubleS+"val y = double(2); val z = double(3.4)") match{
+    tcpss(doubleS+"val y = double 2 ; val z = double 3.4") match{
       case Ok(te) => 
         assert(te.get("double").get == List(
           FunctionType(List(), List(IntType), IntType),
@@ -54,10 +54,10 @@ object TypeCheckerTest3{
     }
     // "Overloaded function application with types (Int) => Int, (Float) =>
     // Float can't be applied to argument of type Boolean"
-    assertFail(tcpss(doubleS+"val x = double(true)"))
+    assertFail(tcpss(doubleS+"val x = double true"))
 
     // Application of sum
-    tcpss(sumS+"\nval x = sum([2,3,4]); val y = sum([2.4,3.4])") match{ 
+    tcpss(sumS+"\nval x = sum [2,3,4]; val y = sum[2.4,3.4]") match{ 
       case Ok(te) =>
         assert(te.get("sum").get == List(
           FunctionType(List(), List(ListType(IntType)), IntType),
@@ -65,9 +65,9 @@ object TypeCheckerTest3{
         ) )
         assert(te("x") == IntType && te("y") == FloatType)
     }
-    assertFail(tcpss(sumS+"; val x = sum([true])"))
-    assertFail(tcpss(sumS+"; val x = sum([])"))
-    assertFail(tcpss(sumS+"; val x = sum(5)"))
+    assertFail(tcpss(sumS+"; val x = sum[true]"))
+    assertFail(tcpss(sumS+"; val x = sum[]"))
+    assertFail(tcpss(sumS+"; val x = sum 5 "))
     tcpss(sumS+"; val x = sum([]: List[Int])") match{ case Ok(te) =>
       assert(te("x") == IntType) }
 
@@ -234,9 +234,9 @@ object TypeCheckerTest3{
 
     val twiceS = 
       "def twice[A](f: A => A): A => A = { def ff(x: A): A = f(f(x)); ff }\n"+
-        "val twtw = twice(twice)\n"+applyS+
-        "val twap = twice(apply)\n"+
-        "def double(x: Int): Int = 2*x; val twapd = twap(double)"
+        "val twtw = twice twice\n"+applyS+
+        "val twap = twice apply\n"+
+        "def double(x: Int): Int = 2*x; val twapd = twap double"
     tcpss(twiceS) match{ case Ok(te) => 
       assert(te("twice") == FunctionType(
         List(("A",AnyTypeConstraint)),
