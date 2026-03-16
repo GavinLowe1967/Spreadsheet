@@ -203,6 +203,25 @@ object ExpParserTest extends ParserTest0{
       CellExp(NameExp("c"), RowExp(6), IntType),
       List(Generator("c", ListLiteral(List(ColumnExp("A"), ColumnExp("D")))))
     ))
+  }
+
+  /** Tests on function applications, mostly without parentheses. */
+  private def functionApps() = {
+    assert(p("f 3") == FunctionApp(NameExp("f"), List(IntExp(3))))
+    assert(p("f 3 + g x") == 
+      BinOp(FunctionApp(NameExp("f"), List(IntExp(3))), "+",
+        FunctionApp(NameExp("g"), List(NameExp("x"))) ))
+    assert(p("f \"Hello\"") == 
+      FunctionApp(NameExp("f"), List(StringExp("Hello"))))
+    assert(p("f true") == FunctionApp(NameExp("f"), List(BoolExp(true))))
+    assert(p("f #A3") == 
+      FunctionApp(NameExp("f"), List(UntypedCellExp(ColumnExp("A"), RowExp(3)))))
+    assert(p("f #A") == FunctionApp(NameExp("f"), List(ColumnExp("A"))))
+    assert(p("f [3]") == 
+      FunctionApp(NameExp("f"), List(ListLiteral(List(IntExp(3))))))
+    assert(p("f {val x = 3; x}") ==
+      FunctionApp(NameExp("f"), 
+        List(BlockExp(List(ValueDeclaration("x",IntExp(3))), NameExp("x")))))
 
   }
 
@@ -214,6 +233,7 @@ object ExpParserTest extends ParserTest0{
     expressions3() // blocks, if statements, list expressions
     typedExpressions() // explicitly typed expressions
     listComprehensions() // list comprehensions
+    functionApps() // function applications
     println("Expression tests done")
   }
 

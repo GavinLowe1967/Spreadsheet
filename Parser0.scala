@@ -8,8 +8,8 @@ import Parser._
 trait Parser0{
   // ========= Numbers
 
-  /** A parser for an Int or Float. */
-  protected def number: Parser[Exp] = {
+  /** A parser for a non-negative Int or Float. */
+  protected def posNum: Parser[Exp] = { 
     /* Convert `ds` to an Int. */
     def mkInt(ds: List[Char]): Int = {
       var ds1 = ds; var x = 0
@@ -25,19 +25,22 @@ trait Parser0{
     // Parser for repeated digits
     val digits: Parser[List[Char]] = 
       spot(_.isDigit) ~~ repeat1(spot(_.isDigit)) > toPair(_::_)
-    // Parser for positive numbers
-    val posNum: Parser[Exp] = 
-      digits ~~ opt(lit(".") ~~ digits) > { 
-        case (intPart, None) => IntExp(mkInt(intPart))
-        case (intPart, Some((_,fracPart))) => 
-          FloatExp(mkInt(intPart) + mkFloat(fracPart))
-      }
+    // Main parser
+    digits ~~ opt(lit(".") ~~ digits) > {
+      case (intPart, None) => IntExp(mkInt(intPart))
+      case (intPart, Some((_,fracPart))) =>
+        FloatExp(mkInt(intPart) + mkFloat(fracPart))
+    }
+  }
+
+  /** A parser for an Int or Float. */
+  protected def number: Parser[Exp] = (
     // Main parser: allow leading "-"
     lit("-") ~~ posNum > { 
       case (_,IntExp(n)) => IntExp(-n); case (_,FloatExp(x)) => FloatExp(-x) 
     } |
     posNum
-  }
+  )
 
   // ========= Strings
 

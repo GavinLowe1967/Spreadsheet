@@ -40,30 +40,10 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
     }
   )
 
-  // /** Parser for the arguments of a function, with no preceding newline.
-  //   * Note: should be sequenced to its left-hand argument using `~~`. */
-  // private def params: Parser[Option[List[Exp]]] =
-  //   opt( consumeWhiteNoNL ~~> inParens(repSep(expr, ",")) )
-
-  /** Parser for arguments of a function, possibly in several sets. */
-  private def paramsList: Parser[List[List[Exp]]] =
-    repeat1( consumeWhiteNoNL ~~> inParens(repSep(expr, ",")) )
-
   // ===== Lists
 
   /** A parser for a list expression, either a list literal or a list
     * comprehension. */
-/*
-  private def list: Parser[Exp] = 
-    // lit("[") ~> expr ~ (
-    //   (lit(",") ~> repSep(expr, ",")) <~ lit("]") > Left
-    //   | lit("|") ~ (qualifiers <~ lit("]")) > Right
-    // ) > { case (e,Left(es) => ListLiter
-    lit("[") ~> (
-      repSep(expr, ",") <~ lit("]") > ListLiteral
-      | (expr <~ lit("|")) ~ (qualifiers <~ lit("]")) > toPair(ListComprehension)
-    )
- */
   private def list: Parser[Exp] = 
     lit("[") ~> (
       lit("]") > (_ => ListLiteral(List[Exp]())) 
@@ -93,13 +73,22 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
     repSepNonEmpty(qualifier, ",")
 
   // ===== Cell expressions
+  /** A parser for a row or column, e.g. "#A". */
+  private def rowOrColumn =
+    lit("#") ~~ (int > RowExp | colName > ColumnExp) > { _._2 }
+
+  /** A parser for an expression such as "#B3". */
+  private def cell0: Parser[(Exp,Exp)] =
+    lit("#") ~> colName ~~ posInt > 
+      { case (c,r) => (ColumnExp(c), RowExp(r)) }
 
   /** A parser for an expression such as "Cell(B,3)" of "#B3". */
   def cell: Parser[(Exp,Exp)] = (
     keyword("Cell") ~ inParens((expr <~ lit(",")) ~ expr) > { case (x,y) => y }
       // Note: can't be interpreted as a function application
-    | lit("#") ~> colName ~~ posInt > 
-      { case (c,r) => (ColumnExp(c), RowExp(r)) }
+    | cell0
+    // | lit("#") ~> colName ~~ posInt > 
+    //   { case (c,r) => (ColumnExp(c), RowExp(r)) }
   )
 
   /** Parse the name of a column: a non-empty sequence of uppercase letters.*/
@@ -143,6 +132,27 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
     }
   // Note: don't consume whitespace when cellRHS fails.
 
+  // ===== Parameters of a function.
+
+  /** Parser for arguments of a function, possibly in several sets. 
+    * Note: should be sequenced to its left-hand argument using `~~`. */
+  private def paramsList: Parser[List[List[Exp]]] =
+    repeat1( consumeWhiteNoNL ~~> params )
+
+  /** A single parameter list, or a single unparenthesised parameter. */
+  private def params: Parser[List[Exp]] = (
+    inParens(repSep(expr, ","))
+    | (posNum | name1 | (cell0 > toPair(UntypedCellExp)) | atomicParam) > 
+      { n => List(n) }
+  )
+  // Notes: we include only positive numbers above; negative numbers would
+  // need parentheses.  The parsers name1 and cell0 are included in more
+  // general parsers within factor0.
+
+  /** A parser for an expression that can be used as an argument of a function
+    * without parentheses, and not otherwise captured within factor0. */
+  private def atomicParam: Parser[Exp] = 
+    string > StringExp | bool | rowOrColumn | list | block
 
   // ===== Expressions not using an infix or if at the top level. 
 
@@ -160,13 +170,12 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
 
 // IMPROVE: do we need the "withExtent" both above and below?
 
-
-
   /** A parser for expressions that use no infix operators or "if" statement
     * outside of parentheses. */
   private def factor0: Parser[Exp] = withExtent( 
-    number
-    | string > StringExp | cellExp | bool
+    number | cellExp | atomicParam
+    // Note: cellExp must precede the rowOrColumn within atomicParam 
+    // | string > StringExp | cellExp | bool
     // Name or application of named function
     | name1 ~~ paramsList  > { case (n,args) => args.foldLeft(n)(FunctionApp) }
     // Note: in the above, inner FunctionApps don't receive an Extent.  
@@ -174,9 +183,9 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
     // }
     // TODO: allow more general definitions of the function.
       // Row and column literals
-    | lit("#") ~~ (int > RowExp | colName > ColumnExp) > { _._2 }  
+    //| rowOrColumn // lit("#") ~~ (int > RowExp | colName > ColumnExp) > { _._2 }  
     | inParens(expr) // Note: sets extent to include parentheses.
-    | list | block
+    //| list | block
     | failure("YYY") // IMPROVE
   )
 
