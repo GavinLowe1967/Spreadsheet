@@ -53,8 +53,28 @@ class TypeEnv(
   //   case None => None; case Some(List(t)) => Some(t)
   // }
 
-  /** The TypeEnv formed by adding the mapping name -> t. */
+ /** The TypeEnv formed by adding the mapping name -> t, overwriting previous
+   * names. */
   def + (name: Name, t: TypeT): TypeEnv = make(nameMap + (name -> List(t)))
+
+/*
+  /** The TypeEnv formed by adding the mapping name -> t. */
+  def add (name: Name, t: TypeT): TypeEnv = nameMap.get(name) match{
+    case None => make(nameMap + (name -> List(t)))
+    case Some(ts) => make(nameMap + (name -> (ts :+ t)))
+  }
+ */
+
+  /** The TypeEnv formed by adding the mapping name -> ft.  There should already
+    * by a similar mapping, but where the FunctionType has a null return type;
+    * this gets replaced. */
+  def update(name: Name, ft: FunctionType): TypeEnv = {
+    val FunctionType(params, domain, range) = ft; val ts = nameMap(name)
+    val ts1 = ts.filter{ case ft1: FunctionType => ft.matches(ft1) }
+    assert(ts1.length == 1); val List(ft1) = ts1
+    val ts2 = ts.filter(_ != ft1) :+ ft
+    make(nameMap + (name -> ts2))
+  }
 
   /** The TypeEnv formed by adding the mapping name -> ts. */
   def + (name: Name, ts: List[TypeT]): TypeEnv = {

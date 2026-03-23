@@ -37,13 +37,15 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
           Ok(te1 + (name, t))
         })
 
-      case fd @ FunctionDeclaration(name, tparams, paramss, rt, body) =>
+      case fd @ FunctionDeclaration(name, tparams, paramss, ort, body) =>
+// TODO: don't require return type
         val params = paramss.flatten
-        // name should already be bound to an appropriate FunctionType, by
-        // typeCheckStmtList
-        val Some(ts) = typeEnv.get(name)
-        //val List(params) = paramss // FIXME
-        require(ts.contains(fd.mkFunctionType)) // FunctionType(tparams, paramss, rt)))
+        // If return type is given, name should already be bound to an
+        // appropriate FunctionType, by typeCheckStmtList
+        if(ort.isDefined){
+          val Some(ts) = typeEnv.get(name)
+          require(ts.contains(fd.mkFunctionType))
+        }
         // Check names of params, tparams are disjoint
         (findRepetition(params.map(_._1)) match{
           case Some(p) => FailureR(s"Repeated parameter $p")
@@ -54,15 +56,26 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
               val te1 = (typeEnv.newScope ++ params).addTypeParams(tparams)
               // Type parameters used in params
               val usedTParams: List[TypeParamName] = 
-                params.flatMap(_._2.typeParams) ++ rt.typeParams
+                params.flatMap(_._2.typeParams) ++ 
+                  (if(ort.isDefined) ort.get.typeParams else List())
               val invalidTParams = usedTParams.filter(p => !te1.hasTypeParam(p))
               if(invalidTParams.nonEmpty)
                 FailureR(s"Unknown type(s): "+invalidTParams.mkString(", "))
-              else
-                // Typecheck body, and make sure return type matches rt
-                typeCheckUnifyAndClose(te1, body, rt).map{ case (te3, tt) =>
-                  Ok(te3.endScope) // back to the old scope
-                }
+              else ort match{
+                case Some(rt) => 
+                  // Typecheck body, and make sure return type matches rt
+                  typeCheckUnifyAndClose(te1, body, rt).map{ case (te2, tt) =>
+                    Ok(te2.endScope) // back to the old scope
+                  }
+                case None => 
+                  // Typecheck body.  Add appropriate FunctionType value. 
+                  typeCheckAndClose(te1, body).map{ case (te2, rt) =>
+                    // println(rt)
+                    val ft = fd.mkFunctionType(rt)
+                    //println(ft)
+                    Ok(te2.endScope.update(name, ft))
+                  }
+              } // end of match
 // FIXME: if any of tparams gets bound to a TypeVar, update in typeEnv(name)
           }
         }).lift(decl)
@@ -142,8 +155,9 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
     }
   }
 
-  /** Extend typeEnv with the claimed types of function declarations.  Also
-    * label each function declaration with its index. */
+  /** Extend typeEnv with the claimed types of function declarations where a
+    * return type is given.  Also label each function declaration with its
+    * index. */
   private def updateEnv(typeEnv: TypeEnv, grouped: GroupedFunctions)
       : Reply[TypeEnv] = {
     var te = typeEnv 
@@ -153,7 +167,7 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
       var ts = List[TypeT](); var i = 0
       for(fd <- defs){
         if(defs.length > 1){ fd.setIndex(i); i += 1 }
-        ts = ts :+ fd.mkFunctionType
+        /*if(fd.ort.isDefined)*/ ts = ts :+ fd.mkFunctionType
       }
       te = te + (name, ts)
     }

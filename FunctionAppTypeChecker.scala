@@ -28,6 +28,9 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       case _ => FailureR("Non-function applied as function")
     }
 
+  private val forwardRefFail = FailureR(
+    s"Function without explicit return type applied before its definition")
+
   /** Typecheck the application of a function of type ft to args. */
   private 
   def checkFunctionApp1(typeEnv: TypeEnv, ft: FunctionType, args: List[Exp])
@@ -36,6 +39,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     val FunctionType(tParams, domain, range) = ft
     if(domain.length != args.length)
       FailureR(s"Expected ${domain.length} arguments, found "+args.length)
+    else if(range == null) forwardRefFail
     else{
       //val unusedTParams = ft.unusedTParams
       // Create fresh type variables to replace tParams in domain and range
@@ -216,7 +220,9 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
             (if(args.length > 1) "s" else "")+" of type "+showList(argsTs)
           ).lift(fa, true)
         case List(index) =>
-          ne.setIndex(index); Ok((te1.endScope, ts(index).range))
+          ne.setIndex(index); val range = ts(index).range
+          if(range != null) Ok((te1.endScope, range)) 
+          else forwardRefFail.lift(fa, true)
         case _ => 
           sys.error(s"Multiple functions $fn with arguments of type(s)"+
             showList(argsTs))

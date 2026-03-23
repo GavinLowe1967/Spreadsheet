@@ -5,7 +5,7 @@ def foldr[A,B](f: A => B => B)(e: B)(xs: List[A]): B =
   if(isEmpty xs) e else f(head xs)(foldr f e (tail xs))
 
 // Curried sum function.
-val sumX = { def p(x:Int)(y:Int): Int = x+y; foldr p 0 }
+val sumX = { def p(x:Int)(y:Int) = x+y; foldr p 0 }
 // Overloaded sum functions.
 def sum(xs: List[Int]): Int = 
   if(isEmpty xs) 0 else head xs + sum(tail(xs))
@@ -13,10 +13,10 @@ def sum(xs: List[Float]): Float =
   if(isEmpty xs) 0.0 else head xs + sum(tail(xs))
 
 //def apply[A,B](f: A => B, x: A): B = f(x)
-def apply[A,B](f: A => B)(x: A): B = f x
+def apply[A,B](f: A => B)(x: A) = f x
 
-def double(n: Int): Int = 2*n
-def double(y: Float): Float = 2.0*y
+def double(n: Int) = 2*n
+def double(y: Float) = 2.0*y
 
 // Row for the first empty cell in column c from row r.
 def firstEmptyInCol(c: Column, r: Row): Row =

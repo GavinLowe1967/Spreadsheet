@@ -3,41 +3,46 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
-* Improve syntax for function declarations and applications -- currying.
 
-1. Parsing of curried function applications -- done.
+* Make return type of functions optional in most cases.
 
-2. Test type checking of above, e.g. cases like const.  With
-def const[A,B](x: A): B => A = { def constX(y: B): A = x; constX }
-val const3 = const(3)         -- done
+1. Change FunctionDeclaration (Statement.scala) so return type is of type
+Option[TypeT].  Initially make all code assume Some(rt). -- done
 
-3. Change FunctionDeclaration (Statement.scala) to take List of parameter
-lists.  Initially, adapt other code to assume singleton list. -- done
+2. Change parser. (DeclarationParser.scala, line 50). Test in
+StatementParserTest -- done.
 
-4. Parsing of curried function declarations -- done
+3. In DeclarationTypeChecker.updateEnv, add FunctionTypes only for those with
+a given return type. -- done
 
-4a. Check names are distinct in typeCheckDecl -- done. TEST
+4. In DeclarationTypeChecker, in the case of return type of None, type check
+body; close and end scope; store FunctionType with type of body. -- done
 
-5. Adapt FunctionDeclaration.mkFunctionType appropriately.  (Called from
-DeclarationtypeChecker.updateEnv.) -- done TEST
+** This doesn't work correctly with overloading.  We want to avoid overwriting
+   other instances of the same name defined in the same scope; but do want to
+   overwrite other instances.
 
-6. Type checking of declarations.  In typeCheckDecl
-(DeclarationTypeChecker.scala), flatten the parameters, and continue as
-before.  Also in checkOverloadingAllowed -- needs TESTING
+- Add FunctionType value for all declarations, but with null for return type
+  when not given. -- done
 
-7. In Execution.perform, build nested FunctionValue. 
+- Add function to TypeEnv to replace with new FunctionType -- done
 
-??  Translate into uncurried form,
-e.g. def f[A,B](x: A)(y: B): C = e --> 
-def f[A,B](x: A): B => C = { def f'(y: B) = e; f' }.
+- Test with bad overloadings -- same types of args.  Also higher-order functions 
+
+- Test with polymorphic functions.
+
+- Check mutual recursions.
+
+5. Check all functions that need a return type declaration have one. 
+  - For each function,  
+    - Enumerate names of later functions without return types
+    - Check the function doesn't use any such.
 
 Priorities
 ==========
 
 
 * Haskell standard prelude.
-
-* Make return type of functions optional in most cases.
 
 * Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
   = #A3".
@@ -76,6 +81,34 @@ Low Priority
 ===================================== DONE
 
 
+
+* Improve syntax for function declarations and applications -- currying.
+
+1. Parsing of curried function applications -- done.
+
+2. Test type checking of above, e.g. cases like const.  With
+def const[A,B](x: A): B => A = { def constX(y: B): A = x; constX }
+val const3 = const(3)         -- done
+
+3. Change FunctionDeclaration (Statement.scala) to take List of parameter
+lists.  Initially, adapt other code to assume singleton list. -- done
+
+4. Parsing of curried function declarations -- done
+
+4a. Check names are distinct in typeCheckDecl -- done. TEST
+
+5. Adapt FunctionDeclaration.mkFunctionType appropriately.  (Called from
+DeclarationtypeChecker.updateEnv.) -- done TEST
+
+6. Type checking of declarations.  In typeCheckDecl
+(DeclarationTypeChecker.scala), flatten the parameters, and continue as
+before.  Also in checkOverloadingAllowed -- needs TESTING
+
+7. In Execution.perform, build nested FunctionValue. 
+
+??  Translate into uncurried form,
+e.g. def f[A,B](x: A)(y: B): C = e --> 
+def f[A,B](x: A): B => C = { def f'(y: B) = e; f' }.
 
 I think we should have cont3: [B] B => Int; at present, it's t => Int for t a
 TypeVar.  I think in FunctionAppTypeChecker.subTypeParams, we should not

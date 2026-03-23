@@ -36,10 +36,11 @@ object FunctionDeclaration{
 import FunctionDeclaration.ParameterList
 
 
-/** The declaration of a function "def name[tparams](args): rt = exp". */
+/** The declaration of a function "def name[tparams](args) = exp".  ort =
+  * Some(rt) if an explicit return type rt is given.*/
 case class FunctionDeclaration(
   name: String, tParams: List[FunctionType.TypeParameter], 
-  params: List[ParameterList], rt: TypeT, body: Exp)
+  params: List[ParameterList], ort: Option[TypeT], body: Exp)
     extends Declaration{
   private var index = -1
 
@@ -52,15 +53,25 @@ case class FunctionDeclaration(
   /** The types of the parameters of this. */
   def paramTs: List[List[TypeT]] = params.map(_.map(_._2))
 
-  /** A FunctionType object representing the type of this function. */
-  def mkFunctionType = // FunctionType(tParams, paramTs, rt)
-    FunctionType(tParams, params.head.map(_._2), mkFunctionType1(params.tail))
+  /** A FunctionType object representing the type of this function.  If the
+    * return type is undefined, uses null. */
+  def mkFunctionType = 
+    FunctionType(tParams, params.head.map(_._2), 
+      mkFunctionType1(params.tail, if(ort.isDefined) ort.get else null))
+
+  /** A FunctionType object representing the type of this function with return
+    * type rt.  Requires that the return type is not defined. */
+  def mkFunctionType(rt: TypeT) = {
+    require(ort.isEmpty)
+    FunctionType(tParams, params.head.map(_._2), 
+      mkFunctionType1(params.tail, rt))
+  }
 
   /** Make the type of a curried function with parameters ps and result type
     * rt. */
-  private def mkFunctionType1(ps: List[ParameterList]): TypeT = 
-    if(ps.isEmpty) rt 
-    else FunctionType(List(), ps.head.map(_._2), mkFunctionType1(ps.tail))
+  private def mkFunctionType1(ps: List[ParameterList], rt: TypeT): TypeT = 
+    if(ps.isEmpty) rt
+    else FunctionType(List(), ps.head.map(_._2), mkFunctionType1(ps.tail, rt))
 }
 
 // =======================================================

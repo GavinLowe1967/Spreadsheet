@@ -41,12 +41,13 @@ object DeclarationParser extends Parser0 with DeclarationParserT{
       { case Some(ts) => ts; case None => List() }
 
   /** A parser for a function declaration 
-    * "def <name>(<params>): <type> = <expr>". */
+    * "def <name>(<params>): <type> = <expr>", where the ": <type>" is 
+    * optional. */
   private def funDec: Parser[FunctionDeclaration] = 
     (keyword("def") ~> name ~~ typeParams ~ inParens(params).+) ~ 
-      (ofType ~ (lit("=") ~> expr)) >
-    { case (((n,tps),ps), (rt,e)) => FunctionDeclaration(n, tps, ps, rt, e) }
- 
+      (opt(ofType) ~ (lit("=") ~> expr)) >
+    { case (((n,tps),ps), (ort,e)) => FunctionDeclaration(n, tps, ps, ort, e) }
+
   /** A parser for a declaration: either a value or function declaration. */
   def declaration = valDec | funDec
 

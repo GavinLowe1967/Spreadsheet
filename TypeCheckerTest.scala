@@ -45,6 +45,7 @@ object TypeCheckerTest{
       curryingTests2()
       // ------                     TypeCheckerTest4.scala
       preludeTests()
+      rtTests()
     }
     println("Done")
   }

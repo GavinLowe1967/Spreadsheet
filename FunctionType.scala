@@ -34,6 +34,20 @@ case class FunctionType(
 
   /** Type parameters that are used in domain. */
   val usedTParams = params.filter(tp => !unusedTParams.contains(tp))
+
+  /** Does ft match this, but with a null final return type? */ 
+  def matches(ft: FunctionType): Boolean = {
+    val FunctionType(ps1, d1, r1) = ft
+    ps1 == params && d1 == domain && (range match{
+      // If both return FunctionTypes, recurse.
+      case rft: FunctionType => 
+        r1 match{
+          case rft1: FunctionType => rft.matches(rft1)
+          case null => true; case _ => false
+        }
+      case _ => r1 == null
+    })
+  }
 }
 
 object FunctionType{

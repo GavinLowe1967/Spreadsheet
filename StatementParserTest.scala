@@ -51,15 +51,22 @@ object StatementParserTest extends ParserTest0{
   /** Tests on function declarations. */
   private def functions() = {
     assert(ps("def square(n: Int): Int = n*n") ==
-      FunctionDeclaration("square", List(), List(List(("n",IntType))), IntType,
-        BinOp(NameExp("n"), "*", NameExp("n")) ))
+      FunctionDeclaration("square", List(), List(List(("n",IntType))), 
+        Some(IntType), BinOp(NameExp("n"), "*", NameExp("n")) ))
+    assert(ps("def square(n: Int) = n*n") ==
+      FunctionDeclaration("square", List(), List(List(("n",IntType))), 
+        None, BinOp(NameExp("n"), "*", NameExp("n")) ))
     // Test with a newline in a strange place
     assert(ps("def square\n(n: Int): Int = n*n") ==
-      FunctionDeclaration("square", List(), List(List(("n",IntType))), IntType,
-        BinOp(NameExp("n"), "*", NameExp("n")) ))
+      FunctionDeclaration("square", List(), List(List(("n",IntType))), 
+        Some(IntType), BinOp(NameExp("n"), "*", NameExp("n")) ))
     assert(ps("def add(x: Int, y: Int) : Int = x+y") == 
       FunctionDeclaration("add", List(), 
-        List(List(("x", IntType), ("y", IntType))), IntType,
+        List(List(("x", IntType), ("y", IntType))), Some(IntType),
+        BinOp(NameExp("x"), "+", NameExp("y")) ))
+    assert(ps("def add(x: Int, y: Int) = x+y") == 
+      FunctionDeclaration("add", List(), 
+        List(List(("x", IntType), ("y", IntType))), None,
         BinOp(NameExp("x"), "+", NameExp("y")) ))
     assert(ps("val c = #B \n") == ValueDeclaration("c", ColumnExp("B")))
 
@@ -67,31 +74,39 @@ object StatementParserTest extends ParserTest0{
       ListType(BoolType))
     assert(ps("def add[A](x: Int, y: Int) : Int = x+y") == 
       FunctionDeclaration("add", List(("A",AnyTypeConstraint)),
-        List(List(("x",IntType), ("y",IntType))), IntType, 
+        List(List(("x",IntType), ("y",IntType))), Some(IntType), 
         BinOp(NameExp("x"), "+", NameExp("y")) ))
     assert(ps("def id[A](x: A) : A = x") == 
       FunctionDeclaration("id", List(("A",AnyTypeConstraint)),
-        List(List(("x",TypeParam("A")))), TypeParam("A"), NameExp("x")) )
+        List(List(("x",TypeParam("A")))), Some(TypeParam("A")), NameExp("x")) )
     // Test with a newline in a strange place.
     assert(ps("def id\n[A](x: A) : A = x") == 
       FunctionDeclaration("id", List(("A",AnyTypeConstraint)),
-        List(List(("x",TypeParam("A")))), TypeParam("A"), NameExp("x")) )
+        List(List(("x",TypeParam("A")))), Some(TypeParam("A")), NameExp("x")) )
 
     assert(ps("def apply[A, B](f: A => B, x: A) : B = f(x)") == 
       FunctionDeclaration("apply", 
         List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint) ),
         List(List(
-          ("f", 
-            FunctionType(List(), List(TypeParam("A")), TypeParam("B")) ),
+          ("f", FunctionType(List(), List(TypeParam("A")), TypeParam("B")) ),
           ("x", TypeParam("A"))
         )),
-        TypeParam("B"), 
+        Some(TypeParam("B")), 
+        FunctionApp(NameExp("f"), List(NameExp("x")) ) ))
+    assert(ps("def apply[A, B](f: A => B, x: A) = f(x)") == 
+      FunctionDeclaration("apply", 
+        List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint) ),
+        List(List(
+          ("f", FunctionType(List(), List(TypeParam("A")), TypeParam("B")) ),
+          ("x", TypeParam("A"))
+        )),
+        None,
         FunctionApp(NameExp("f"), List(NameExp("x")) ) ))
 
     assert(ps("def f[A <: Eq](x: A): Boolean = x == x") ==
       FunctionDeclaration(
         "f", List(("A",EqTypeConstraint)),
-        List(List(("x",TypeParam("A")))), BoolType, 
+        List(List(("x",TypeParam("A")))), Some(BoolType), 
         BinOp(NameExp("x"), "==", NameExp("x")) ))
 
     assertFail(pe("{ def f(x: Int): Int = 5/x; f(0) }"))
@@ -107,7 +122,11 @@ object StatementParserTest extends ParserTest0{
   private def curriedFunctions() = {
     assert(ps("def add(x: Int) (y: Int): Int = x+y") == 
       FunctionDeclaration("add", List(), 
-        List( List(("x",IntType)), List(("y",IntType)) ), IntType,  
+        List( List(("x",IntType)), List(("y",IntType)) ), Some(IntType),  
+        BinOp(NameExp("x"), "+", NameExp("y")) ))
+    assert(ps("def add(x: Int) (y: Int) = x+y") == 
+      FunctionDeclaration("add", List(), 
+        List( List(("x",IntType)), List(("y",IntType)) ), None,  
         BinOp(NameExp("x"), "+", NameExp("y")) ))
 
     assert(ps("def foo[A](x: A, y: Int) (z: Float) (b: Boolean): Int = 3") ==
@@ -115,7 +134,13 @@ object StatementParserTest extends ParserTest0{
         "foo", List(("A",AnyTypeConstraint)),
         List( List(("x",TypeParam("A")), ("y",IntType)), 
           List(("z",FloatType)), List(("b",BoolType)) ),
-        IntType, IntExp(3)) )
+        Some(IntType), IntExp(3)) )
+    assert(ps("def foo[A](x: A, y: Int) (z: Float) (b: Boolean) = 3") ==
+      FunctionDeclaration(
+        "foo", List(("A",AnyTypeConstraint)),
+        List( List(("x",TypeParam("A")), ("y",IntType)), 
+          List(("z",FloatType)), List(("b",BoolType)) ),
+        None, IntExp(3)) )
   }
 
   /** Tests on "for" statements. */
