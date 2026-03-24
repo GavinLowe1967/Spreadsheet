@@ -37,7 +37,7 @@ object Execution{
       case CellExp(column, row, theType) =>
         // Check contents of cell has type theType
         val v1 = applyToCell(column, row, checkCellType(theType))
-        e.liftValue(v1, false) // true)
+        e.liftValue(v1, true)
 
       case CellMatchExp(column, row, branches) =>
         // Try to match v against branches

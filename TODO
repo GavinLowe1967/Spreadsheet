@@ -48,7 +48,14 @@ Priorities
 * Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
   = #A3".
 
+* Mod (%).
+
+* Extend arithmetic operators to, e.g. (Int,Float) => Float, and toInt,
+  toFloat.
+
 * Allow assertions, error.
+
+* Negation "!".
 
 * "println" statements.
 

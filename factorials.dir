@@ -2,7 +2,7 @@
 val In = #A; val Out = #B
 
 // The factorial of n.
-def fact(n: Int): Int = if(n <= 1.0) 1 else n*fact(n-1)
+def fact(n: Int): Int = if(n <= 1) 1 else n*fact(n-1)
 
 // The sum of xs.
 def sum(xs: List[Int]): Int = if(xs == []) 0 else head(xs) + sum(tail(xs)) 

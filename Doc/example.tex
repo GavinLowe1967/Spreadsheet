@@ -1,0 +1,121 @@
+
+\section{A simple example script}
+
+Figure~\ref{fig:example-script} gives a simple (somewhat contrived) example
+script, intended to introduce the language.  The script expects to find
+integers in an initial segment of column~|A|.  It calculates their factorials,
+and writes them in column~|B|.  It also prints the total of those factorials
+below. 
+
+%%%%%
+
+\begin{figure}
+\begin{scala}[numbers = left]
+// The input and output columns.
+val In = #A; val Out = #B £\label{line:InOut}£
+
+// The factorial of £n£.
+def fact(n: Int): Int = if(n <= 1) 1 else n*fact(n-1)£\label{line:factorial}£
+
+// The sum of £xs£.
+def sum(xs: List[Int]): Int = if(xs == []) 0 else head(xs) + sum(tail(xs))£\label{line:sum}£
+
+// Row for the first empty cell in column £c£ from row £r£.
+def firstEmptyInCol(c: Column, r: Row): Row = £\label{line:firstEmptyInCol}£
+  Cell(c,r) match{ case Empty => r; case n: Int => firstEmptyInCol(c, r+1) }£\label{line:cell-match}£
+
+// Row for the first empty cell in £In£
+val firstEmpty = firstEmptyInCol(In, #0)£\label{line:firstEmpty}£
+
+// Write factorials of entries in £In£ into £Out£.
+for(r <- #0 until firstEmpty) Cell(Out,r) = fact(Cell(In,r))£\label{line:write-facts}£
+
+// Write the total.
+Cell(In, firstEmpty+1) = "Total:"£\label{line:total}£
+Cell(Out, firstEmpty+1) = sum([Cell(Out,r): Int | r <- #0 until firstEmpty])£\label{line:write-sum}£
+\end{scala}
+\caption{A simple example script.}
+\label{fig:example-script}
+\end{figure}
+
+%%%%%
+
+The characters ``|\\|'' Turn the rest of the line into a comment. 
+
+Line~\ref{line:InOut} defines two values |In| and |Out|, representing the
+input and output columns.  A column value can be defined by preceding the
+corresponding letter with ``|#|'', so, for example, ``|#A|'' represents
+column~|A|.  Likewise a row value can be defined by preceding the row number
+with ``|#|'', for example ``|#0|''.  It is a good idea to give names to
+relevant rows and columns, in the same way that it is a good idea to give
+names to relevant constants in standard programming languages.
+
+Line~\ref{line:factorial} defines the factorial function.  Definitions of
+functions are introduced using the keyword |def|.  Each parameter of a
+function is given a type.  The return type of a function should be given when
+the function is recursive---which is the case for all three functions in this
+script---or when a reference is made to the function before its definition
+(e.g.~when two functions are defined by mutual recursion).  The definition of
+|fact| is a straightforward recursion, whose meaning should be obvious.
+
+The |sum| function at line~\ref{line:sum} calculates the sum of a list of
+|Int|s.  If |A| is a type, then |List[A]| is the type of lists that contain
+values of type~|A|.  The value |[]| is the empty list.  More generally, a list
+can be defined by writing its elements between square brackets, separated by
+commas, for example ``|[2, 4, 6, 8]|''.  The function |head| returns the first
+element of a nonempty list; and the function |tail| returns the list
+containing all except the first element of a nonempty list.  Again, the
+definition is a straightforward recursion.  
+
+The expression |Cell(c,r)| represents the value in the spreadsheet cell
+in column~|c| and row~|r|.  In the case where |c| and |r| are column and row
+literals, this can be written more concisely.  For example, |#B3| is shorthand
+for |Cell(#B,#3)|.  
+
+The function |firstEmptyInCol(c, r)|, at line~\ref{line:firstEmptyInCol},
+finds the first empty cell in column~|c|, from row |r| onwards, and returns
+the relevant row.  |Column| is the type of columns, and |Row| is the type of
+rows.    When a cell is read, the script should define what
+type or types the cell may read.  The |firstEmptyInCol| function requires the
+cell read to be either empty or an integer.  This is checked using pattern
+matching on the value, using syntax similar to that in Scala.  Each case in a
+pattern matching expression is of the form |case|~$pat$~|=>|~$e$, where $pat$
+is a pattern, and $e$ is an expression giving the result when that pattern is
+matched.  The pattern |Empty| matches an empty cell.  Hence, if |Cell(c,r)| is
+empty, |firstEmptyInCol| returns~|r|.  The pattern |n: Int| matches an
+integer, and binds the name~|n| to that integer in the subsequent expression.
+Hence, if |Cell(r,r)| contains an integer, the |firstEmptyInCol| function
+recurses with \SCALA{firstEmptyInCol(c, r+1)}, where |r+1| represents the row
+after~|r|; thus, the function simply continues searching from the next row.
+We could have written the pattern as ``|_: Int|'' in this case, where ``|_|''
+represents a wildcard pattern, because the subsequent expression does not use
+the value of the integer.  If the value read from the cell does not match any
+of the patterns---in this case, if it is not empty or an integer---the pattern
+matching fails, and the spreadsheet application gives an error message.
+
+Line~\ref{line:firstEmpty} sets |firstEmpty| to be the first row in column
+|In| that contains an empty cell. 
+
+A cell can be written using a command of the form ``|Cell(c,r) = |$e$'',
+where~$e$ defines the value written.  For example, line~\ref{line:total}
+writes the string ``Total:'' into the cell below the first empty cell in
+column~|In|.
+
+Line~\ref{line:write-facts} writes into column~|Out| the factorials of values
+in corresponding cells in column~|In|.  It does this using a |for| loop.  A
+|for| loop of the form |for(x <- xs)|~$block$ executes $block$ for each value
+of~|x| from the list~|xs|.  Here $block$ is a block containing declarations
+and commands.  The expression |#0 until firstEmpty| represents the list of
+rows from~|0|, inclusive, until |firstEmpty|, exclusive, i.e.~the rows that
+were previously found to contain integers in column~|In|.  For each such
+row~|r|, line~\ref{line:write-facts} writes the corresponding factorial into
+column~|Out|.
+
+Finally, line~\ref{line:write-sum} calculates the sum of the factorials, and
+writes it into the appropriate cell.  The expression in square brackets on the
+left is a list comprehension, using Haskell-style notation.  It forms the list
+of values in row~|r| of column~|Out|, for each value of~|r| in \SCALA{#0 until
+  firstEmpty}, i.e.~the factorials written at line~\ref{line:write-facts}.
+The subexpression ``|Cell(Out, r): Int|'' tells the spreadsheet program that
+the cell should contain an integer; the typechecker makes use of this
+information.

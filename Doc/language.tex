@@ -1,0 +1,108 @@
+\section{Script language}
+
+\subsection{Types}
+
+The script language contains the standard types |Int| of (32-bit) integers,
+|Float| of (32-bit) floating point numbers, |Boolean| of booleans (with values
+|true| and |false|), and |String| of strings.  
+
+These four types can be entered in cells of the spreadsheet.  The application
+decides their type based on how they are entered, mostly in the obvious way;
+for example, if a value looks like an integer, it is given the type |Int|.  In
+the case that a |String| is required that looks like a value of another type,
+it can be entered inside quotation marks (e.g.~|"3"|); in such cases, a
+literal quotation can be entered as \SCALA{\\"} (e.g.~\SCALA{"He said
+  \"Hello\""}).  
+
+The types |Row| and |Column| represent rows and columns, respectively. 
+
+If |T| is a type, then |List[T]| represents the type of lists whose elements
+are from~|T|.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Expressions}
+
+\subsubsection{Standard expressions}
+
+The script language contains the normal arithmetic operators, |+|, |-|, |*|
+and |/|, over |Int| and |Float| (over |Int|, |/| performs rounding).  Note
+that |Int| and |Float| are distinct types, so can't (currently) be combined
+using these operators.  The language also contains the normal equality (|==|),
+inequality (|!=|), and order (|<|, |<=|, |>|, |>=|) operators.
+
+The language includes the normal boolean binary operators, |&&| and
+\SCALA{\|\|}.  Boolean negation is written using the function |not|.
+
+List operations: |::|, |head|, |tail|, |isEmpty|, |to|, |until|.  
+
+|if|
+
+Function applications.
+
+\subsubsection{Row, column, and cell expressions}
+
+Row and column literals are written using |#|, e.g.~|#A|, |#B|, etc., and
+|#0|, |#1|, etc.  A row or column value can have an |Int| added to it or
+subtracted from it, with the obvious effect.  For example, $\sm{\#C} + 2 =
+\sm{\#E}$, and $\sm{\#C} - 2 = \sm{\#A}$.  Arithmetic underflow, e.g.~from
+$\sm{\#C} - 3$, gives an error.
+
+If |c| and |r| are a |Row| and |Column|, respectively, then |Cell(c,r)| is a
+cell expression which represents the value in the corresponding cell.  This
+can be abbreviated  in the case of row and column literals; for example
+\SCALA{\#D3} is shorthand for \SCALA{Cell(\#D, \#3)}. 
+
+The type checker needs to be able to deduce a type for each cell expression.
+When the script is executed, the application checks that each cell has the
+expected type, and signals an error otherwise. 
+
+One way the type deduction can be made is if a function is applied to the cell
+expression, which implies that its type must match the parameter type for the
+function.  For example, in line~\ref{line:write-facts} of
+Figure~\ref{fig:example-script}, the expression |fact(Cell(In,r))| implies
+that the cell expression must have type |Int|, since |fact| takes a parameter
+of type~|Int|.
+
+Alternatively, an explicit type can be provided for a cell expression.  For
+example, \SCALA{\#D3: Int} gives the type |Int| to the cell expression.
+
+Finally, a |match| expression allows the cell to have one of several different
+types, and for the value of the expression to depend on that type.  An example
+was given on line~\ref{line:cell-match} of Figure~\ref{fig:example-script}.
+In general, a |match| expression takes the form
+\begin{scala}
+  £\syntax{cell expression}£ match{ £\syntax{cases}£ } 
+\end{scala}
+where \syntax{cases} is a sequence of cases, separated by semicolons or
+newlines.  Each case is of the form
+\begin{scala}
+  case £\syntax{pattern}£ => £\syntax{expression}£
+\end{scala}
+%
+Each pattern takes one of the following forms.
+\begin{itemize}
+\item |Empty|, which matches an empty cell;
+
+\item \syntax{name}|: |\syntax{type}, where \syntax{type} is one of |Int|,
+  |Float|, |String|, or |Boolean|; this matches a value of the given type, and
+  binds the name to that value in the subsequent expression;
+ 
+\item |_|\,|: |\syntax{type}, which is similar to the previous form, except no
+  name is bound.
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Declarations}
+
+|val|
+
+|def|
+
+polymorphism.  |Eq| type class. 
+
+overloading
+
+\subsection{Directives}
