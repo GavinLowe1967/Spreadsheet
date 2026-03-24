@@ -41,8 +41,9 @@ body; close and end scope; store FunctionType with type of body. -- done
 Priorities
 ==========
 
+* Manual
 
-* Haskell standard prelude.
+* Haskell standard prelude.  Allow "include" statements
 
 * Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
   = #A3".

@@ -29,7 +29,8 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     }
 
   private val forwardRefFail = FailureR(
-    s"Function without explicit return type applied before its definition")
+    "Function without explicit return type applied recursively, \n"+
+      "or before its definition,")
 
   /** Typecheck the application of a function of type ft to args. */
   private 
