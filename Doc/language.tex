@@ -34,11 +34,84 @@ inequality (|!=|), and order (|<|, |<=|, |>|, |>=|) operators.
 The language includes the normal boolean binary operators, |&&| and
 \SCALA{\|\|}.  Boolean negation is written using the function |not|.
 
-List operations: |::|, |head|, |tail|, |isEmpty|, |to|, |until|.  
+Conditional expressions are written using C/Java/Scala-style syntax: 
+\begin{scala}
+  if(£\syntax{test}£) £\syntax{expression}£ else £\syntax{expression}£
+\end{scala}
+%
+The two branches must have the same type, and this is the overall type of the
+conditional expression. 
 
-|if|
+Functional applications can be written using parentheses, in the normal way,
+as in Figure~\ref{fig:example-script}.  However, as in Haskell, the
+parentheses can be omitted for a function of one argument, where the actual
+parameter does not logically need parentheses: for example, |f 3|, or \SCALA{g
+  #A3}.  Function application associates to the left, and binds tighter than
+infix operators; for example, \SCALA{f g true + h \#A} represents
+\SCALA{((f(g))(true)) + (h(\#A))}.
 
-Function applications.
+String literals are written inside double quotation marks, as in most other
+languages, e.g.~|"Hello"|.  Special characters can be written using
+\SCALA{\\}, for example, \SCALA{"He said \\"Hello\\".\\n"}.
+
+A \emph{block expression} consists of a sequence of declarations, followed by
+an expression, separated by semicolons or newlines, and enclosed in braces,
+for example
+\begin{scala}
+  { def square(x: Int) = x*x; val y2 = square y; val z2 = square z; y2+z2 }
+\end{scala}
+The declarations are evaluated in order; then the value of the final
+expression is the value of the block expression.
+
+%%%%%
+
+\subsubsection{List expressions}
+
+List literals are written in square brackets, for example |[1,2,3]| or |[]|.
+All the elements of the list must be of the same type.  With the empty list,
+it is sometimes necessary to give the type, to help the type checker, for
+example |[]: List[Int]|.
+
+List concatenation is written using |::|, pronounced ``cons''.  This operator
+takes an element on the left and a list on the right, and returns their
+concatenation; for example $\sm{3 :: [4,5]} = \sm{[3,4,5]}$.  The function
+|head| returns the first element of a non-empty list; for example $\sm{head
+  [3,4,5]} = \sm{3}$.  The function |tail| returns the list containing all
+except the first element of a non-empty list; for example $\sm{tail [3,4,5]} =
+\sm{[4,5]}$.  The function |isEmpty| tests whether a list is empty. 
+
+Lists of consecutive |Int|s can be constructed using the infix operators |to|
+and |until|.  The list |m to n| produces the list from~|m| to~|n| inclusive;
+for example, $\sm{3 to 5} = \sm{[3,4,5]}$.  The list |m until n| is similar,
+but does not include~|n|; for example, $\sm{3 until 5} = \sm{[3,4]}$.  These
+operators can also be applied to row and column values; see below. 
+
+List comprehensions provide a way to define a list, in a similar style to
+mathematical set comprehensions.  The expression \SCALA{[e \| x <- xs]}
+generates the list containing the value of~|e| for each~|x| in~|xs|.  For
+example,
+%
+\begin{eqnarray*}
+\mbox{\SCALA{[x*x \| x <- [3,4,5]]}} & = & \sm{[9,16,25]}.
+\end{eqnarray*}
+%
+A term of the form |x <- xs| is called a \emph{generator}.  A list
+comprehension may have multiple generators, separated by commas; an earlier
+generator is iterated over more slowly than a later generator.  For example,
+\begin{eqnarray*}
+\mbox{\SCALA{[x*y | x <- [2,3], y <- [4,5]]}} & = & \sm{[8,10,12,15]}.
+\end{eqnarray*}
+%
+A list comprehension may also have one or more boolean filters; a term is
+produced only for values of the variables that satisfy the filter.  For
+example, 
+%
+\begin{eqnarray*}
+\mbox{\SCALA{[x*y | x <- [2,3], y <- [4,5], x+y != 7]}} & = & \sm{[8,15]}.
+\end{eqnarray*}
+
+
+%%%%%
 
 \subsubsection{Row, column, and cell expressions}
 
@@ -48,17 +121,23 @@ subtracted from it, with the obvious effect.  For example, $\sm{\#C} + 2 =
 \sm{\#E}$, and $\sm{\#C} - 2 = \sm{\#A}$.  Arithmetic underflow, e.g.~from
 $\sm{\#C} - 3$, gives an error.
 
-If |c| and |r| are a |Row| and |Column|, respectively, then |Cell(c,r)| is a
-cell expression which represents the value in the corresponding cell.  This
-can be abbreviated  in the case of row and column literals; for example
-\SCALA{\#D3} is shorthand for \SCALA{Cell(\#D, \#3)}. 
+Lists of row and column values can be formed using the |to| and |until|
+operators.  For example \SCALA{#B to #D} $=$ \SCALA{[#B,#C,#D]}, and \SCALA{#2
+  until #4} $=$ \SCALA{[#2,#3]}.
 
-The type checker needs to be able to deduce a type for each cell expression.
-When the script is executed, the application checks that each cell has the
-expected type, and signals an error otherwise. 
+
+If |c| and |r| are a |Row| and |Column|, respectively, then |Cell(c,r)| is a
+\emph{cell expression}: it represents the value in the corresponding cell of
+the spreadsheet.  This can be abbreviated in the case of row and column
+literals; for example \SCALA{\#D3} is shorthand for \SCALA{Cell(\#D, \#3)}.
+
+The type checker needs to be able to deduce a type, or a set of possible
+types, for each cell expression.  When the script is executed, the application
+checks if the corresponding cell in the spreadsheet has the expected type, and
+signals an error otherwise.
 
 One way the type deduction can be made is if a function is applied to the cell
-expression, which implies that its type must match the parameter type for the
+expression: this implies that its type must match the parameter type for the
 function.  For example, in line~\ref{line:write-facts} of
 Figure~\ref{fig:example-script}, the expression |fact(Cell(In,r))| implies
 that the cell expression must have type |Int|, since |fact| takes a parameter
@@ -89,20 +168,47 @@ Each pattern takes one of the following forms.
   binds the name to that value in the subsequent expression;
  
 \item |_|\,|: |\syntax{type}, which is similar to the previous form, except no
-  name is bound.
+  name is bound;
+
+\item |_|\,, which matches any type.
 \end{itemize}
+%
+In a |match| expression, the cases are tried in the order given; the first
+case that matches is selected, and the corresponding expression is evaluated.
+If no case matches, an error is signalled.  Within a |match| expression, all
+the expressions on the right-hand side of cases must have the same type.  
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Declarations}
 
-|val|
+A \emph{value declaration} is written using the keyword |val|.
+Figure~\ref{fig:example-script} contains several examples.
 
-|def|
+A \emph{function declaration} is written using the keyword |def|.  Again,
+Figure~\ref{fig:example-script} contains several examples.  Each parameter of
+the function should be given a type.  A return type must be given for a
+recursive function, or if a forward reference is made to the function.  For
+example, the return type for |f| is necessary in the following:
+%
+\begin{scala}
+val y = f(3); def f(x: Int): Int = x+1
+\end{scala}
+%
+However, no return type is necessary in the following:
+%
+\begin{scala}
+def f(x: Int) = x+1; val y = f(3) 
+\end{scala}
+ 
+
+multiple argument lists
 
 polymorphism.  |Eq| type class. 
 
 overloading
+
+Top-level or local.
 
 \subsection{Directives}

@@ -48,6 +48,11 @@ case class FunctionType(
       case _ => r1 == null
     })
   }
+
+  /** Does this (possibly curried) function have an undefined return? */
+  def finalNull: Boolean = range match{
+    case null => true; case ft: FunctionType => ft.finalNull; case _ => false
+  }
 }
 
 object FunctionType{

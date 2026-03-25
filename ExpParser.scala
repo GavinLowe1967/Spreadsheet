@@ -136,6 +136,8 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
     * without parentheses, and not otherwise captured within factor0. */
   private def atomicParam: Parser[Exp] = 
     string > StringExp | bool | rowOrColumn | list | block
+  // Note: numbers, and cell expressions such as #A3 are captured within
+  // factor0.
 
   /** A single parameter list, or a single unparenthesised parameter. */
   private def params: Parser[List[Exp]] = (

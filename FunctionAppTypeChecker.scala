@@ -40,7 +40,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     val FunctionType(tParams, domain, range) = ft
     if(domain.length != args.length)
       FailureR(s"Expected ${domain.length} arguments, found "+args.length)
-    else if(range == null) forwardRefFail
+    else if(/*range == null ||*/ ft.finalNull) forwardRefFail
     else{
       //val unusedTParams = ft.unusedTParams
       // Create fresh type variables to replace tParams in domain and range
@@ -221,9 +221,9 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
             (if(args.length > 1) "s" else "")+" of type "+showList(argsTs)
           ).lift(fa, true)
         case List(index) =>
-          ne.setIndex(index); val range = ts(index).range
-          if(range != null) Ok((te1.endScope, range)) 
-          else forwardRefFail.lift(fa, true)
+          ne.setIndex(index); val ft = ts(index)
+          if(ft.finalNull) forwardRefFail.lift(fa, true)
+          else Ok((te1.endScope, ft.range))
         case _ => 
           sys.error(s"Multiple functions $fn with arguments of type(s)"+
             showList(argsTs))

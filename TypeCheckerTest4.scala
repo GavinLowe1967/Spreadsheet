@@ -236,6 +236,26 @@ object TypeCheckerTest4{
 
     val script11 = "def fact(n: Int) = if(n==0) 1 else n*fact(n-1)"
     assertFail(tcpss(script11))
+
+    // Reference to curried function
+    val script12 = "val add3 = add(3); def add(x: Int)(y: Int) = x+y"
+    assertFail(tcpss(script12))
+
+    val script12a = "val add3 = add(3); def add(x: Int)(y: Int): Int = x+y"
+    tcpss(script12a) match{ case Ok(te) =>
+      assert(te("add3") == FunctionType(List(), List(IntType), IntType))
+    }
+
+    val script13 = 
+      "val add3 = add(3); "+
+      "def add(x: Int)(y: Int) = x+y; def add(x: Float)(y: Float) = x+y"
+    assertFail(tcpss(script13))
+    val script13a = 
+      "val add3 = add(3); "+
+      "def add(x: Int)(y: Int): Int = x+y; def add(x: Float)(y: Float) = x+y"
+    tcpss(script13a) match{ case Ok(te) =>
+      assert(te("add3") == FunctionType(List(), List(IntType), IntType))
+    }
   }
 
 
