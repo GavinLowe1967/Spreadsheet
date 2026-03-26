@@ -238,6 +238,9 @@ object Execution{
       v1 match{ case ev: ErrorValue => handleError(ev); case _ => {} }
     }
     else{
+      // v1 match{
+      //   case err: ErrorValue => handleError(err); case _ => {}
+      // }
       val mwe = MultipleWriteError(env.getCell1(c,r), v1) 
       env.setCell(c, r, mwe); handleError(mwe)
     }
