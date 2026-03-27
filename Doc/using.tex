@@ -3,12 +3,10 @@
 
 The spreadsheet application can be run by running Scala on the class
 \texttt{spreadsheet.SpreadsheetApp}, providing the name of the script to use.
-The application uses the Scala Swing library, so the jar
-file\footnote{Available from \url{https://scala-lang.org/files/archive/}.}
-needs to be on the classpath.  I use the following command (except all on one
-line): {\small
+The application uses the Scala Swing library, so the jar file must be on the
+classpath.  I use the following command (except all on one line): {\small
 \begin{verbatim}
-scala -cp .:/home/gavin/Scala/lib/scala-swing_2.13-3.0.0.jar 
+scala -cp .:scala-swing_2.13-3.0.0.jar 
   spreadsheet.SpreadsheetApp factorials.dir 
 \end{verbatim}
 }
