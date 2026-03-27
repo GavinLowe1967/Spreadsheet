@@ -16,18 +16,18 @@ Mod
 Priorities
 ==========
 
-* Manual
+* Manual -- UPDATE with %, toInt, toFloat
 
 * Haskell standard prelude.  Allow "include" statements
 
 * Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
   = #A3".
 
-1. Mod (%).
+1. Mod (%). -- done
 
 * Extend arithmetic operators to, e.g. (Int,Float) => Float
 
-2. toInt, toFloat.
+2. toInt, toFloat. -- done
 
 * Allow assertions, error.
 

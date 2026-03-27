@@ -114,8 +114,10 @@ object ExpParserTest extends ParserTest0{
     assert(pe("(2+3)*4 > 6") == BoolValue(true))
     assert(pe("(2+3)*4 <= 6 || 6*7 == 42") == BoolValue(true))
     assert(pe("(2+3)*4 <= 6 && 6*7 == 42") == BoolValue(false))
-    assertFail(pe("3/0+4"))
-    assertFail(pe("2+5/0"))
+    assertFail(pe("3/0+4")); assertFail(pe("2+5/0"))
+
+    assert(pe("toInt 4.5") == IntValue(4))
+    assert(pe("toFloat 3") == FloatValue(3.0F))
 
     // Tests mixing floats and ints
     // assert(pe("2+5.7") == FloatValue(7.7F))
