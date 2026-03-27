@@ -1,18 +1,31 @@
 \section{Script language}
+\label{sec:language}
+
+In this section we give a more detailed description of the script language.
+We describe the types in Section~\ref{ssec:types}.  We describe expressions in
+Section~\ref{ssec:expressions}.  We describe declarations of values and
+functions in Section~\ref{ssec:declarations}.  We then describe cell write
+commands in Section~\ref{ssec:cell-writes}, and |for| loop iterations in
+Section~\ref{ssec:for-loops}. 
+
+%%%%% 
 
 \subsection{Types}
+\label{ssec:types}
 
 The script language contains the standard types |Int| of (32-bit) integers,
 |Float| of (32-bit) floating point numbers, |Boolean| of booleans (with values
 |true| and |false|), and |String| of strings.  
 
-These four types can be entered in cells of the spreadsheet.  The application
-decides their type based on how they are entered, mostly in the obvious way;
-for example, if a value looks like an integer, it is given the type |Int|.  In
-the case that a |String| is required that looks like a value of another type,
-it can be entered inside quotation marks (e.g.~|"3"|); in such cases, a
-literal quotation can be entered as \SCALA{\\"} (e.g.~\SCALA{"He said
-  \"Hello\""}).  
+These four types (and no others) can be entered in cells of the spreadsheet.
+The application decides the type of each value based on how it is entered,
+mostly in the obvious way; for example, if a value looks like an integer, it
+is given the type |Int|.  In most cases, a |String| can be entered by simply
+typing the text, or can (optionally) be enclosed in quotation marks.  However,
+in the case that a |String| is required that looks like a value of another
+type, it \emph{must} be entered inside quotation marks (e.g.~|"3"|).  A
+literal quotation mark can be entered as \SCALA{\\"} (e.g.~\SCALA{"He said
+  \\"Hello\\""}).
 
 The types |Row| and |Column| represent rows and columns, respectively. 
 
@@ -25,6 +38,7 @@ to~|T2|.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Expressions}
+\label{ssec:expressions}
 
 \subsubsection{Standard expressions}
 
@@ -58,8 +72,8 @@ languages, e.g.~|"Hello"|.  Special characters can be written using
 \SCALA{\\}, for example, \SCALA{"He said \\"Hello\\".\\n"}.
 
 A \emph{block expression} consists of a sequence of declarations, followed by
-an expression, separated by semicolons or newlines, and enclosed in braces,
-for example
+an expression, separated by semicolons or newlines, and enclosed in braces;
+for example,
 \begin{scala}
   { def square(x: Int) = x*x; val y2 = square y; val z2 = square z; y2+z2 }
 \end{scala}
@@ -136,7 +150,7 @@ literals; for example \SCALA{\#D3} is shorthand for \SCALA{Cell(\#D, \#3)}.
 
 The type checker needs to be able to deduce a type, or a set of possible
 types, for each cell expression.  When the script is executed, the application
-checks if the corresponding cell in the spreadsheet has the expected type, and
+checks if the corresponding cell in the spreadsheet has an expected type, and
 signals an error otherwise.
 
 One option is to provide an explicit type for a cell expression.  For example,
@@ -192,6 +206,7 @@ the expressions on the right-hand side of cases must have the same type.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Declarations}
+\label{ssec:declarations}
 
 Declarations, of values and functions, may be made either at the top level of
 a script, or within a local block.  Standard scoping rules apply. 
@@ -292,6 +307,7 @@ types for their first vectors of parameters, and may not be polymorphic.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Cell writes}
+\label{ssec:cell-writes}
 
 The syntax for a cell write is \syntax{cell-expression} = \syntax{expression}.
 Figure~\ref{fig:example-script} contains examples where the cell expression on
@@ -301,9 +317,13 @@ can also be used on the left-hand side; for example,
 #A4 = #A3:Int + 2
 \end{scala}
 
+Recall that the application treats any attempt to write to a non-empty cell as
+an error. 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{{\scalashape for} loops}
+\label{ssec:for-loops}
 
 The basic form of a |for| loop is
 \begin{scala}

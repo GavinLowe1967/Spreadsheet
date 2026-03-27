@@ -245,7 +245,7 @@ object Execution{
       env.setCell(c, r, mwe); handleError(mwe)
     }
   }
-
+ 
   /** Perform `s` in `env`, handling errors with `handleError`. 
     * @return false if an error occurred in a declaration. */
   private def perform(

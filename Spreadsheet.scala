@@ -1,4 +1,4 @@
-package spreadsheet
+package spreadsheet 
 
 import scala.swing._
 import event._

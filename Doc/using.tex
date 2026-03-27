@@ -1,10 +1,12 @@
-
 \section{Using the spreadsheet application}
+\label{sec:using}
 
 The spreadsheet application can be run by running Scala on the class
 \texttt{spreadsheet.SpreadsheetApp}, providing the name of the script to use.
-The application uses the Scala Swing library, so that needs to be on the
-classpath.  I use the following command (except all on one line): {\small
+The application uses the Scala Swing library, so the jar
+file\footnote{Available from \url{https://scala-lang.org/files/archive/}.}
+needs to be on the classpath.  I use the following command (except all on one
+line): {\small
 \begin{verbatim}
 scala -cp .:/home/gavin/Scala/lib/scala-swing_2.13-3.0.0.jar 
   spreadsheet.SpreadsheetApp factorials.dir 
@@ -66,7 +68,7 @@ such as division by zero, or taking the head of an empty list.
 
 A non-standard form of error occurs when the script reads a value from a cell
 that is not of the expected type.  For example, suppose we enter the string
-|three| into cell |#A0|, the error panel displays the following error.
+|three| into cell |#A0|; then the error panel displays the following error:
 %
 \begin{trivlist}
 \item[]
@@ -92,10 +94,10 @@ def firstEmptyInCol(c: Column, r: Row): Row =
 The pattern ``|_|'' matches any value, so the pattern matching will succeed.
 However, now other errors occur, as illustrated in
 Figure~\ref{fig:screenshot-read-error}, where cells with a pink background
-represent error.  The error panel indicates that the cell~|#A0| read at
+represent errors.  The error panel indicates that the cell~|#A0| read at
 line~18 found a |String| when an |Int| was expected.  The same information is
 included in the selection panel, since cell |#B0| is selected.  The bottom of
-the error panel also explains an error a type error corresponding to the write
+the error panel also explains an error corresponding to the write
 of cell~|#B4| (this requires scrolling to read fully).
 
 \begin{figure}[thp]
@@ -107,7 +109,7 @@ of cell~|#B4| (this requires scrolling to read fully).
 
 The application partitions cells into \emph{input cells}, where the user has
 provided input, \emph{output cells}, written to by the script, and \emph{empty
-  cells}.  Any attempt to write to an output cell is considered an error and
+  cells}.  Any attempt to write to an input cell is considered an error and
 blocked: this prevents an erroneous script from overwriting user data.
 Likewise, an attempt to write to an output cell for a second time is
 considered an error. 

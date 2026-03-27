@@ -1,11 +1,58 @@
-
 \section{Introduction}
 
-General rationale for the project.  \framebox{\ldots}
+The goal of the \emph{Rethinking Spreadsheets} project is to reconsider the
+interface that existing spreadsheets provide to the user, and to improve upon
+it.
 
-The language is influenced by both Scala and Haskell.  In particular, the
-language allows type checking of the script. 
+The traditional way to program a spreadsheet is to type a formula into a cell;
+the formula represents a calculation based on the values in other cells.  The
+cell then displays the value of the formula.  Often, the user copies the
+formula in one cell into adjacent cells; the application adjusts references to
+other cells appropriately.
+
+The difficulty with this approach is that it is very hard to scrutinise the
+code.  The user has to click on each cell individually and read the formula.
+If is very easy to make mistakes.  
+
+For example, the Economists Reinhart and Rogoff claimed\footnote{Carmen
+  M. Reinhart and Kenneth S. Rogoff, "Growth in a Time of Debt". American
+  Economic Review. 100 (2): 573–78, 2010.} that if a country has national debt
+of over 90\% of GDP, it leads to much reduced growth.  Various nations adopted
+policies of austerity based on this paper.  However, Herdon, Ash and
+Pollin\footnote{Thomas Herndon, Michael Ash, Robert Pollin. "Does High Public
+  Debt Consistently Stifle Economic Growth? A Critique of Reinhart and
+  Rogoff". Political Economy Research Institute, University of Massachusetts
+  Amherst.  2013.} found that the result was incorrect, partly because of an
+error in the spreadsheet which omitted some countries.  Such errors are easy
+to make, but hard to spot.
+
+Our thesis is that there should be a separation between the rules that
+define calculations and the results of those calculations.  The rules are
+given in a separate script; and the results appear in the spreadsheet.
+
+In order to allow scrutiny of the script, and to support maintenance, it
+should be a reasonable length.  If similar calculations are performed to
+produce multiple cells, the relevant formula should be defined once, and then
+applied to relevant cells via an iteration: it should not be necessary to copy
+the formula. 
+
+Note, though, that we propose keeping input data and calculated cells as part
+of the same spreadsheet: it is often convenient to view those together.
+
+Further, the language used for most existing spreadsheets---simple functions
+that are combined together---is not convenient for anything other than very
+simple applications.  Spreadsheet users should be able to use a language
+similar to modern programming languages. 
+%
+The script language we propose is a declarative language, influenced by both
+Haskell and the functional fragment of Scala.  In particular, the language
+allows type checking of the script.
 
 A script contains a combination of declarations (of values and functions), and
-commands (e.g.~to write a value into a cell).  The script is executed in
-order. 
+commands (e.g.~to write a value into a cell). 
+
+In Section~\ref{sec:example} we present a simple example script, to introduce
+the main parts of the language.  In Section~\ref{sec:using} we describe how
+to use the spreadsheet application.   Then in Section~\ref{sec:language} we
+present a more detailed description of the language.  We assume some
+familiarity with programming. 

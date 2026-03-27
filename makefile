@@ -1,4 +1,5 @@
-CP = .:/home/gavin/Scala/lib/scala-swing_2.13-3.0.0.jar
+# CP = .:/home/gavin/Scala/lib/scala-swing_2.13-3.0.0.jar
+CP = .:scala-swing_2.13-3.0.0.jar
 
 DIR = spreadsheet
 

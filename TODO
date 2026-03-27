@@ -57,6 +57,10 @@ Priorities
 
 * Negation "!".
 
+* More general expressions on LHS of cell write directives.
+
+* Expressions like Cells(#A, #0 to #5): List[Int]
+
 * "println" statements.
 
 * Add "if" directives.
