@@ -3,40 +3,15 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
+Mod
+---
 
-* Make return type of functions optional in most cases.
+1. Parser
 
-1. Change FunctionDeclaration (Statement.scala) so return type is of type
-Option[TypeT].  Initially make all code assume Some(rt). -- done
+2. Type checker
 
-2. Change parser. (DeclarationParser.scala, line 50). Test in
-StatementParserTest -- done.
+3. Evaluation
 
-3. In DeclarationTypeChecker.updateEnv, add FunctionTypes only for those with
-a given return type. -- done
-
-4. In DeclarationTypeChecker, in the case of return type of None, type check
-body; close and end scope; store FunctionType with type of body. -- done
-
-** This doesn't work correctly with overloading.  We want to avoid overwriting
-   other instances of the same name defined in the same scope; but do want to
-   overwrite other instances.
-
-- Add FunctionType value for all declarations, but with null for return type
-  when not given. -- done
-
-- Add function to TypeEnv to replace with new FunctionType -- done
-
-- Test with bad overloadings -- same types of args.  Also higher-order functions 
-
-- Test with polymorphic functions.
-
-- Check mutual recursions.
-
-5. Check all functions that need a return type declaration have one. 
-  - For each function,  
-    - Enumerate names of later functions without return types
-    - Check the function doesn't use any such.
 
 Priorities
 ==========
@@ -48,10 +23,11 @@ Priorities
 * Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
   = #A3".
 
-* Mod (%).
+1. Mod (%).
 
-* Extend arithmetic operators to, e.g. (Int,Float) => Float, and toInt,
-  toFloat.
+* Extend arithmetic operators to, e.g. (Int,Float) => Float
+
+2. toInt, toFloat.
 
 * Allow assertions, error.
 
@@ -92,7 +68,42 @@ Low Priority
 
 ===================================== DONE
 
+* Make return type of functions optional in most cases.
 
+1. Change FunctionDeclaration (Statement.scala) so return type is of type
+Option[TypeT].  Initially make all code assume Some(rt). -- done
+
+2. Change parser. (DeclarationParser.scala, line 50). Test in
+StatementParserTest -- done.
+
+3. In DeclarationTypeChecker.updateEnv, add FunctionTypes only for those with
+a given return type. -- done
+
+4. In DeclarationTypeChecker, in the case of return type of None, type check
+body; close and end scope; store FunctionType with type of body. -- done
+
+** This doesn't work correctly with overloading.  We want to avoid overwriting
+   other instances of the same name defined in the same scope; but do want to
+   overwrite other instances.
+
+- Add FunctionType value for all declarations, but with null for return type
+  when not given. -- done
+
+- Add function to TypeEnv to replace with new FunctionType -- done
+
+- Test with bad overloadings -- same types of args.  Also higher-order functions 
+
+- Test with polymorphic functions.
+
+- Check mutual recursions.
+
+5. Check all functions that need a return type declaration have one. 
+  - For each function,  
+    - Enumerate names of later functions without return types
+    - Check the function doesn't use any such.
+
+
+=====
 
 * Improve syntax for function declarations and applications -- currying.
 

@@ -63,6 +63,7 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
   /** Map giving all types for infix operators, except for equality,
     * inequality and (::). */
   private val binopTypes: Map[String, List[(TypeT,TypeT,TypeT)]] = {
+    val intOps = List((IntType, IntType, IntType)) // % only
     val numeric = // numeric operators
       List((IntType,IntType,IntType), (FloatType,FloatType,FloatType))
     val arith =  // + and -
@@ -73,7 +74,7 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
     val enumT = // enumerable types
       for(t <- List(IntType,RowType,ColumnType)) yield (t,t,ListType(t))
     Map(
-      "+" -> arith, "-" -> arith, "*" -> numeric, "/" -> numeric,
+      "%" -> intOps, "+" -> arith, "-" -> arith, "*" -> numeric, "/" -> numeric,
       "<" -> order, "<=" -> order, ">" -> order, ">=" -> order,
       "&&" -> bool, "||" -> bool, "to" -> enumT, "until" -> enumT
     )

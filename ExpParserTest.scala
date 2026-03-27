@@ -105,6 +105,8 @@ object ExpParserTest extends ParserTest0{
 
     assert(pe("2+3*4") == IntValue(14)); assert(pe("2*3+4") == IntValue(10))
     assert(pe("(2+3)") == IntValue(5))
+    assert(p("3%2") == BinOp(IntExp(3), "%", IntExp(2)))
+    assert(pe("12%5") == IntValue(2)); assertFail(pe("3%0"))
     assert(pe("(2+3)*4 == 6") == BoolValue(false))
     assert(pe("(1+4)*4 == 60/3") == BoolValue(true))
     assert(pe("(2+3)*4 != 6") == BoolValue(true))

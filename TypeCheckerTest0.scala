@@ -80,6 +80,7 @@ object TypeCheckerTestExpr{
     assertInt(tcp("#A3: Int"))
     assertInt(tcp("2")); assertInt(tcp("2+3"))
     assertEq(tcp("4.5 + 2.4"), FloatType)
+    assertEq(tcp("5%3"), IntType); assertFail(tcp("4.5 % 3.2"))
     assertFail(tcp("4.5 + 2"));  assertFail(tcp("4 + 2.4")) 
     assertFail(tcp("2+f+5"))
     assertFail(tcp("2+false+5")); assertFail(tcp("true+4"))

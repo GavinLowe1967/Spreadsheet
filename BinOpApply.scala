@@ -13,6 +13,9 @@ object BinOpApply{
         def err = EvalError("Division by zero")
         mkBinOp({case (n1,n2) => if(n2 != 0) IntValue(n1/n2) else err},
           {case (x1,x2) => if(x2 != 0.0) FloatValue(x1/x2) else err} )
+      case "%" => 
+        def err = EvalError("Division by zero")
+        mkIntOp({case (n1,n2) => if(n2 != 0) IntValue(n1%n2) else err})
       case "<=" => mkBinRelOp((_<=_), (_<=_))
       case "<" => mkBinRelOp((_<_), (_<_))
       case ">=" => mkBinRelOp((_>=_), (_>=_))
@@ -33,6 +36,11 @@ object BinOpApply{
 
   /* The functions below define BinOpReps by lifting functions over the
    * primitive types. */
+
+  /** (Int,Int) -> Int functions. */
+  private def mkIntOp(f: (Int,Int) => Value): BinOpRep = {
+    case IntValue(m) => { case IntValue(n) => f(m,n) }
+  }
 
   /** (Bool,Bool) -> Bool functions. */
   private def mkBoolOp(f: (Boolean,Boolean) => Boolean): BinOpRep = {

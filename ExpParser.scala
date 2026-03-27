@@ -204,7 +204,7 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
     (List("||"), R), (List("&&"), R), // 2-3 in Haskell 
     (List("==", "!=", "<", "<=", ">", ">="), L), // 4
     (List("::"), R), // 5
-    (List("+", "-"), L), (List("*", "/"), L)  // 6-7
+    (List("+", "-"), L), (List("*", "/", "%"), L)  // 6-7
   )
 
   /** A parser for expressions involving binary operators of precedence at least
