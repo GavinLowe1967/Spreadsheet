@@ -43,10 +43,12 @@ to~|T2|.
 \subsubsection{Standard expressions}
 
 The script language contains the normal arithmetic operators, |+|, |-|, |*|
-and |/|, over |Int| and |Float| (over |Int|, |/| performs rounding).  Note
+and |/|, over |Int| and |Float| (over |Int|, |/| performs rounding), and
+\SCALA{\%} over |Int|.  The language also contains the normal equality (|==|),
+inequality (|!=|), and order (|<|, |<=|, |>|, |>=|) operators.   Note
 that |Int| and |Float| are distinct types, so can't (currently) be combined
-using these operators.  The language also contains the normal equality (|==|),
-inequality (|!=|), and order (|<|, |<=|, |>|, |>=|) operators.
+using these operators.  The built-in functions |toFloat: Int => Float| and
+|toInt: Float => Int| can be used to convert between these types.
 
 The language includes the normal boolean binary operators, |&&| and
 \SCALA{\|\|}.  Boolean negation is written using the function |not|.
@@ -126,7 +128,6 @@ example,
 \begin{eqnarray*}
 \mbox{\SCALA{[x*y | x <- [2,3], y <- [4,5], x+y != 7]}} & = & \sm{[8,15]}.
 \end{eqnarray*}
-
 
 %%%%%
 
