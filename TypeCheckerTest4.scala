@@ -258,6 +258,26 @@ object TypeCheckerTest4{
     }
   }
 
+  /** Tests involving tuples. */
+  def tupleTests() = {
+    println("===tupleTests===")
+    tcpss("def pair(x: Int): (Int,Int) = (x,x)") match{ case Ok(te) =>
+      assert(te("pair") == FunctionType(
+        List(), List(IntType), TupleType(List(IntType, IntType))))
+    }
+    tcpss("def pair[A,B](x: A, y: B): (A,B) = (x,y)") match{ case Ok(te) =>
+      assert(te("pair") == FunctionType(
+        List(("A", AnyTypeConstraint), ("B", AnyTypeConstraint)),
+        List(TypeParam("A"), TypeParam("B")),
+        TupleType(List(TypeParam("A"), TypeParam("B"))) ))
+    }
+    tcpss("val pair = (1,2.5); val x = get1From2(pair)") match{ case Ok(te) =>
+      assert(te("pair") == TupleType(List(IntType,FloatType)))
+      assert(te("x") == IntType)
+    }
+    // Expected (t379,t380,t381), found (Int,Float)
+    assertFail(tcpss("val pair = (1,2.5); val x = get1From3 pair"))
 
+  }
 
 }

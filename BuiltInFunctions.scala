@@ -20,10 +20,32 @@ object BuiltInFunctions{
   private val toIntT = FunctionType(List(), List(FloatType), IntType)
   private val toFloatT = FunctionType(List(), List(IntType), FloatType)
 
+  import TupleType.MaxArity
+  /** The selector functions, e.g. get1From2. */
+  private val selectorTypes: List[(String, List[FunctionType])] = 
+    for(i <- (1 to MaxArity).toList; a <- 2 to MaxArity)
+    yield s"get${i}From$a" -> // (T1,...,Ta) => Ti
+      List(FunctionType(
+        for(j <- (1 to a).toList) yield (s"A$j", AnyTypeConstraint),
+        List(TupleType(for(j <- (1 to a).toList) yield TypeParam(s"A$j"))),
+        TypeParam(s"A$i") ))
+/* // Following doesn't work currently, as these are overloaded polymorphic functions
+    for(i <- (1 to MaxArity).toList) 
+    yield s"get$i" -> (
+      for (a <- (2 to MaxArity).toList) // (T1,...,Ta) => Ti
+      yield FunctionType(
+        for(j <- (1 to a).toList) yield (s"A$j", AnyTypeConstraint),
+        List(TupleType(for(j <- (1 to a).toList) yield TypeParam(s"A$j"))),
+        TypeParam(s"A$i") ))
+ */
+//  println(selectorTypes)
+
   /** The types of built-in functions. */
   val builtInTypes = 
     List("head" -> headT, "tail" -> tailT, "isEmpty" -> isEmptyT, "not" -> notT,
-      "toInt" -> toIntT, "toFloat" -> toFloatT)
+      "toInt" -> toIntT, "toFloat" -> toFloatT
+    ).map{ case (n,t) => (n,List(t)) }  ++
+    selectorTypes
 
   /* Definitions. */
 
@@ -39,10 +61,20 @@ object BuiltInFunctions{
   private val toFloatFn = 
     FunctionValue{ case List(IntValue(n)) => FloatValue(n.toFloat) }
 
+  /** The selector functions. */
+  private val selectorFns: List[(String,FunctionValue)] =
+    for(i <- (1 to MaxArity).toList; a <- 2 to MaxArity)
+    yield s"get${i}From$a" -> FunctionValue{ 
+      case List(tv @ TupleValue(elems)) if tv.arity == a => elems(i-1)
+        // Note: tuples use 1-based indexing, but lists use 0-based indexing.
+    }
+
   /** The built-in functions. */
-  val builtIns = List(
-    "head" -> headFn, "tail" -> tailFn, "isEmpty" -> isEmptyFn, "not" -> notFn,
-    "toInt" -> toIntFn, "toFloat" -> toFloatFn
-  )
+  val builtIns =
+    List(
+      "head" -> headFn, "tail" -> tailFn, "isEmpty" -> isEmptyFn, "not" -> notFn,
+      "toInt" -> toIntFn, "toFloat" -> toFloatFn
+    ) ++ 
+      selectorFns
 
 }

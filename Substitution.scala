@@ -38,7 +38,9 @@ object Substitution{
       FunctionType(params, domain.map(remapBy(typeMap, _)), 
         remapBy(typeMap, range))
 
-    case _ => t
+    case TupleType(cpts) => TupleType(cpts.map(t1 => remapBy(typeMap, t1))) 
+
+    case _: BaseType | _: TypeVar => t
   }
 
   /** Create a remapping from the type parameters in tParams to fresh TypeVars,
@@ -81,7 +83,8 @@ object Substitution{
     case FunctionType(params, domain, range) =>
       assert(params.forall{ case (n,_) => !tParams.map(_._1).contains(n) })
       FunctionType(params++tParams, domain, range)
-    case _ => t
+    case TupleType(cpts) => ??? // FIXME
+    case _: BaseType | _: TypeVar | _: CellTypeVar => t 
   }
 
   /** Substitute type parameters in result from tParams with fresh type
@@ -131,7 +134,8 @@ object Substitution{
       assert(tParams.forall{ case (n,_) => !t.typeParams.contains(n) })
       FunctionType(params++tParams, domain.map(reverseRemapBy(rtMap, List(), _)),
         reverseRemapBy(rtMap, List(), range))
-    case t => t
+    case TupleType(_) => ???  // FIXME
+    case _: BaseType | _: TypeVar | _: CellTypeVar | _: TypeParam => t
   }
 
   /** The inverse of map.  Assumes that map is injective on parameter names. */

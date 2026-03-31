@@ -3,18 +3,52 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
-Mod
----
+Tuples
+------
 
-1. Parser
+1. Define type of expressions. -- done
 
-2. Type checker
+2. Define parser. -- done
 
-3. Evaluation
+3. Define TupleType.  Define type checker over tuples. -- done
+
+3a. Parser for tuple type. -- done
+
+4. Define TupleValue -- done
+
+5. Define built-in functions _1, etc.  But they are overloaded and
+polymorphic.
+
+TODO: 
+
+-- Allow overloaded functions to be polymorphic when they have disjoint types?
+
+-- Make TupleType into a trait, with subclasses Tuple2, Tuple3, etc? 
+
+** Need to include tuples in unification. 
+
+** Some missing cases in Substitution.scala (se "FIXME"s)
+
+6. Evaluation. -- done
+
+7. Add to manual.
+
+LATER: Allow function that expects a tuple to be applied to a vector of
+values; and vice versa, e.g. get1From2(x,y).
+
+
+
 
 
 Priorities
 ==========
+
+* Tidy up FunctionAppTypeChecker.scala
+
+* Improve type error in Unification.unify.  Example: bas(foo) in
+  TypeCheckerTest3.scala.  Gives error "Expected Int, found ((Int) => Int) =>
+  Int"; should really be "Expected Int => Int, found (((Int) => Int) => Int)
+  => Int".
 
 * Manual -- UPDATE with %, toInt, toFloat
 

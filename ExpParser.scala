@@ -72,7 +72,23 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
   private def qualifiers: Parser[List[Qualifier]] = 
     repSepNonEmpty(qualifier, ",")
 
+  // ===== Tuples
+
+  // /** A parser for a tuple, with at least two elements. */
+  // private def tuple: Parser[TupleLiteral] = 
+  //   (lit("(") ~> expr) ~ (lit(",") ~> repSep(expr, ",") <~ lit(")")) > {
+  //     case (e, es) => TupleLiteral(e::es) }
+
+  /** A parser for a tuple with at least two elements, or an expression in
+    * parentheses. */
+  private def tupleOrParens: Parser[Exp] = 
+    (lit("(") ~> expr) ~ (
+      lit(")") ~~> success(List[Exp]()) // Note: don't consume whitespace.
+      | lit(",") ~> repSep(expr, ",") <~ lit(")")
+    ) > { case (e, es) => if(es.isEmpty) e else TupleLiteral(e::es) }
+
   // ===== Cell expressions
+
   /** A parser for a row or column, e.g. "#A". */
   private def rowOrColumn =
     lit("#") ~~ (int > RowExp | colName > ColumnExp) > { _._2 }
@@ -173,13 +189,14 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
   /** A parser for expressions that use no infix operators or "if" statement
     * outside of parentheses. */
   private def factor0: Parser[Exp] = withExtent( 
-    number | cellExp | atomicParam
+    number | cellExp | atomicParam // | tuple 
     // Note: cellExp must precede the rowOrColumn within atomicParam 
     // Name or application of named function
     | name1 ~~ paramsList  > { case (n,args) => args.foldLeft(n)(FunctionApp) }
     // Note: in the above, inner FunctionApps don't receive an Extent.  
     // TODO: allow more general definitions of the function.
-    | inParens(expr) // Note: sets extent to include parentheses.
+    | tupleOrParens
+    //| inParens(expr) // Note: sets extent to include parentheses.
     | failure("YYY") // IMPROVE
   )
 

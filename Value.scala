@@ -221,7 +221,8 @@ case class ListValue(elems: List[Value]) extends Value{
   assert(elems.forall(v => !v.isInstanceOf[ErrorValue]))
 
   override def forError = 
-    s"List"+elems.map(_.forError).mkString("(", ", ", ")")
+  //  s"List"+elems.map(_.forError).mkString("(", ", ", ")")
+    elems.map(_.forError).mkString("[", ", ", "]")
 
   /* Functions corresponding to built-in functions. */
   def head = if(elems.nonEmpty) elems.head else EvalError("head of empty list")
@@ -236,6 +237,25 @@ case class ListValue(elems: List[Value]) extends Value{
 object ListValue{
   /** Convenience factory method. */
   def apply(vs: Value*) = new ListValue(vs.toList)
+}
+
+// =======================================================
+
+/** A tuple value. */
+case class TupleValue(elems: List[Value]) extends Value{
+  val arity = elems.length
+  require(2 <= arity && arity <= TupleType.MaxArity)
+
+  assert(elems.forall(v => !v.isInstanceOf[ErrorValue]))
+
+  override def forError = 
+    elems.map(_.forError).mkString("(", ", ", ")")
+}
+
+object TupleValue{
+  /** Convenience factory method. */
+  def apply(v1: Value, v2: Value, vs: Value*) = 
+    new TupleValue(v1::v2::vs.toList)
 }
 
 // ==================================================================

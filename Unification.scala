@@ -112,6 +112,7 @@ object Unification{
 
       case (ListType(tt1), ListType(tt2)) => 
         unify(typeEnv, tt1, tt2, ListType(_)).map{ 
+// or t => f(ListType(t))
           case (te2, tt) => Ok((te2, ListType(tt))) 
         }
         // Note: if the recursive call fails, the error message talks about
@@ -124,7 +125,6 @@ object Unification{
 
       case (f1 @ FunctionType(tc1,d1,r1), FunctionType(tc2,d2,r2)) =>  
         assert(tc2.isEmpty)
-//if(false){
         // Replace type parameters
         val (te1, d11, r11, typeMap) =
           replaceTypeParamsByTypeVars(typeEnv, f1.usedTParams, d1, r1)
@@ -136,20 +136,21 @@ object Unification{
             Ok((te3, ft2))
           }
         }
-//}
-// else{
-//        unifyList(typeEnv, d1, d2).map{ case (te2, dd) =>
-//          unify(te2, r1, r2)
-//        }
-// }
-// Also improve error messages in this case. 
+// IMPROVE error messages in this case. 
+
+      case (TupleType(ts1), TupleType(ts2)) if ts1.length == ts2.length =>
+        // println((ts1, ts2))
+        unifyList(typeEnv, ts1, ts2).map{ case (te1, tt) =>
+          Ok((te1, TupleType(tt)))
+        }
 
       case (_,_) => fail
     }
   }
 
   /** Unify corresponding elements of the lists ts1 and ts2, giving the list of
-    * resulting types. */
+    * resulting types. 
+    * @param f a function that transforms the way types are reported in errors.*/
   private def unifyList(typeEnv: TypeEnv, ts1: List[TypeT], ts2: List[TypeT])
       : Reply[(TypeEnv, List[TypeT])] =
     if(ts1.isEmpty){ assert(ts2.isEmpty); Ok((typeEnv, List())) }

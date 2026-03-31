@@ -243,6 +243,20 @@ printErrors = false
 printErrors = false
   }
 
+  /** Tests on tuple literals. */
+  def tupleTests() = {
+    assertEq(tcp("(1, 2.5 ,true ) "), 
+      TupleType(List(IntType, FloatType, BoolType)))
+    assertFail(tcp("(1,2,3,4,5,6,7,8,9,10,11,12,13)"))
+    // println(tcp("(1,2,3,4,5,6,7,8,9,10,11,12)"))
+    assertFail(tcp("(1, 2+true)"))
+    assertFail(tcp("(1+true , 2)"))
+    // Note: the extra parentheses are currently necessary
+    assertEq(tcp("get1From2((2+5, 3.5*1.2))"), IntType)
+    // "Expected (t51,t52,t53), found (Int,Int)"
+    assertFail(tcp("get1From3((2, 4))"))
+  }
+
 
   /** Tests on expressions. */
   def expTests() = {
@@ -252,6 +266,7 @@ printErrors = false
     untypedCellTests() // tests on untyped cell reads
     typedTests() // Tests on explicitly typed expressions.
     listComprehensionTests()
+    tupleTests()
     // Repeated names 
     assertFail(tcpss("val x = 4; val x = 5"))
     assertFail(tcpss("val x = 4; def x(): Int = 5"))

@@ -53,6 +53,8 @@ case class FunctionType(
   def finalNull: Boolean = range match{
     case null => true; case ft: FunctionType => ft.finalNull; case _ => false
   }
+
+  def hasNullReturnFunction = finalNull
 }
 
 object FunctionType{

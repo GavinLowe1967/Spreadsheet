@@ -248,7 +248,7 @@ object TypeEnv{
   def apply() = {
     val nameMap = 
       new NameMap ++ 
-        BuiltInFunctions.builtInTypes.map{ case (n,t) => (n, List(t)) }
+        BuiltInFunctions.builtInTypes //.map{ case (n,t) => (n, List(t)) }
     new TypeEnv(nameMap, new Constraints, new TypeParamMap, 
       List[UntypedCellExp](), Map[CellTypeVar, CellType](), List[Frame]())
   }

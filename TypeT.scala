@@ -14,6 +14,10 @@ trait TypeT{
     * parameters that name-clash with a member of tps to fresh values.  Here
     * dom f is a subset of tps. */
   def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]): TypeT
+
+  /** Does this contain a FunctionValue whose return type has not yet been
+    * set? */
+  def hasNullReturnFunction: Boolean
 }
 
 object TypeT{
@@ -35,6 +39,7 @@ case class TypeVar(tv: TypeID) extends TypeT{
   def asString = s"t$tv"                   
   def typeParams = List()
   def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = this
+  def hasNullReturnFunction = false
 }
 
 // =========
@@ -54,6 +59,7 @@ case class CellTypeVar(tv: TypeID) extends TypeT{
   def asString = s"t$tv"                   
   def typeParams = List()
   def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = this
+  def hasNullReturnFunction = false
 }
 
 // ==================================================================
@@ -66,6 +72,7 @@ case class TypeParam(name: String) extends TypeT{
     f.get(name) match{
       case Some(n1) => TypeParam(n1); case None => this 
     }
+  def hasNullReturnFunction = false
 }
 
 object TypeParam{
@@ -101,6 +108,7 @@ trait EqType extends TypeT
 trait BaseType extends TypeT{
   def typeParams = List()
   def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = this
+  def hasNullReturnFunction = false
 }
 
 /** A marker trait for types that can appear in cells of the spreadsheet. */
@@ -150,7 +158,30 @@ case class ListType(underlying: TypeT) extends TypeT{
 
   def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = 
     ListType(underlying.renameTypeParams(f, tps))
+
+  def hasNullReturnFunction = underlying.hasNullReturnFunction
 }
+
+// ==================================================================
+
+case class TupleType(componentTs: List[TypeT]) extends TypeT{
+  val arity = componentTs.length
+  require(2 <= arity && arity <= TupleType.MaxArity)
+
+  def asString = componentTs.map(_.asString).mkString("(", ",", ")")
+
+  def typeParams = componentTs.flatMap(_.typeParams).distinct
+
+  def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = 
+    TupleType(componentTs.map(_.renameTypeParams(f, tps)))
+
+  def hasNullReturnFunction = componentTs.exists(_.hasNullReturnFunction)
+}
+
+object TupleType{
+  val MaxArity = 3 // 12
+}
+
 
 // ==================================================================
 

@@ -95,24 +95,39 @@ object Execution{
       }
 
     case ListLiteral(elems) => 
-      // Traverse elems, evaluating each, and building in vs in reverse;
-      // maintain type of elements in theType; and catch any error.
-      var es = elems; var vs = List[Value](); var error: ErrorValue = null
-      while(es.nonEmpty && error == null){
-        eval(env, es.head) match{
-          case err: ErrorValue => error = e.liftError(err)
-          case v => vs ::= v;  es = es.tail
-        }
+      evalList(env, elems) match{
+        case Left(vs) => ListValue(vs); case Right(err) => e.liftError(err)
       }
-      if(error != null) error else ListValue(vs.reverse)
+      // // Traverse elems, evaluating each, and building in vs in reverse;
+      // // maintain type of elements in theType; and catch any error.
+      // var es = elems; var vs = List[Value](); var error: ErrorValue = null
+      // while(es.nonEmpty && error == null){
+      //   eval(env, es.head) match{
+      //     case err: ErrorValue => error = e.liftError(err)
+      //     case v => vs ::= v;  es = es.tail
+      //   }
+      // }
+      // if(error != null) error else ListValue(vs.reverse)
 
     case ListComprehension(e1, qs) => // evalListComp(env, e, qs)
       val ab = new ArrayBuffer[Value]
       val error = processListComp(env, e1, qs, ab)
       if(error != null) e.liftError(error) else ListValue(ab.toList)
 
+    case TupleLiteral(es) => 
+      evalList(env, es) match{
+        case Left(vs) => TupleValue(vs); case Right(err) => e.liftError(err)
+      }
+
     case fa @ FunctionApp(f, args) => eval(env, f) match{
       case fv : FunctionValue =>
+        evalList(env, args) match{
+          case Left(vs) => fv(vs) match{
+            case err: ErrorValue => e.liftError(err); case result => result
+          }
+          case Right(err) => e.liftError(err)
+        }
+/*
         // Evaluate args, but stop if an error occurs
         var error: ErrorValue = null; val iter = args.iterator
         var vs = List[Value]() // built in reverse
@@ -127,7 +142,7 @@ object Execution{
         else fv(vs.reverse) match{
           case err: ErrorValue => e.liftError(err); case result => result
         }
-
+ */
       case err: ErrorValue => e.liftError(err)
 
       case other => sys.error(s"$f -> $other")
@@ -151,38 +166,17 @@ object Execution{
     case TypedExp(e, _) => eval(env, e)
   } // end of eval
 
-/*
-  private 
-  def evalListComp(env: Environment, e: Exp, qs: List[Qualifier]): Value =
-    if(qs.isEmpty) eval(env, e) match{
-      case ev: ErrorValue => ev; case v => ListValue(v)
+  /** The result of evaluating exps if all succeed; or a relevant ErrorValue. */
+  private def evalList(env: Environment, exps: List[Exp])
+      : Either[List[Value], ErrorValue] = {
+    // Traverse exps, evaluating each, and building in vs in reverse;
+    // maintain type of elements in theType; and catch any error.
+    var es = exps; var vs = List[Value](); var error: ErrorValue = null
+    while(es.nonEmpty && error == null) eval(env, es.head) match{
+      case err: ErrorValue => error = err; case v => vs ::= v; es = es.tail
     }
-    else qs.head match{
-      case Generator(name, list) =>
-        eval(env, list) match{
-          case ListValue(vs) => 
-            // bind name to v for each v in vs; recurse; and combine results.
-            var vs1 = vs; var error: ErrorValue = null
-            var result = List[Value]()
-            while(vs1.nonEmpty && error == null){
-              val env1 = env.clone; env1.update(name,vs1.head)
-              evalListComp(env1, e, qs.tail) match{
-                case e: ErrorValue => error = e // exit loop
-                case ListValue(vs) => result = result ++ vs; vs1 = vs1.tail
-              }
-            } // end of while loop
-            if(error != null) error else ListValue(result)
-          case ev: ErrorValue => ??? // FIXME
-        }
-      case Filter(test) => 
-        eval(env, test) match{
-          case BoolValue(b) => 
-            if(b) evalListComp(env, e, qs.tail) else ListValue(List())
-          case err: ErrorValue => err
-        }
-    }
- */
-
+    if(error != null) Right(error) else Left(vs.reverse)
+  }
   /* IMPROVE: the use of a List is inefficient */
 
   /** Evaluate a list comprehension with term e and qualifiers qs.  Add

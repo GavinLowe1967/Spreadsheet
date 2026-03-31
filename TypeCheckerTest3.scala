@@ -291,5 +291,55 @@ object TypeCheckerTest3{
           FunctionType(List(), List(ListType(TypeParam("A"))),
             ListType(TypeParam("B")) ))) 
     }
+
+    // Type with parentheses.
+    val script = 
+      "def foo(x: Int): (Int => Int) => Int = {"+
+        "def foox(f: Int => Int) = f x; foox }"
+    //println(tcpss(script))
+    tcpss(script) match{ case Ok(te) =>
+      assert(te("foo") == FunctionType(
+        List(), List(IntType),
+        FunctionType(
+          List(), List(FunctionType(List(), List(IntType), IntType)), IntType) ))
+    }
+    val script1 = 
+      "def foo(f: (Int => Int) => Int) = { def double(x: Int) = 2*x; f(double) }"
+    //println(tcpss(script1))
+    tcpss(script1) match{ case Ok(te) =>
+      assert(te("foo") == FunctionType(
+        List(),
+        List(FunctionType(
+          List(), List(FunctionType(List(), List(IntType), IntType)), IntType
+        )),
+        IntType ))
+    }
+
+    val script2 = 
+      "def foo(f: (Int => Int) => Int) = { def double(x: Int) = 2*x; f(foo) }"
+    assertFail(tcpss(script2))
+    val script4 = 
+      "def foo(f: (Int => Int) => Int) = 3; def bas(f: Int => Int) = f 3"
+    //println(tcpss(script4))
+    tcpss(script4) match{ case Ok(te) =>
+      assert(te("foo") == FunctionType(
+        List(),
+        List(FunctionType(
+          List(), List(FunctionType(List(), List(IntType), IntType)), IntType)
+        ), IntType ))
+      assert(te("bas") == FunctionType(
+        List(), List(FunctionType(List(), List(IntType), IntType)), IntType) )
+    }
+    // IMPROVE: the error message on the following isn't what we'd like. Gives
+    // error "Expected Int, found ((Int) => Int) => Int"; should really be
+    // "Expected Int => Int, found (((Int) => Int) => Int) => Int".
+    val script5 = script4+"; val xxx = bas(foo)"
+    // println(tcpss(script5))
+    assertFail(tcpss(script5))
+/*
+    val script3 = 
+      "def foo(f: (Int => Int) => Int):Int = {  f(foo) }"
+    println(tcpss(script3))
+ */
   }
 }

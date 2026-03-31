@@ -80,6 +80,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     // updated to the appropriate return type.
     val name = newName(); val te1 = typeEnv + (name, range)
     typeCheckList(te1, typeParams, args).map{ case (te2, argTs) =>
+      // println(s"$args -> $argTs")
       unifyList(te2, argTs, domain).map{ case (te3, invMap) =>
         // Extract type of name.  Need to apply invMap to reverse renaming
         // done in unifyList.
@@ -111,10 +112,13 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       : Reply[(TypeEnv, List[TypeT])] = {
     if(args.isEmpty) Ok((typeEnv, List[TypeT]()))
     else etc.typeCheck(typeEnv, args.head).map{ case (te1, t1) =>
-      // Rename type parameters to avoid name clashes.
-      val t2 = t1.renameTypeParams(TypeParam.newTypeParamMap, fnTParams)
-      typeCheckList(te1, fnTParams, args.tail).map{ case (te2, ts) =>
-        Ok(te2, t2::ts)
+      if(t1.hasNullReturnFunction) forwardRefFail 
+      else{
+        // Rename type parameters to avoid name clashes.
+        val t2 = t1.renameTypeParams(TypeParam.newTypeParamMap, fnTParams)
+        typeCheckList(te1, fnTParams, args.tail).map{ case (te2, ts) =>
+          Ok(te2, t2::ts)
+        }
       }
     }
   }
@@ -130,6 +134,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     else{
       // Replace type parameters in argTs.head by type variables
       val (te1, t1, typeMap) = mkInstance(typeEnv, argTs.head)
+      // println(s"Unifying $t1 and\n${paramTs.head}")
       unify(te1, t1, paramTs.head).map{ case (te2, _) =>
         unifyList(te2, argTs.tail, paramTs.tail).map{ case (te3, invMap) =>
           Ok((te3, union(invMap, inverse(typeMap))))
@@ -209,7 +214,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   def findFunctionApp(typeEnv: TypeEnv, fa: FunctionApp, ts: Array[FunctionType])
       : Reply[(TypeEnv, TypeT)] = {
     val FunctionApp(ne @ NameExp(fn), args) = fa
-    assert(ts.length >= 2 && ts.forall(_.params.isEmpty))
+    assert(ts.length >= 2 && ts.forall(_.params.isEmpty), ts.mkString("\n"))
     // Get types of actual parameters
     typeCheckList(typeEnv.newScope, args).lift(fa).map{ case (te1, argsTs) => 
       // Find those elements that match

@@ -100,6 +100,16 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
         // Try to unify types of remainder with t1
         typeCheckListSingleType(te1, elems.tail, t1).lift(exp)
       }
+      // Tuple literals
+    case TupleLiteral(elems) => 
+      if(elems.length > TupleType.MaxArity)
+        FailureR(s"Tuple has more than maximum allowed number of components "+
+          s"(${TupleType.MaxArity})").lift(exp,true)
+      else 
+        typeCheckList(typeEnv, elems).map{ case (te1,ts) => 
+          Ok(te1, TupleType(ts)) 
+        }.lift(exp)
+
     // Application of function name; allow overloading here
     case fa @ FunctionApp(NameExp(fn), args) => (typeEnv.get(fn) match{
       case None => FailureR(s"Name $fn not found").lift(exp, true) 
@@ -174,6 +184,15 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
     }
   // Note: this traverses the list from left to right, which makes for more
   // natural error messages when type checking fails.
+
+  /** Typecheck exps.  If successful, return the resulting type environment and
+    * the list of types. */
+  private def typeCheckList(typeEnv: TypeEnv, exps: List[Exp])
+      : Reply[(TypeEnv, List[TypeT])] =
+    if(exps.isEmpty) Ok(typeEnv, List[TypeT]())
+    else typeCheck(typeEnv, exps.head).map{ case (te1, t1) =>
+      typeCheckList(te1, exps.tail).map{ case(te2, ts) => Ok(te2, t1::ts) }
+    }
 
   // ========= Qualifiers
 

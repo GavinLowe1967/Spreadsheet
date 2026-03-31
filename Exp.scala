@@ -194,6 +194,11 @@ case class Filter(exp: Exp) extends Qualifier
 
 case class ListComprehension(term: Exp, qualifiers: List[Qualifier]) extends Exp
 
+// =======================================================
+
+/** An expression for a Tuple literal. */
+case class TupleLiteral(elems: List[Exp]) extends Exp
+
 // ==================================================================
 
 /** The application of a function represented by `f` to `args`. */

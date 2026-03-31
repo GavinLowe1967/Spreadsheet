@@ -111,21 +111,33 @@ object TypeParser extends Parser0{
     | keyword("String") > { _ => StringType }
   )
 
-  /** A parser for a type name or type parameter. */
+  /** Parser for a tuple type or parenthesised type. */
+  private def tupleOrParens: Parser[TypeT] =
+    (lit("(") ~> typeP) ~ (
+      lit(")") ~~> success(List[TypeT]()) // Note: don't consume white space
+      | lit(",") ~> repSep(typeP, ",") <~ lit(")")
+    ) > { case (e, es) => if(es.isEmpty) e else TupleType(e::es) }
+
+  /** A parser for a type name, type parameter, tuple type, or parenthesised
+    * type. */
   private def typeP1: Parser[TypeT] = (
     cellType
     | keyword("Row") > { _ => RowType } | keyword("Column") > { _ => ColumnType }
     | keyword("List") ~> inSquare(typeP) > { t => ListType(t) }
     | upperName > { n => TypeParam(n) }
+    | tupleOrParens
+
   )
 
   /** A parser for a type. */
-  def typeP: Parser[TypeT] = 
+  def typeP: Parser[TypeT] = (
     typeP1 ~~ opt(consumeWhite ~~> lit("=>") ~> typeP) > { _ match {
       case (t,None) => t
       case (t1, Some(t2)) => FunctionType(List(), List(t1), t2)
         // IMPROVE: the "List()" looks odd.
     }}
+//    | lit("(") ~> typeP <~ lit(")")
+  )
 
   /** A parser for a type preceded by a colon. */
   def ofType: Parser[TypeT] = lit(":") ~> typeP
