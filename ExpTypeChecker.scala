@@ -187,7 +187,7 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
 
   /** Typecheck exps.  If successful, return the resulting type environment and
     * the list of types.*/
-  private def typeCheckList(typeEnv: TypeEnv, exps: List[Exp])
+  def typeCheckList(typeEnv: TypeEnv, exps: List[Exp])
       : Reply[(TypeEnv, List[TypeT])] =
     if(exps.isEmpty) Ok(typeEnv, List[TypeT]())
     else typeCheck(typeEnv, exps.head).map{ case (te1, t1) =>

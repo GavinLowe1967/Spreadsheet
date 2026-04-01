@@ -10,7 +10,8 @@ case class FunctionType(
   params: List[TypeParameter], domain: List[TypeT], range: TypeT
 ) extends TypeT{
   def asString = 
-    domain.map(_.asString).mkString("(", ",", ")")+" => "+range.asString
+    domain.map(_.asString).mkString("(", ",", ")")+" => "+
+      (if(range == null) "<undefined type>" else range.asString)
 
   def typeParams = 
     (params.map(_._1) ++ domain.flatMap(_.typeParams) ++ range.typeParams

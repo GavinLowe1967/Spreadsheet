@@ -66,7 +66,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     // then unify the types of args with domain, so the new name gets
     // updated to the appropriate return type.
     val name = newName(); val te1 = typeEnv + (name, range)
-    typeCheckList(te1, typeParams, args).map{ case (te2, argTs) =>
+    typeCheckList1(te1, typeParams, args).map{ case (te2, argTs) =>
       // println(s"$args -> $argTs")
       unifyList(te2, argTs, domain).map{ case (te3, invMap) =>
         // Extract type of name.  Need to apply invMap to reverse renaming
@@ -79,7 +79,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   /** Type check each element of args.  Rename bound type parameters to avoid
     * clashes with elements of fnTParams.  If successful, return resulting
     * environment, and list of types. */
-  private def typeCheckList(
+  private def typeCheckList1(
     typeEnv: TypeEnv, fnTParams: Set[TypeParamName], args: List[Exp])
       : Reply[(TypeEnv, List[TypeT])] = {
     if(args.isEmpty) Ok((typeEnv, List[TypeT]()))
@@ -88,7 +88,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       else{
         // Rename type parameters to avoid name clashes.
         val t2 = t1.renameTypeParams(TypeParam.newTypeParamMap, fnTParams)
-        typeCheckList(te1, fnTParams, args.tail).map{ case (te2, ts) =>
+        typeCheckList1(te1, fnTParams, args.tail).map{ case (te2, ts) =>
           Ok(te2, t2::ts)
         }
       }
@@ -127,65 +127,75 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
 // FIXME, what about a type like ListType(FunctionType(_,_,_)) ???
   }
 
-  /** Type check es in turn.  If successful, return the resulting type
-    * environment and list of types. */
-  private def typeCheckList(typeEnv: TypeEnv, es: List[Exp])
-      : Reply[(TypeEnv, List[TypeT])] = {
-    if(es.isEmpty) Ok(typeEnv, List[TypeT]())
-    else etc.typeCheck(typeEnv, es.head).map{ case(te1, t1) => 
-      val (te2,t2,typeMap) = mkInstance(te1,t1)
-      typeCheckList(te2, es.tail).map{ case (te3,ts) => Ok(te3, t2::ts) }
-    }
-  }
+  // /** Type check es in turn.  If successful, return the resulting type
+  //   * environment and list of types. */
+  // def typeCheckList(typeEnv: TypeEnv, es: List[Exp])
+  //     : Reply[(TypeEnv, List[TypeT])] = {
+  //   if(es.isEmpty) Ok(typeEnv, List[TypeT]())
+  //   else etc.typeCheck(typeEnv, es.head).map{ case(te1, t1) => 
+  //     val (te2,t2,typeMap) = mkInstance(te1,t1)
+  //     typeCheckList(te2, es.tail).map{ case (te3,ts) => Ok(te3, t2::ts) }
+  //   }
+  // }
+// Note: using etc.typeCheckList
 
-  /** Typecheck the arguments of fa, and find the type from ts for the function.
-    * If successful, store the index in fa.  */
-  def fOLDindFunctionApp(typeEnv: TypeEnv, fa: FunctionApp, ts: Array[FunctionType])
-      : Reply[(TypeEnv, TypeT)] = {
-    val FunctionApp(ne @ NameExp(fn), args) = fa
-    assert(ts.length >= 2 && ts.forall(_.params.isEmpty), ts.mkString("\n"))
-    // Get types of actual parameters
-    typeCheckList(typeEnv.newScope, args).lift(fa).map{ case (te1, argsTs) => 
-      // Find those elements that match
-      (0 until ts.length).toList.filter(i => ts(i).domain == argsTs) match{
-        case List() => 
-          FailureR(
-            s"Application of overloaded function $fn with types\n"+
-            ts.map(_.asString).mkString(", ")+"\ncan't be applied to argument"+
-            (if(args.length > 1) "s" else "")+" of type "+showList(argsTs)
-          ).lift(fa, true)
-        case List(index) =>
-          ne.setIndex(index); val ft = ts(index)
-          if(ft.finalNull) forwardRefFail.lift(fa, true)
-          else Ok((te1.endScope, ft.range))
-        case _ => 
-          sys.error(s"Multiple functions $fn with arguments of type(s)"+
-            showList(argsTs))
-          // I think this can't happen
-      }
-    }
-  }
+  // /** Typecheck the arguments of fa, and find the type from ts for the function.
+  //   * If successful, store the index in fa.  */
+  // def fOLDindFunctionApp(typeEnv: TypeEnv, fa: FunctionApp, ts: Array[FunctionType])
+  //     : Reply[(TypeEnv, TypeT)] = {
+  //   val FunctionApp(ne @ NameExp(fn), args) = fa
+  //   assert(ts.length >= 2 && ts.forall(_.params.isEmpty), ts.mkString("\n"))
+  //   // Get types of actual parameters
+  //   typeCheckList(typeEnv.newScope, args).lift(fa).map{ case (te1, argsTs) => 
+  //     // Find those elements that match
+  //     (0 until ts.length).toList.filter(i => ts(i).domain == argsTs) match{
+  //       case List() => 
+  //         FailureR(
+  //           s"Application of overloaded function $fn with types\n"+
+  //           ts.map(_.asString).mkString(", ")+"\ncan't be applied to argument"+
+  //           (if(args.length > 1) "s" else "")+" of type "+showList(argsTs)
+  //         ).lift(fa, true)
+  //       case List(index) =>
+  //         ne.setIndex(index); val ft = ts(index)
+  //         if(ft.finalNull) forwardRefFail.lift(fa, true)
+  //         else Ok((te1.endScope, ft.range))
+  //       case _ => 
+  //         sys.error(s"Multiple functions $fn with arguments of type(s)"+
+  //           showList(argsTs))
+  //         // I think this can't happen
+  //     }
+  //   }
+  // }
 
   def findFunctionApp(typeEnv: TypeEnv, fa: FunctionApp, ts: Array[FunctionType])
       : Reply[(TypeEnv, TypeT)] = {
     val FunctionApp(ne @ NameExp(fn), args) = fa
-    assert(ts.length >= 2 /* && ts.forall(_.params.isEmpty) */, ts.mkString("\n"))
+    assert(ts.length >= 2, ts.mkString("\n"))
     // If args don't typecheck, then just return the error
-    typeCheckList(typeEnv.newScope, args).lift(fa).map{ case (_,argsTs) => 
+    etc.typeCheckList(typeEnv.newScope, args).lift(fa).map{ case (_,argsTs) => 
       // Iterate through ts.  Note: this involves typechecking args again,
-      // multiple times.  IMPROVE.
+      // multiple times.  But I think this is unavoidable, as in each later
+      // case we need to consider the relevant type parameters.
       var i = 0; var result: Reply[(TypeEnv, TypeT)] = null
+      var errs = List[String]()
       while(i < ts.length && result == null){
-        checkFunctionApp1(typeEnv, ts(i), args) match{
+        val ft = ts(i)
+        checkFunctionApp1(typeEnv, ft, args) match{
           case ok @ Ok((te,res)) => ne.setIndex(i); result = ok
-          case _: FailureR => i += 1
+          case FailureR(err) => 
+            //if(!ft.finalNull) 
+              errs = errs :+ s"Instance of type ${ft.asString}: $err"
+            i += 1
         }
       } // end of while loop
       if(result != null) result 
       else FailureR(
-        s"Application of overloaded function $fn with types\n"+
-          ts.filter(!_.finalNull).map(_.asString).mkString(", ")+"\ncan't be applied to argument"+
-          (if(args.length > 1) "s" else "")+" of type "+showList(argsTs)
+        s"Overloaded function $fn can't be applied to argument"+
+            // with types\n"+
+            // ts.map(_.asString).mkString(", ")+
+            //"\ncan't be applied to argument"+
+          (if(args.length > 1) "s" else "")+" of type "+showList(argsTs)+"\n"+
+          errs.mkString("\n")+"\n"
       ).lift(fa, true)
     }
   }

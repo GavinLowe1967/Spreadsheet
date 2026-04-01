@@ -28,6 +28,7 @@ successful.
 Basically done, but needs more testing, particularly with selector functions. 
 
 ** DeclarationTypeChecker to allow overloading -- TIDY UP
+- Move calculation of typeCheckList(... args) into checkFunctionApp, and pass resulting types to checkFunctionApp(1,2).
 
 TypeCheckerTest3, l 41 -- done
 

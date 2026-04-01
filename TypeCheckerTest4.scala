@@ -232,7 +232,7 @@ object TypeCheckerTest4{
     val script10 =
       "def g(x: Float) = f(x); def f(x: Int) = x; def f(x: Float) = x"
     assertFail(tcpss(script10))
-    // println(tcpss(script10))
+    //println(tcpss(script10))
 
     val script11 = "def fact(n: Int) = if(n==0) 1 else n*fact(n-1)"
     assertFail(tcpss(script11))

@@ -27,7 +27,6 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
     result
   }
 
-
   /** Type check the Declaration decl, returning the resulting type envionment
     * if successful. */
   def typeCheckDecl(typeEnv: TypeEnv, decl: Declaration): Reply[TypeEnv] = 
@@ -38,7 +37,6 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
         })
 
       case fd @ FunctionDeclaration(name, tparams, paramss, ort, body) =>
-// TODO: don't require return type
         val params = paramss.flatten
         // If return type is given, name should already be bound to an
         // appropriate FunctionType, by typeCheckStmtList

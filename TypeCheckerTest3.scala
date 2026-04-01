@@ -62,6 +62,7 @@ object TypeCheckerTest3{
     // "Overloaded function application with types (Int) => Int, (Float) =>
     // Float can't be applied to argument of type Boolean"
     assertFail(tcpss(doubleS+"val x = double true"))
+    //println(tcpss(doubleS+"val x = double true"))
 
     // Application of sum
     tcpss(sumS+"\nval x = sum [2,3,4]; val y = sum[2.4,3.4]") match{ 

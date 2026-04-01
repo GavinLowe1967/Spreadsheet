@@ -43,6 +43,11 @@ trait ExpTypeCheckerT{
 
   /** Typecheck exp, and unify with eType. */
   def typeCheckUnify(typeEnv: TypeEnv, exp: Exp, eType: TypeT): TypeCheckRes
+
+  /** Typecheck exps.  If successful, return the resulting type environment and
+    * the list of types.*/
+  def typeCheckList(typeEnv: TypeEnv, exps: List[Exp])
+      : Reply[(TypeEnv, List[TypeT])]
 }
 
 // =======================================================
