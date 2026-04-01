@@ -22,23 +22,25 @@ object BuiltInFunctions{
 
   import TupleType.MaxArity
   /** The selector functions, e.g. get1From2. */
-  private val selectorTypes: List[(String, List[FunctionType])] = 
-    for(i <- (1 to MaxArity).toList; a <- 2 to MaxArity)
-    yield s"get${i}From$a" -> // (T1,...,Ta) => Ti
-      List(FunctionType(
-        for(j <- (1 to a).toList) yield (s"A$j", AnyTypeConstraint),
-        List(TupleType(for(j <- (1 to a).toList) yield TypeParam(s"A$j"))),
-        TypeParam(s"A$i") ))
-/* // Following doesn't work currently, as these are overloaded polymorphic functions
+  // private val selectorTypes1: List[(String, List[FunctionType])] = 
+  //   for(i <- (1 to MaxArity).toList; a <- 2 to MaxArity)
+  //   yield s"get${i}From$a" -> // (T1,...,Ta) => Ti
+  //     List(FunctionType(
+  //       for(j <- (1 to a).toList) yield (s"A$j", AnyTypeConstraint),
+  //       List(TupleType(for(j <- (1 to a).toList) yield TypeParam(s"A$j"))),
+  //       TypeParam(s"A$i") ))
+
+  /** The selector functions, e.g. get2. */
+  private val selectorTypes = 
     for(i <- (1 to MaxArity).toList) 
-    yield s"get$i" -> (
-      for (a <- (2 to MaxArity).toList) // (T1,...,Ta) => Ti
+    yield s"get$i" -> ( // Defined on tuples of size i max 2 or larger
+      for (a <- ((i max 2) to MaxArity).toList) // (T1,...,Ta) => Ti
       yield FunctionType(
         for(j <- (1 to a).toList) yield (s"A$j", AnyTypeConstraint),
         List(TupleType(for(j <- (1 to a).toList) yield TypeParam(s"A$j"))),
         TypeParam(s"A$i") ))
- */
-//  println(selectorTypes)
+
+  //  println(selectorTypes)
 
   /** The types of built-in functions. */
   val builtInTypes = 
@@ -61,12 +63,26 @@ object BuiltInFunctions{
   private val toFloatFn = 
     FunctionValue{ case List(IntValue(n)) => FloatValue(n.toFloat) }
 
+  // /** The selector functions. */
+  // private val selectorFns1: List[(String,FunctionValue)] =
+  //   for(i <- (1 to MaxArity).toList; a <- (2 max i) to MaxArity)
+  //   yield s"get${i}From$a" -> FunctionValue{ 
+  //     case List(tv @ TupleValue(elems)) if tv.arity == a => elems(i-1)
+  //       // Note: tuples use 1-based indexing, but lists use 0-based indexing.
+  //   }
+
   /** The selector functions. */
-  private val selectorFns: List[(String,FunctionValue)] =
-    for(i <- (1 to MaxArity).toList; a <- 2 to MaxArity)
-    yield s"get${i}From$a" -> FunctionValue{ 
-      case List(tv @ TupleValue(elems)) if tv.arity == a => elems(i-1)
-        // Note: tuples use 1-based indexing, but lists use 0-based indexing.
+  private val selectorFns =
+    for(i <- (1 to MaxArity).toList; a <- (2 max i) to MaxArity)
+    yield{
+      // Note: we have to use NameExp.getName to set the names appropriately,
+      // except for the maximum arity.  This is a bit of a hack.
+      val name = 
+        if(i == MaxArity) s"get$i" else NameExp.getName(s"get$i", a-(2 max i))
+      name -> FunctionValue{
+        case List(tv @ TupleValue(elems)) if tv.arity == a => elems(i-1)
+          // Note: tuples use 1-based indexing, but lists use 0-based indexing.
+      }
     }
 
   /** The built-in functions. */

@@ -30,16 +30,23 @@ object TypeCheckerTest3{
   }
 
   def overloadingTests() = {
-    val doubleS = 
-      "def double(x: Int): Int = 2*x; def double(x: Float): Float = 2.0*x\n"
+    val doubleS = "def double(x: Int) = 2*x; def double(x: Float) = 2.0*x\n"
     val sumS = // ok, these definitions are wrong
-      "def sum(xs: List[Int]): Int = 0; def sum(xs: List[Float]): Float = 0.0"
+      "def sum(xs: List[Int]) = 0; def sum(xs: List[Float]) = 0.0"
     val applyS = "def apply[A,B](f: A => B, x: A): B = f x\n"
 //printErrors = true
     assertFail(tcpss("val x = 3; val x = 5"))
     assertFail(tcpss("val x = 3; def x(y: Int): Int = y+1"))
-    assertFail(tcpss("def f(x: Int): Int = x+1; def f[A](x: A): A = x"))
-    // "Forward reference to name f"
+    //    assertFail(tcpss("def f(x: Int): Int = x+1; def f[A](x: A): A = x"))
+    // Now allowed
+    // Overloaded function where first case applies
+    tcpss("def f(x: Int) = true; def f[A](x: A) = x; val z = f(3)") match{
+      case Ok(te) => assert(te("z") == BoolType)
+    }
+    tcpss("def f[A](x: A) = x; def f(x: Int) = true; val z = f(3)") match{
+      case Ok(te) => assert(te("z") == IntType)
+    }
+
     assertFail(tcpss("val x = f 3\n val f = 5"))
     assertFail(tcpss("val x = f 3"))
 
@@ -66,7 +73,11 @@ object TypeCheckerTest3{
         assert(te("x") == IntType && te("y") == FloatType)
     }
     assertFail(tcpss(sumS+"; val x = sum[true]"))
-    assertFail(tcpss(sumS+"; val x = sum[]"))
+    // assertFail(tcpss(sumS+"; val x = sum[]")) -- now allowed; first case
+    // applies
+    tcpss(sumS+"; val x = sum [] ") match{ case Ok(te) =>
+      assert(te("x") == IntType)
+    }
     assertFail(tcpss(sumS+"; val x = sum 5 "))
     tcpss(sumS+"; val x = sum([]: List[Int])") match{ case Ok(te) =>
       assert(te("x") == IntType) }

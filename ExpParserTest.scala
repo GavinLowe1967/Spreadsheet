@@ -7,7 +7,7 @@ object ExpParserTest extends ParserTest0{
 
   /** Test of expression parsers on atomic values. */
   private def expressions1() = {
-    assert(p("123") == IntExp(123)); 
+    assert(p("123") == IntExp(123))
     assert(p(" ( -123 ) ") == IntExp(-123))
     assert(pe("123.45") == FloatValue(123.45F))
     assert(pe("-456.12") == FloatValue(-456.12F))
@@ -121,8 +121,12 @@ object ExpParserTest extends ParserTest0{
     assert(pe("toFloat 3") == FloatValue(3.0F))
 
     assert(pe("(2,3.5)") == TupleValue(IntValue(2), FloatValue(3.5F)))
-    assert(pe("{val pair = (2,3.5); get1From2 pair}") == IntValue(2))
-    assert(pe("get2From2((3.4, 2+2))") == IntValue(4))
+    //assert(pe("{val pair = (2,3.5); get1From2 pair}") == IntValue(2))
+    //assert(pe("get2From2((3.4, 2+2))") == IntValue(4))
+    // The following won't work, because it requires the typechecker to run
+    // first, to identify the right instance of get1.
+    //println(pe("{val pair = (2,3.5); get1 pair}") == IntValue(2))
+
 
     // Tests mixing floats and ints
     // assert(pe("2+5.7") == FloatValue(7.7F))

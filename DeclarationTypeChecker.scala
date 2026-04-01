@@ -82,37 +82,35 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
     }
 
   /** Check that the definitions `defs` for function `name` is allowed: if there
-    * is more than one definition, that none is polymorphic, and that they
-    * have disjoint types: we require them to differ in the first list of
-    * parameters.  If not, return appropriate FailureR; return null if ok. */
+    * is more than one definition, then they have disjoint types: we require
+    * them to differ in the first list of parameters.  If not, return
+    * appropriate FailureR; return null if ok. */
   private 
   def checkOverloadingAllowed(name: String, defs: List[FunctionDeclaration])
       : Reply[TypeEnv] = {
     val len = defs.length
     if(len > 1){
-      val poly = defs.filter(_.tParams.nonEmpty)
-      if(poly.nonEmpty)
-        FailureR(
-          s"Function $name with multiple definitions has polymorphic\n"+
-            s"instance at line ${poly.head.lineNumber}.") 
-      else{
-        // Search for definitions with same first argument types.  
-        var i = 0; var result: Reply[TypeEnv] = null
-        while(i < len-1 && result == null){
-          val paramTs = defs(i).paramTs.head; var j = i+1
-          while(j < len && result == null){
-            if(defs(j).paramTs.head == paramTs)
-              result = FailureR(
-                s"Function $name has multiple definitions with\n"+
-                  "parameters of type "+TypeT.showList(paramTs)
-              ).addLines(defs(i),defs(j))
-            j += 1
-          }
-          i += 1
-        } // end of outer while
-        result
-        // FIXME: check disjoint types
-      }
+//       val poly = defs.filter(_.tParams.nonEmpty)
+//       if(false && poly.nonEmpty)
+//         FailureR(
+//           s"Function $name with multiple definitions has polymorphic\n"+
+//             s"instance at line ${poly.head.lineNumber}.") 
+//       else{
+      // Search for definitions with same first argument types.
+      var i = 0; var result: Reply[TypeEnv] = null
+      while(i < len-1 && result == null){
+        val paramTs = defs(i).paramTs.head; var j = i+1
+        while(j < len && result == null){
+          if(defs(j).paramTs.head == paramTs)
+            result = FailureR(
+              s"Function $name has multiple definitions with\n"+
+                "parameters of type "+TypeT.showList(paramTs)
+            ).addLines(defs(i),defs(j))
+          j += 1
+        }
+        i += 1
+      } // end of outer while
+      result
     }
     else null
   }

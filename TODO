@@ -21,15 +21,31 @@ polymorphic.
 
 TODO: 
 
--- Allow overloaded functions to be polymorphic when they have disjoint types?
+In findFunctionApp, iterate through the list of instances; filter out those
+with the wrong number of parameters; for others, try unifyList on each until
+successful.
 
--- Make TupleType into a trait, with subclasses Tuple2, Tuple3, etc? 
+Basically done, but needs more testing, particularly with selector functions. 
+
+** DeclarationTypeChecker to allow overloading -- TIDY UP
+
+TypeCheckerTest3, l 41 -- done
+
+--> Reconsider sum[], (TypeCheckerTest3.scala:69).  I think the result is correct (i.e. giving Int).  -- done
+
+TypeCheckerTest4, l 195 -- done
+
+-- Allow overloaded functions to be polymorphic when they have disjoint types? -- done
+
 
 ** Need to include tuples in unification. 
 
 ** Some missing cases in Substitution.scala (se "FIXME"s)
 
 6. Evaluation. -- done
+
+7a. Increase MaxArity, but include test in test.dir for the non-overloaded get
+function.
 
 7. Add to manual.
 

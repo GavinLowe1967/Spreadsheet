@@ -271,12 +271,17 @@ object TypeCheckerTest4{
         List(TypeParam("A"), TypeParam("B")),
         TupleType(List(TypeParam("A"), TypeParam("B"))) ))
     }
-    tcpss("val pair = (1,2.5); val x = get1From2(pair)") match{ case Ok(te) =>
+    // tcpss("val pair = (1,2.5); val x = get1From2(pair)") match{ case Ok(te) =>
+    //   assert(te("pair") == TupleType(List(IntType,FloatType)))
+    //   assert(te("x") == IntType)
+    // }
+    tcpss("val pair = (1,2.5); val x = get1(pair)") match{ case Ok(te) =>
       assert(te("pair") == TupleType(List(IntType,FloatType)))
       assert(te("x") == IntType)
     }
     // Expected (t379,t380,t381), found (Int,Float)
-    assertFail(tcpss("val pair = (1,2.5); val x = get1From3 pair"))
+    // assertFail(tcpss("val pair = (1,2.5); val x = get1From3 pair"))
+    assertFail(tcpss("val pair = (1,2.5); val x = get3 pair"))
 
   }
 

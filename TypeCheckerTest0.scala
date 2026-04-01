@@ -36,6 +36,7 @@ object TypeCheckerTest0{
   
   /* Parse and typecheck expression given by st. */
   def tcp(st: String, env: TypeEnv = newEnv) = {
+    //println(env); sys.exit()
     val e = parseAll(expr, st); val res = typeCheckAndClose(env, e)
     maybePrintError(res); res
   }
@@ -252,9 +253,13 @@ printErrors = false
     assertFail(tcp("(1, 2+true)"))
     assertFail(tcp("(1+true , 2)"))
     // Note: the extra parentheses are currently necessary
-    assertEq(tcp("get1From2((2+5, 3.5*1.2))"), IntType)
+    // assertEq(tcp("get1From2((2+5, 3.5*1.2))"), IntType)
+    assertEq(tcp("get1((2+5, 4.5))"), IntType)
     // "Expected (t51,t52,t53), found (Int,Int)"
-    assertFail(tcp("get1From3((2, 4))"))
+    // assertFail(tcp("get1From3((2, 4))"))
+    // "Application of overloaded function get3 with types ((A1,A2,A3)) => A3,
+    // ((A1,A2,A3,A4)) => A3 can't be applied to argument of type (Int,Int)"
+    assertFail(tcp("get3((2,4))"))
   }
 
 

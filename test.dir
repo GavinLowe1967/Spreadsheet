@@ -61,6 +61,12 @@ def g(z: Int): Int = { val y = 10; f z }
 def f(x: Int): Int = x+y
 // Note: above tests that a forward reference to a function is allowed. 
 
+// Tests of overloading
+def f1(x: Int) = x+1; def f1[A](x: A) = x
+#E6 = f1(3); #F6 = f1(true) // 4, true
+def f2[A](x: A) = x; def f2(x: Int) = x+1
+#G6 = f2(3); #H6 = f2(true) // 3, true
+
 // This test checks the inner declaration of flag doesn't leak. 
 val flag = true
 for(r <- #7 to #8; if r == #6 || flag){ 
@@ -78,3 +84,5 @@ val xs = [x+y | x <- [1,2,3], y <- [4,7], x != 2]
 #A9 = xs == [5,8,7,10] // true
 #B9 = sum([Cell(c,#6):Int | c <- #A to #D]) // 21
 
+// Tuples and overloading
+#C9 = get1((2,4,6,8)); #D9 = get4((2,4,6,8))

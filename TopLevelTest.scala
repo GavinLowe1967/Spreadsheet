@@ -22,7 +22,8 @@ object TopLevelTest{
       s"Expected $e found ${cells(c)(r)} in #${ColumnValue.getName(c)}$r")
 
   // Column names
-  val A = 0; val B = 1; val C = 2; val D = 3; val E = 4; val F = 5; val G = 6
+  val A = 0; val B = 1; val C = 2; val D = 3; val E = 4;
+  val F = 5; val G = 6; val H = 7
 
   /** Values expected to be provided as inputs. */
   val expectedInputs = List[(Int,Int,Value)](
@@ -38,12 +39,14 @@ object TopLevelTest{
     // #F0 = double(3.0); #G0 = double(2)
     (A,0,FloatValue(7.0F)), (B,0,IntValue(10)), (E,0,StringValue("Hello")), 
     (F,0,FloatValue(6.0F)), (G,0,IntValue(4)),
+
     // Factorials, rows 1-4 
     // for(r <- #1 to #4; c <- [#B, #C]; if r != #2){
     //   Cell(c, r) = fact(Cell(#A,r))
     // }
     (B,1,IntValue(24)), (C,1,IntValue(24)),
     (B,3,IntValue(720)), (C,3,IntValue(720)),
+
     // val firstEmpty = firstEmptyInCol(#A, #1) // Should give #4
     // Cell(#D, firstEmpty) = "first empty"
     (D,4,StringValue("first empty")),
@@ -55,6 +58,15 @@ object TopLevelTest{
     // #C6 = if(false) 3 else #A1 // Untyped cell read.
     // #D6 = g(1) // should be 4
     (C,6,IntValue(4)), (D,6,IntValue(4)),
+
+    // // Tests of overloading
+    // def f1(x: Int) = x+1; def f1[A](x: A) = x
+    // #E6 = f1(3); #F6 = f1(true) // 4, true
+    // def f2[A](x: A) = x; def f2(x: Int) = x+1
+    // #G6 = f2(3); #H6 = f2(true) // 3, true
+    (E, 6, IntValue(4)), (F, 6, BoolValue(true)),
+    (G, 6, IntValue(3)), (H, 6, BoolValue(true)),
+
     // val flag = true
     // for(r <- #7 to #8; if r == #6 || flag){
     //   Cell(#B, r) = flag; val flag = false
@@ -63,7 +75,9 @@ object TopLevelTest{
     // for(r <- 2 to 2; r <- #5+r to #6+r) Cell(#C, r) = 6
     (C,7,IntValue(6)), (C,8,IntValue(6)),
     // List comprehensions
-    (A,9,BoolValue(true)), (B,9,IntValue(21))
+    (A,9,BoolValue(true)), (B,9,IntValue(21)),
+    // Tuples and overloading
+    (C,9,IntValue(2)), (D,9,IntValue(8))
   )
 
   /** Lit of cells where type errors are expected. */
