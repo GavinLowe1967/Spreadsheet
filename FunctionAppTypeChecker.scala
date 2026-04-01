@@ -67,10 +67,13 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     // updated to the appropriate return type.
     val name = newName(); val te1 = typeEnv + (name, range)
     typeCheckList1(te1, typeParams, args).map{ case (te2, argTs) =>
-      // println(s"$args -> $argTs")
+//println(s"$args -> $argTs")
+//println(s"te2 = $te2")
       unifyList(te2, argTs, domain).map{ case (te3, invMap) =>
         // Extract type of name.  Need to apply invMap to reverse renaming
         // done in unifyList.
+//println(s"te3 = $te3")
+//println(s"invMap = $invMap")
         Ok((te3, reverseRemapBy(invMap, te3(name))))
       }
     }

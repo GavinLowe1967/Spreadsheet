@@ -282,6 +282,13 @@ object TypeCheckerTest4{
     // Expected (t379,t380,t381), found (Int,Float)
     // assertFail(tcpss("val pair = (1,2.5); val x = get1From3 pair"))
     assertFail(tcpss("val pair = (1,2.5); val x = get3 pair"))
+    tcpss("def pair[A,B](x: A, y: B) = (x,y); val p = pair (2,3.5)") match{ 
+      case Ok(te) => assert(te("p") == TupleType(List(IntType,FloatType)))
+    }
+    tcpss("def fst[A,B](p: (A,B)) = get1 p; val x = fst((2.3, 5))") match{
+      case Ok(te) => assert(te("x") == FloatType) 
+    }
+    //println(tcpss("def id[A](x: A) = x; val y = id 3"))
 
   }
 

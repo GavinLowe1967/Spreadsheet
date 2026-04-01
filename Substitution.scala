@@ -12,7 +12,8 @@ object Substitution{
     case ListType(underlying) => ListType(reMap(tv, t, underlying))
     case FunctionType(params, domain, range) =>
       FunctionType(params, domain.map(reMap(tv, t, _)), reMap(tv, t, range))
-    case _ => t1
+    case TupleType(cpts) => TupleType(cpts.map(reMap(tv, t, _)))
+    case _: BaseType | _: TypeParam | _: CellTypeVar | null => t1 
   }
 
   /* We substitute TypeParams with TypeVars, but store the TypeParamConstraint
@@ -42,6 +43,8 @@ object Substitution{
 
     case _: BaseType | _: TypeVar => t
   }
+
+//  def remapTypeVars(f: PartialFunction[TypeID, TypeConstraint]], t: Type
 
   /** Create a remapping from the type parameters in tParams to fresh TypeVars,
     * together with corresponding constraints on those TypeVars. */
@@ -83,8 +86,10 @@ object Substitution{
     case FunctionType(params, domain, range) =>
       assert(params.forall{ case (n,_) => !tParams.map(_._1).contains(n) })
       FunctionType(params++tParams, domain, range)
-    case TupleType(cpts) => ??? // FIXME
-    case _: BaseType | _: TypeVar | _: CellTypeVar => t 
+    case TupleType(cpts) => 
+      TupleType(cpts.map(t1 => remapInResult(tParams, typeMap, t1)))
+    case tv: TypeVar => tv // println(getConstraint(tv)); ???
+    case _: BaseType | _: CellTypeVar => t 
   }
 
   /** Substitute type parameters in result from tParams with fresh type
@@ -134,7 +139,8 @@ object Substitution{
       assert(tParams.forall{ case (n,_) => !t.typeParams.contains(n) })
       FunctionType(params++tParams, domain.map(reverseRemapBy(rtMap, List(), _)),
         reverseRemapBy(rtMap, List(), range))
-    case TupleType(_) => ???  // FIXME
+    case TupleType(cptTs) => 
+      TupleType(cptTs.map(t1 => reverseRemapBy(rtMap, tParams, t1)))
     case _: BaseType | _: TypeVar | _: CellTypeVar | _: TypeParam => t
   }
 

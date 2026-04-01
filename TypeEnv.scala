@@ -224,7 +224,7 @@ class TypeEnv(
   // ========= Generic helper functions
 
   private def showNameMap = (
-    for((n,v) <- nameMap; if true || ! builtInNames.contains(n)) yield s"$n -> $v"
+    for((n,v) <- nameMap; if ! builtInNames.contains(n)) yield s"$n -> $v"
   ).mkString("\n{ ", ",\n  ", " }")
 
   override def toString = 
