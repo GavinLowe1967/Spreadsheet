@@ -32,7 +32,7 @@ object ParserTest extends ParserTest0{
 
     assert(CellParser("\\Z") == StringValue("\\Z"))
     assert(CellParser("\"Hello").isInstanceOf[ParseError])
-    assert(CellParser("\"\\Z\"").isInstanceOf[ParseError]) // .isInstanceOf[Failure])
+    assert(CellParser("\"\\Z\"").isInstanceOf[ParseError]) 
 
     println("Cell tests done")
   }

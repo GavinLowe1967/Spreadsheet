@@ -86,7 +86,29 @@ object EvaluationTest{
     assert(eval("[1,2] == tail([3,1,2])") == BoolValue(true))
     assert(eval("tail([1]) == []") == BoolValue(true))
     assert(eval("[] == tail([1])") == BoolValue(true))
+    assert(eval(
+      "{val xs = [x+y | x <- [1,2,3], y <- [4,7], x != 2]; xs == [5,8,7,10]}"
+    ) == BoolValue(true))
+    // ===== Pairs
+    assert(eval("{val pair = (2,3.5); get1 pair}") == IntValue(2))
+    assert(eval("get1((2,4,6,8))") == IntValue(2))
+    assert(eval("get4((2,4,6,8))") == IntValue(8))
+  }
 
+  /** Tests involving functions. */
+  private def tests3() = {
+    assert(
+      eval("{def fact(n: Int) : Int = if(n <= 1) 1 else n*fact(n-1)\n"+
+        "val ff = fact: Int => Int; ff(3)}"
+      ) == IntValue(6) )
+
+    // Overloading
+    assert(
+      eval("{def f1(x: Int) = x+1; def f1[A](x: A) = x; (f1(3), f1(true))}") ==
+        TupleValue(IntValue(4), BoolValue(true))) // 4, true
+    assert(
+      eval("{def f2[A](x: A) = x; def f2(x: Int) = x+1; (f2(3), f2(true))}") ==
+      TupleValue(IntValue(3), BoolValue(true))) // 3, true
   }
 
 
@@ -94,6 +116,7 @@ object EvaluationTest{
     println("===EvaluationTest===")
     tests1()
     tests2()
+    tests3()
   }
 
 
