@@ -101,6 +101,19 @@ object EvaluationTest{
       eval("{def fact(n: Int) : Int = if(n <= 1) 1 else n*fact(n-1)\n"+
         "val ff = fact: Int => Int; ff(3)}"
       ) == IntValue(6) )
+    // Test of scoping and forward reference
+    assert(
+      eval("{val y = 3; val res = g(1)\n" + // should be 4
+        "def g(z: Int): Int = { val y = 10; f z }\n" +
+        "def f(x: Int): Int = x+y; res}"
+      ) == IntValue(4))
+    // Currying, higher-order function
+    assert(
+      eval("{def foldr[A,B](f: A => B => B)(e: B)(xs: List[A]): B = "+
+        "if(isEmpty xs) e else f(head xs)(foldr f e (tail xs)) \n"+
+        "val sum = { def p(x:Int)(y:Int) = x+y; foldr p 0 } \n" +
+        "sum [1,4]: Int + sum([]: List[Int])}"
+      ) == IntValue(5))
 
     // Overloading
     assert(
@@ -109,6 +122,14 @@ object EvaluationTest{
     assert(
       eval("{def f2[A](x: A) = x; def f2(x: Int) = x+1; (f2(3), f2(true))}") ==
       TupleValue(IntValue(3), BoolValue(true))) // 3, true
+    assert(
+      eval("{def sum(xs: List[Int]): Int = "+
+        "  if(isEmpty xs) 0 else head xs + sum(tail(xs)) \n" +
+        "def sum(xs: List[Float]): Float = "+
+        "  if(isEmpty xs) 0.0 else head xs + sum(tail(xs)) \n" +
+        "val s = sum: List[Int] => Int; "+
+        "(sum[2.4,4.6], s [2,4]) }"
+      ) == TupleValue(FloatValue(7.0F), IntValue(6)) )
   }
 
 

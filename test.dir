@@ -1,20 +1,14 @@
 // The factorial function
 def fact(n: Int) : Int = if(n <= 1) 1 else n*fact(n-1)
 
-def foldr[A,B](f: A => B => B)(e: B)(xs: List[A]): B =
-  if(isEmpty xs) e else f(head xs)(foldr f e (tail xs))
-
-// Curried sum function.
-val sumX = { def p(x:Int)(y:Int) = x+y; foldr p 0 }
 // Overloaded sum functions.
 def sum(xs: List[Int]): Int = 
   if(isEmpty xs) 0 else head xs + sum(tail(xs))
 def sum(xs: List[Float]): Float = 
   if(isEmpty xs) 0.0 else head xs + sum(tail(xs))
-
-//def apply[A,B](f: A => B, x: A): B = f(x)
+// Apply function
 def apply[A,B](f: A => B)(x: A) = f x
-
+// Overloaded double function
 def double(n: Int) = 2*n
 def double(y: Float) = 2.0*y
 
@@ -30,15 +24,12 @@ def firstEmptyInCol(c: Column, r: Row): Row =
 
 // Inputs in column A
 
-// Simple tests in row 0
-val s = sum: List[Int] => Int
-#A0 = sum [2.4,4.6]
-#B0 = sumX [1,4]: Int + s [2,3] + sumX([]: List[Int]) // + sum([]) *** Not allowed
-#C0 = 1/0: Int // Evaluation error
-#D0 = 3; #D0 = 4.0 // Evaluation error
-val hello = "Hello"; #E0 = hello
-#F0 = apply(double: Float => Float) 3.0 : Float 
-#G0 = double 2
+// Row 0
+#A0 = 1/0: Int // Evaluation error
+#B0 = 3; #B0 = 4.0 // Double-write  error
+val hello = "Hello"; #C0 = hello
+#D0 = apply(double: Float => Float) 3.0 : Float 
+#E0 = double 2
 
 // factorials, rows 1-4
 for(r <- #1 to #4; c <- [#B, #C]; if r != #2){
@@ -48,24 +39,13 @@ for(r <- #1 to #4; c <- [#B, #C]; if r != #2){
 val firstEmpty = firstEmptyInCol(#A, #1) // Should give #4
 Cell(#D, firstEmpty) = "first empty"
 
-// More in row 6
-// val ff = fact: Int => Int
-#A6 = fact(3)
-#B6 = 3+#A1 // untyped cell read.
+// Row 6
+#A6 = fact(3); #B6 = 3+#A1 // untyped cell read.
 #C6 = if(false) 3 else #A1 // Untyped cell read.
-// Test of scoping
-val y = 3
-#D6 = g(1) // should be 4
-def g(z: Int): Int = { val y = 10; f z }
-def f(x: Int): Int = x+y
-// Note: above tests that a forward reference to a function is allowed. 
+// List comprehension
+#D6 = sum([Cell(c,#6):Int | c <- #A to #C]) // 17
 
-// Tests of overloading
-// def f1(x: Int) = x+1; def f1[A](x: A) = x
-// #E6 = f1(3); #F6 = f1(true) // 4, true
-// def f2[A](x: A) = x; def f2(x: Int) = x+1
-// #G6 = f2(3); #H6 = f2(true) // 3, true
-
+// Rows 7, 8
 // This test checks the inner declaration of flag doesn't leak. 
 val flag = true
 for(r <- #7 to #8; if r == #6 || flag){ 
@@ -78,10 +58,4 @@ for(r <- 2 to 2; r <- #5+r to #6+r) Cell(#C, r) = 6
 // Test of empty blocks.
 for(x <- #0 until #10){ }
 
-// List comprehensions
-// val xs = [x+y | x <- [1,2,3], y <- [4,7], x != 2]
-// #A9 = xs == [5,8,7,10] // true
-#B9 = sum([Cell(c,#6):Int | c <- #A to #D]) // 21
 
-// Tuples and overloading
-//#C9 = get1((2,4,6,8)); #D9 = get4((2,4,6,8))
