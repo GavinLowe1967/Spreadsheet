@@ -17,7 +17,7 @@ Tuples
 4. Define TupleValue -- done
 
 5. Define built-in functions _1, etc.  But they are overloaded and
-polymorphic.
+polymorphic. -- done
 
 TODO: 
 
@@ -60,6 +60,13 @@ values; and vice versa, e.g. get1From2(x,y).
 Priorities
 ==========
 
+1. Manual -- UPDATE with tuples
+
+2. Allow function that expects a tuple to be applied to a vector of
+values; and vice versa, e.g. get1(x,y).
+
+3. Separate evaluation tester. 
+
 * Tidy up FunctionAppTypeChecker.scala
 
 * Improve type error in Unification.unify.  Example: bas(foo) in
@@ -67,18 +74,14 @@ Priorities
   Int"; should really be "Expected Int => Int, found (((Int) => Int) => Int)
   => Int".
 
-* Manual -- UPDATE with %, toInt, toFloat
 
 * Haskell standard prelude.  Allow "include" statements
 
 * Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
   = #A3".
 
-1. Mod (%). -- done
-
 * Extend arithmetic operators to, e.g. (Int,Float) => Float
 
-2. toInt, toFloat. -- done
 
 * Allow assertions, error.
 
@@ -118,6 +121,9 @@ Low Priority
 ======================================================================
 
 ===================================== DONE
+
+1. Mod (%). -- done
+2. toInt, toFloat. -- done
 
 * Make return type of functions optional in most cases.
 
