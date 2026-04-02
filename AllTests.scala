@@ -5,6 +5,7 @@ object AllTests{
   def main(args: Array[String]) = {
     ParserTest.main(Array())
     TypeCheckerTest.main(Array())
+    EvaluationTest.main(Array())
     TopLevelTest.main(Array())
   }
 }

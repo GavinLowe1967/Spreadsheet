@@ -42,6 +42,9 @@ $(DIR)/BinOpApply.class: $(DIR)/Value.class
 
 $(DIR)/Execution.class: $(DIR)/BinOpApply.class $(DIR)/Statement.class $(DIR)/Environment.class
 
+$(DIR)/EvaluationTest.class: $(DIR)/Execution.class	\
+  $(DIR)/StatementParser.class $(DIR)/TypeChecker.class
+
 # Type checking
 
 $(DIR)/Substitution.class: $(DIR)/FunctionType.class $(DIR)/Reply.class
@@ -106,7 +109,7 @@ $(DIR)/View.class: $(DIR)/Model.class $(DIR)/Spreadsheet.class $(DIR)/ViewT.clas
 
 $(DIR)/TopLevelTest.class: $(DIR)/Model.class
 
-$(DIR)/AllTests.class: $(DIR)/ParserTest.class $(DIR)/TypeCheckerTest.class $(DIR)/TopLevelTest.class
+$(DIR)/AllTests.class: $(DIR)/ParserTest.class $(DIR)/TypeCheckerTest.class $(DIR)/TopLevelTest.class $(DIR)/EvaluationTest.class
 
 $(DIR)/SpreadsheetApp.class: $(DIR)/Spreadsheet.class $(DIR)/View.class
 
