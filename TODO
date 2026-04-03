@@ -3,71 +3,36 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
-Tuples
-------
+Script for alternative vote.
 
-1. Define type of expressions. -- done
+1. Assertions (as statements).
 
-2. Define parser. -- done
+- Syntax
 
-3. Define TupleType.  Define type checker over tuples. -- done
+- Parser
 
-3a. Parser for tuple type. -- done
+- Typechecking
 
-4. Define TupleValue -- done
+- Execution.
 
-5. Define built-in functions _1, etc.  But they are overloaded and
-polymorphic. -- done
+- Test in interface; and add to TopLevelTest
 
-TODO: 
+- TODO: manual
 
-In findFunctionApp, iterate through the list of instances; filter out those
-with the wrong number of parameters; for others, try unifyList on each until
-successful.
-
-Basically done, but needs more testing, particularly with selector functions. 
-
-** DeclarationTypeChecker to allow overloading -- TIDY UP
-- Move calculation of typeCheckList(... args) into checkFunctionApp, and pass resulting types to checkFunctionApp(1,2).
-
-TypeCheckerTest3, l 41 -- done
-
---> Reconsider sum[], (TypeCheckerTest3.scala:69).  I think the result is correct (i.e. giving Int).  -- done
-
-TypeCheckerTest4, l 195 -- done
-
--- Allow overloaded functions to be polymorphic when they have disjoint types? -- done
-
-
-** Need to include tuples in unification. 
-
-** Some missing cases in Substitution.scala (se "FIXME"s)
-
-6. Evaluation. -- done
-
-7a. Increase MaxArity, but include test in test.dir for the non-overloaded get
-function.
-
-7. Add to manual.
-
-LATER: Allow function that expects a tuple to be applied to a vector of
-values; and vice versa, e.g. get1From2(x,y).
-
-
+2. println
 
 
 
 Priorities
 ==========
 
-1. Manual -- UPDATE with tuples
+X. Manual -- keep updated.
 
 3. Allow function that expects a tuple to be applied to a vector of
 values; and vice versa, e.g. get1(x,y).
 
-2. Separate evaluation tester. 
 
-4. Larger example: admissions spreadsheet or alternative vote. 
+1. Larger example: admissions spreadsheet or alternative vote. 
 
 * Tidy up FunctionAppTypeChecker.scala
 
@@ -122,8 +87,63 @@ Low Priority
 
 ===================================== DONE
 
-1. Mod (%). -- done
-2. toInt, toFloat. -- done
+Tuples
+------
+
+1. Define type of expressions. -- done
+
+2. Define parser. -- done
+
+3. Define TupleType.  Define type checker over tuples. -- done
+
+3a. Parser for tuple type. -- done
+
+4. Define TupleValue -- done
+
+5. Define built-in functions _1, etc.  But they are overloaded and
+polymorphic. -- done
+
+TODO: 
+
+In findFunctionApp, iterate through the list of instances; filter out those
+with the wrong number of parameters; for others, try unifyList on each until
+successful.
+
+Basically done, but needs more testing, particularly with selector functions. 
+
+** DeclarationTypeChecker to allow overloading -- TIDY UP
+- Move calculation of typeCheckList(... args) into checkFunctionApp, and pass resulting types to checkFunctionApp(1,2).
+
+TypeCheckerTest3, l 41 -- done
+
+--> Reconsider sum[], (TypeCheckerTest3.scala:69).  I think the result is correct (i.e. giving Int).  -- done
+
+TypeCheckerTest4, l 195 -- done
+
+-- Allow overloaded functions to be polymorphic when they have disjoint types? -- done
+
+
+** Need to include tuples in unification. 
+
+** Some missing cases in Substitution.scala (se "FIXME"s)
+
+6. Evaluation. -- done
+
+7a. Increase MaxArity, but include test in test.dir for the non-overloaded get
+function.
+
+7. Add to manual.
+
+LATER: Allow 
+
+
+------------
+
+Separate evaluation tester. - done
+Mod (%). -- done
+toInt, toFloat. -- done
+
+---
 
 * Make return type of functions optional in most cases.
 

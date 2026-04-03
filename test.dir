@@ -1,5 +1,5 @@
 // The factorial function
-def fact(n: Int) : Int = if(n <= 1) 1 else n*fact(n-1)
+def fact(n: Int) : Int = { assert(n >= 0); if(n <= 1) 1 else n*fact(n-1) }
 
 // Overloaded sum functions.
 def sum(xs: List[Int]): Int = 
@@ -30,6 +30,7 @@ def firstEmptyInCol(c: Column, r: Row): Row =
 val hello = "Hello"; #C0 = hello
 #D0 = apply(double: Float => Float) 3.0 : Float 
 #E0 = double 2
+#F0 = { assert(#E0: Int == 3); 5 }
 
 // factorials, rows 1-4
 for(r <- #1 to #4; c <- [#B, #C]; if r != #2){

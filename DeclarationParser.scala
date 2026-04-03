@@ -48,8 +48,19 @@ object DeclarationParser extends Parser0 with DeclarationParserT{
       (opt(ofType) ~ (lit("=") ~> expr)) >
     { case (((n,tps),ps), (ort,e)) => FunctionDeclaration(n, tps, ps, ort, e) }
 
-  /** A parser for a declaration: either a value or function declaration. */
-  def declaration = valDec | funDec
+
+  // ===== Assertions
+
+  /** A parser for an assertion. */
+  private def assertion: Parser[Declaration] = (
+    (keyword("assert") ~~ lit("(") ~> expr) ~~ 
+      (opt(lit(",") ~> expr) <~ lit(")")) 
+      > { case (e, None) => Assertion(e); case (e, Some(m)) => Assertion2(e,m) }
+  )
+
+  /** A parser for a declaration: either a value or function declaration, or an
+    * assertion. */
+  def declaration: Parser[Declaration] = valDec | funDec | assertion
 
   // private val outer = this
 

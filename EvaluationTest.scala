@@ -132,12 +132,28 @@ object EvaluationTest{
       ) == TupleValue(FloatValue(7.0F), IntValue(6)) )
   }
 
+  /** Tests involving assertions. */
+  private def tests4() = {
+    assert(eval("{ assert(2+2==4); 3 }") == IntValue(3))
+    // "Assertion error at line 1 in "assert(false)" in ..." 
+    assertFail(eval("{ assert(false); 3 }"))
+    // "Division by zero at line 1 in ..."
+    assertFail(eval("{ assert(1/0 != 3); 3 }"))
+
+    assert(eval("{ assert(true, \"XX\"); 3 }") == IntValue(3))
+    // "Assertion error: XX at line 1 in "assert(false, "XX")" in ..."
+    assertFail(eval("{ assert(false, \"XX\"); 3 }"))
+    assertFail(eval("{ assert(1/0 != 3, \"XX\"); 3 }"))
+    assertFail(eval("{ assert(false, if(1/0 != 3) \"XX\" else \"YY\"); 3 }"))
+  }
+
 
   def main(args: Array[String]) = {
     println("===EvaluationTest===")
-    tests1()
-    tests2()
-    tests3()
+    tests1() // basic expressions
+    tests2() // blocks, if statements, list expressions
+    tests3() // functions
+    tests4()
   }
 
 

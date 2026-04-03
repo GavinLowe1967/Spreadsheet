@@ -72,9 +72,10 @@ object TopLevelTest{
   val expectedTypeErrs = List((B,4), (C,4))
 
   /** List of cells where evaluation errors are expected. */
-  val expectedEvalErrs = List((A,0), (B,0))
+  val expectedEvalErrs = List((A,0), (B,0), (F,0))
     // #C0 = 1/0: Int // Evaluation error
     // #D0 = 3; #D0 = 4.0 // Evaluation error
+    // #F0 = { assert(#E0: Int == 3); 5 }
 
   /** Main function. */
   def main(args: Array[String]) = {

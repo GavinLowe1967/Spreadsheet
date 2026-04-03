@@ -81,6 +81,17 @@ case class FunctionDeclaration(
 case class ForStatement(qualfiers: List[Qualifier], stmts: List[Statement]) 
     extends Statement
 
+// =======================================================
+
+/** An assertion.  Note: this is a declaration, since it doesn't have to
+  * appear at the top level. */
+case class Assertion(condition: Exp) extends Declaration
+
+/** An assertion with an error message. */
+case class Assertion2(condition: Exp, msg: Exp) extends Declaration
+
+// =======================================================
+
 /* Note: we can't include this in Exp.scala, because it builds on Statement. */
 
 /** A block expression of the form { stmt_1; ...; stmt_n; exp }. */ 

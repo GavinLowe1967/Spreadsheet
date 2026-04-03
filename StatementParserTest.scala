@@ -3,6 +3,7 @@ package spreadsheet
 /** Tests on parsing of Statements. */
 object StatementParserTest extends ParserTest0{
   import Parser.parseAll
+  import StatementParser.parseStatements
   import StatementParser.TestHooks.{statement,statements}
 
   /** Parse st as a statement, and check its extent. */
@@ -168,12 +169,20 @@ object StatementParserTest extends ParserTest0{
     //println(ps("for(x <- [#A3]) #B2 = 0"))
   }
 
+  private def assertions() = {
+    assert(ps("assert(2 > 3)") == Assertion(BinOp(IntExp(2), ">", IntExp(3))))
+    assert(ps("assert(2 > 3, \"XXX\")") == 
+      Assertion2(BinOp(IntExp(2), ">", IntExp(3)), StringExp("XXX")))
+    assert(parseStatements("assert(2,3,4)").isRight)
+  }
+
   /** Tests on parsing of statements. */
   def apply() = {
     statements1() // value declarations and cell writes.
     functions() // function declarations.
     curriedFunctions() // curried function declarations
     forStatements() // for statements 
+    assertions() // assertions
     println("Statement tests done")
   }
 

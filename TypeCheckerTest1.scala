@@ -40,6 +40,13 @@ object TypeCheckerTest1{
     assertFail(tcp("g(true, false)", te2)); assertFail(tcp("g(3, 4)", te2))
     assertFail(tcp("f(3,5)", te2)); assertFail(tcp("g(true)", te2))
     assertFail(tcp("four(4)", te2))
+
+    assertOk(tcpss("assert(2+2 == 5)")); assertOk(tcpss("assert(true, \"X\")"))
+    // "Expected Boolean, found Int" (for both))
+    assertFail(tcpss("assert(42)")); assertFail(tcpss("assert(42, \"X\")"))
+    // "Expected String, found Int"
+    assertFail(tcpss("assert(true, 5)"))
+
   }
 
   // ==================================================================

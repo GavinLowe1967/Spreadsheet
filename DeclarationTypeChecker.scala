@@ -76,7 +76,18 @@ object DeclarationTypeChecker extends DeclarationTypeCheckerT{
               } // end of match
 // FIXME: if any of tparams gets bound to a TypeVar, update in typeEnv(name)
           }
+
         }).lift(decl)
+
+      case Assertion(condition) => 
+        typeCheckUnifyAndClose(typeEnv, condition, BoolType).
+          mapOrLift(decl, { case (te, _) => Ok(te) })
+
+      case Assertion2(condition, msg) => 
+        typeCheckUnifyAndClose(typeEnv, condition, BoolType).map{ case (te, _) =>
+          typeCheckUnifyAndClose(te, msg, StringType).map{ case (te1,_) => 
+            Ok(te1) }
+        }.lift(decl)
     }
 
   /** Check that the definitions `defs` for function `name` is allowed: if there

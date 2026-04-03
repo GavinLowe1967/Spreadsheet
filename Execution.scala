@@ -290,6 +290,25 @@ object Execution{
       // different names, given by fd.getName, as set during type checking.
  */
 
+    case Assertion(condition) => eval(env, condition) match{
+      case BoolValue(true) => true
+      case BoolValue(false) =>
+        val err = s.liftError(EvalError("Assertion error"), true)
+        handleError(err); false
+      case ev: ErrorValue => handleError(s.liftError(ev)); false
+    }
+
+    case Assertion2(condition, msg) => eval(env, condition) match{
+      case BoolValue(true) => true
+      case BoolValue(false) => eval(env, msg) match{
+        case StringValue(st) => 
+          val err = s.liftError(EvalError(s"Assertion error: $st"), true)
+          handleError(err); false
+        case ev: ErrorValue => handleError(s.liftError(ev)); false
+      }
+      case ev: ErrorValue => handleError(s.liftError(ev)); false
+    }
+
     case ForStatement(binders, stmts) =>
       def he(ev: ErrorValue) = handleError(s.liftError(ev)) 
       performFor(env, he, binders, stmts); true
@@ -357,35 +376,6 @@ object Execution{
       }
     }
 
-/*
-  private type QualifierValue =  Either[List[Environment], ErrorValue] 
-
-  /** Evaluate q, giving the resulting list of environments if successful. */
-  private def evalQualifier(env: Environment, q: Qualifier): QualifierValue = 
-    q match{
-      case Generator(name, list) => eval(env, list) match{
-        case ListValue(vs) => // bind name to v for each v in vs
-          Left(
-            for(v <- vs)
-            yield{ val env1 = env.clone; env1.update(name,v); env1 }
-          )
-        case err: ErrorValue => Right(err)
-      }
-      case Filter(test) => eval(env, test) match{
-        case BoolValue(b) => Left(if(b) List(env) else List())
-        case err: ErrorValue => Right(err)
-      }
-    }
-
-  private 
-  def evalQualifiers(env: Environment, qs: List[Qualifier]): QualifierValue =
-    if(qs.isEmpty) Left(List())
-    else evalQualifier(env, qs.head) match{
-      case Left(envs) => envs.flatMap(env1 => evalQualifiers(env1, qs.tail))
-
-      case Right(error) => Right(error)
-    }
- */
 
   // ========= Testing hooks
 

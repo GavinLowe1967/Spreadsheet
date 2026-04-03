@@ -17,7 +17,7 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
   // ===== Some basic parsers
 
   private val ReservedNames =
-    List("Cell", "if", "else", "def", "val", "for", "match", "case",
+    List("Cell", "if", "else", "def", "val", "for", "match", "case", "assert",
       "true", "false", "Empty", "to", "until",
       "Int", "Float", "Boolean", "String", "Row", "Column", "List", "Eq")
 

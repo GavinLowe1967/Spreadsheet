@@ -98,6 +98,8 @@ BinOpApply.scala: evaluation of binary operators.
 
 Execution.scala: main execution engine. 
 
+EvaluationTest.scala: tests on the execution engine. 
+
 Model
 =====
 
