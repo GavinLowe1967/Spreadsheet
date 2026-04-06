@@ -17,7 +17,7 @@ We describe the script below.  The script is executed in order.
 val In = #A; val Out = #B £\label{line:InOut}£
 
 // The factorial of £n£.
-def fact(n: Int): Int = if(n <= 1) 1 else n*fact(n-1)£\label{line:factorial}£
+def fact(n: Int): Int = { assert(n >= 0); if(n <= 1) 1 else n*fact(n-1) }£\label{line:factorial}£
 
 // The sum of £xs£.
 def sum(xs: List[Int]): Int = if(xs == []) 0 else head(xs) + sum(tail(xs))£\label{line:sum}£
@@ -58,8 +58,10 @@ functions are introduced using the keyword |def|.  Each parameter of a
 function is given a type.  The return type of a function should be given when
 the function is recursive---which is the case for all three functions in this
 script---or when a reference is made to the function before its definition
-(e.g.~when two functions are defined by mutual recursion).  The definition of
-|fact| is a straightforward recursion, whose meaning should be obvious.
+(e.g.~when two functions are defined by mutual recursion).  The |assert|
+statement is an assertion, capturing the natural precondition of the factorial
+function.  The rest of the definition of |fact| is a straightforward
+recursion, whose meaning should be obvious.
 
 The |sum| function at line~\ref{line:sum} calculates the sum of a list of
 |Int|s.  If |A| is a type, then |List[A]| is the type of lists that contain

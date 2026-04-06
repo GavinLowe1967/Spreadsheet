@@ -4,7 +4,7 @@ import scala.swing._
 
 /** The main file for the spreadsheet application.
   * 
-  * Version 0.1.2. */
+  * Version 0.1.3. */
 object SpreadsheetApp extends SimpleSwingApplication{
 
   private val model = new Model(100, 26)

@@ -47,7 +47,11 @@ object Execution{
           if(bs.isEmpty) 
             e.liftError(TypeError(
               s"Cannot match ${vType.asString} in cell $name"), true)
-          else eval(env, bs.head.body)
+          else{ 
+            val branch = bs.head
+            val env1 = env.clone // clone env to prevent leakage
+            bind(env1, branch.pattern, v); eval(env1, branch.body)
+          }
         }
         applyToCell(column, row, doMatch)
 
@@ -62,12 +66,7 @@ object Execution{
 
   /** Evaluate `e` in environment `env`. */
   private def eval0(env: Environment, e: Exp): Value = e match{
-    case ne @ NameExp(name) => env(ne.getName) //  env(name)
-      // env.get(name) match{
-      //   case Some(value) => value
-      //   case None => sys.error(s"Name not found: $name")
-      // }
-
+    case ne @ NameExp(name) => env(ne.getName) 
     case IntExp(value) => IntValue(value)
     case FloatExp(value) => FloatValue(value) 
     case BoolExp(value) => BoolValue(value)
@@ -98,18 +97,8 @@ object Execution{
       evalList(env, elems) match{
         case Left(vs) => ListValue(vs); case Right(err) => e.liftError(err)
       }
-      // // Traverse elems, evaluating each, and building in vs in reverse;
-      // // maintain type of elements in theType; and catch any error.
-      // var es = elems; var vs = List[Value](); var error: ErrorValue = null
-      // while(es.nonEmpty && error == null){
-      //   eval(env, es.head) match{
-      //     case err: ErrorValue => error = e.liftError(err)
-      //     case v => vs ::= v;  es = es.tail
-      //   }
-      // }
-      // if(error != null) error else ListValue(vs.reverse)
 
-    case ListComprehension(e1, qs) => // evalListComp(env, e, qs)
+    case ListComprehension(e1, qs) =>
       val ab = new ArrayBuffer[Value]
       val error = processListComp(env, e1, qs, ab)
       if(error != null) e.liftError(error) else ListValue(ab.toList)
@@ -127,24 +116,7 @@ object Execution{
           }
           case Right(err) => e.liftError(err)
         }
-/*
-        // Evaluate args, but stop if an error occurs
-        var error: ErrorValue = null; val iter = args.iterator
-        var vs = List[Value]() // built in reverse
-        while(error == null && iter.hasNext){
-          val arg = iter.next()
-          eval(env, arg) match{
-            case err: ErrorValue => error = e.liftError(err)
-            case v =>  vs ::= v
-          }
-        }
-        if(error != null) error
-        else fv(vs.reverse) match{
-          case err: ErrorValue => e.liftError(err); case result => result
-        }
- */
       case err: ErrorValue => e.liftError(err)
-
       case other => sys.error(s"$f -> $other")
         // Note: eval0 is never called on a CellExpr
       } // end of case FunctionApp(...)
@@ -177,7 +149,6 @@ object Execution{
     }
     if(error != null) Right(error) else Left(vs.reverse)
   }
-  /* IMPROVE: the use of a List is inefficient */
 
   /** Evaluate a list comprehension with term e and qualifiers qs.  Add
     * resulting values to ab if there are no errors.  Return an error if there
@@ -209,6 +180,12 @@ object Execution{
         }
     }
 
+  /** Update env by performing the binding corresponding to v matching cell. */
+  private def bind(env: Environment, pat: Pattern, v: Cell): Unit = pat match{
+    case TypedPattern(Some(name), _) => env.update(name, v)
+    case _ => {}
+  }
+
   // ==================================================================
 
   /** Make an error message. */
@@ -232,9 +209,6 @@ object Execution{
       v1 match{ case ev: ErrorValue => handleError(ev); case _ => {} }
     }
     else{
-      // v1 match{
-      //   case err: ErrorValue => handleError(err); case _ => {}
-      // }
       val mwe = MultipleWriteError(env.getCell1(c,r), v1) 
       env.setCell(c, r, mwe); handleError(mwe)
     }
@@ -275,20 +249,6 @@ object Execution{
     case fd @ FunctionDeclaration(name, tParams, paramss, rt, body) => 
       assert(paramss.nonEmpty)
       env.update(fd.getName, evalFn(env, paramss, body)); true
-/*
-// FIXME: allow curried functions
-      // Build a Scala function to capture the FunctionDeclaration
-      def f(args: List[Value]): Value = {
-        require(args.length == params.length)
-        // Bind params to values of args in env
-        val env2 = env.clone
-        for(((x,_),v) <- params.zip(args)) env2.update(x, v)
-        eval(env2, body)
-      }
-      env.update(fd.getName, FunctionValue(f _)); true
-      // Note, if f is overloaded, the different instances are stored against
-      // different names, given by fd.getName, as set during type checking.
- */
 
     case Assertion(condition) => eval(env, condition) match{
       case BoolValue(true) => true

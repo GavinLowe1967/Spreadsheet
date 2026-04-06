@@ -49,12 +49,14 @@ Cell(#D, firstEmpty) = "first empty"
 // Rows 7, 8
 // This test checks the inner declaration of flag doesn't leak. 
 val flag = true
+val six = 6
+#E7 = #A1 match{ case six: Int => six+3 } // 7
 for(r <- #7 to #8; if r == #6 || flag){ 
   // Cell(#B, r) = flag; val flag = false // Illegal forward reference.
   Cell(#B, r) = true; val flag = false 
 }  
 // Repeated variable in for loop.  Allowed but yuk!
-for(r <- 2 to 2; r <- #5+r to #6+r) Cell(#C, r) = 6 
+for(r <- 2 to 2; r <- #5+r to #6+r) Cell(#C, r) = six
 
 // Test of empty blocks.
 for(x <- #0 until #10){ }

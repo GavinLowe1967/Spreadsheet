@@ -321,6 +321,16 @@ val y = double(#A4: Float) // Float => Float instance.
 To allow type deductions to be made, overloaded functions must have disjoint
 types for their first vectors of parameters, and may not be polymorphic. 
 
+\subsection{Assertions}
+
+The basic form for an assertion is |assert(|\syntax{expression}|)|, where
+the expression should evaluate to a boolean.  When the script is executed, if
+that boolean is|false|, an error is generated.
+
+A generalisation is |assert(|\syntax{expression}|, |\syntax{expression}|)|,
+where the second expression should evaluate to a string.  If the assertion
+fails, that string is included in the error message. 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Cell writes}
@@ -334,10 +344,14 @@ can also be used on the left-hand side; for example,
 #A4 = #A3:Int + 2
 \end{scala}
 
+Cell writes may not occur within a function definition, or within a block
+expression: they may appear only at the top level or within a |for| statement.
+
 Recall that the application treats any attempt to write to a non-empty cell as
 an error. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 \subsection{{\scalashape for} loops}
 \label{ssec:for-loops}
@@ -361,3 +375,7 @@ A |for| loop may have multiple generators, or boolean filters; for example,
 for(r <- #0 to #5; c <- [#A, #C]; if r != #3) 
   Cell(c+1,r) = Cell(c,r):Int + 3
 \end{scala}
+
+Like cell writes, a |for| loop may not occur within a function definition, or
+within a block expression: it may appear only at the top level or within
+another |for| statement.
