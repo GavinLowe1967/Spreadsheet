@@ -2,24 +2,27 @@ package spreadsheet
 
 /** Representation of an expression. */
 trait Exp extends HasExtent{
-
+/*
   /** Handle value v, which is expected to be an ErrorValue: lift it by tagging
     * on the extent of this. */
-  protected def handleError(v: Value): ErrorValue = v match{ 
+  def handleError(v: Value): ErrorValue = v match{
       case ev: ErrorValue => liftError(ev)
       case _ => sys.error(s"unexpected value: $v")
     }
-
+ */
+/*
   /** Extend f(v) to: cases where v is an ErrorValue (passing on the error).
     * Other cases shouldn't happen. */ 
   def lift(f: PartialFunction[Value, Value], v: Value) : Value = 
     if(f.isDefinedAt(v)) f(v) else handleError(v)
-
+ */
+/*
   /** If v is an error, lift it by tagging it with the extent of this. */
   def liftValue(v: Value, lineNum: Boolean = false): Value = v match{
     case err: ErrorValue => liftError(err, lineNum)
     case _ => v
   }
+ */
 }
 
 // ==================================================================
@@ -107,9 +110,18 @@ case class ColumnExp(column: String) extends Exp{
   require(column.length <= 2) // surely? 
 
   /** Int representation of this. */
-  val asInt = ColumnValue.asInt(column)
+  val asInt = ColumnExp.asInt(column)
 
   override def toString = s"#$column"
+}
+
+object ColumnExp{
+  /** Convert column to the corresponding Int representation. */
+  def asInt(column: String): Int = {
+    require(column.forall{ c => 'A' <= c && c<= 'Z' })
+    if(column.length == 1) column(0)-'A' 
+    else (column(0)-'A'+1)*26 + column(1)-'A'
+  }
 }
 
 // ==================================================================

@@ -1,6 +1,7 @@
 package spreadsheet
 
-import Substitution.{replaceTypeParamsByTypeVars, inverse, reverseRemapBy}
+import TypeParamSubstitution.{replaceTypeParamsByTypeVars, inverse, reverseRemapBy}
+
 
 /** Unification of types. */
 object Unification{

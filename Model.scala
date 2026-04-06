@@ -92,7 +92,8 @@ class Model(val height: Int, val width: Int){
       for(r <- 0 until lines.length){
         val fields = CSVParser(lines(r)).toArray 
         for(c <- 0 until fields.length) 
-          env.setUserCell(c, r, fields(c).withCellSource(c,r))
+          //env.setUserCell(c, r, fields(c).withCellSource(c,r))
+          env.setUserCell(c, r, fields(c).withCSource(CellSource(c,r)))
       }
     }
   }

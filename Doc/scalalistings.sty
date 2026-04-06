@@ -1,0 +1,127 @@
+%
+% Designed to work with tex2java to weave java/scala code from latex sources
+% 
+% $Id: javalistings.sty 421 2008-02-16 21:37:15Z sufrin $
+%
+
+% Adapted by Gavin to add colour, and specialise for Scala
+
+\ProvidesPackage{scalalistings}
+%\RequirePackage{breakverbatim}
+\RequirePackage{listings}
+\RequirePackage{ifthen}
+
+\newif\if@bw@ \@bw@false
+\DeclareOption{bw}{\@bw@true}
+\ProcessOptions
+
+%\def\scalacolour{\color{Plum}}
+\if@bw@
+  \def\scalacolour{\relax}
+\else
+  \RequirePackage{color} 
+  \definecolor{ScalaColour}{cmyk}{1,1,0,0.53}
+  \def\scalacolour{\color{ScalaColour}}
+\fi
+
+\def\scalasize{\small}
+\def\scalaInlineSize{\small}
+\def\scalafont{\sffamily}
+\def\scalashape{\scalafont\scalacolour}
+\def\scalastyle{\scalasize\scalafont\scalacolour}
+\def\scalaInlineStyle{\scalaInlineSize\scalafont\scalacolour}
+
+\def\sub#1{{\scalacolour$\mathsf{_{#1}}$}}
+%
+% Scala definition
+%
+\lstdefinelanguage{scala}
+  {morekeywords={, case, def, else, for, if, match, val, to, until, assert,}      
+   sensitive,
+   % keepspaces=true,
+   showstringspaces=false,
+   basewidth={1.5em,0.48em},%
+   morecomment=[l][\sl]//,%
+   morecomment=[s][\sl]{/*}{*/},%
+   morestring=[b]",%
+   morestring=[b]',% 
+   escapechar=£,%
+   % frame=single,
+  }[keywords,comments]%
+
+\lstset{columns=flexible}
+
+\lstnewenvironment{scala}[1][]{%
+  \global\@ignoretrue\bgroup%\nopagebreak%
+%%   \begin{list}{}{\setlength{\leftmargin}{0pt}%
+%%       \setlength{\topsep}{0pt}\setlength{\parskip}{0pt}}%
+%%   \item[]\begin{minipage}{\textwidth}\color{TextColour}
+  \lstset{language=scala,showstringspaces=false,
+    basicstyle=\scalastyle, numberstyle=\footnotesize,
+   columns = fullflexible,
+    % \classsize\sffamily,
+%          moredelim=[is][\underbar]{*}{*}, % for emphasis
+          #1}%
+          %\verbatim@@size=tiny}%
+  \scalacolour%
+  %\let\verbatim@@size=\tiny%
+  \def\baselinestretch{1.0}}
+{\egroup} % \end{minipage}\end{list}}
+
+
+\def\SCALA#1{\mbox{%
+  \sffamily\lstset{language=scala,basicstyle=\scalaInlineStyle,showstringspaces=false,columns=fullflexible}%
+  \scalacolour\lstinline{#1}%
+}}
+%\def\textscala#1{{\ttfamily\lstset{language=scala}\scalacolour\lstinline{#1}}}
+
+% Scala keyword
+\def\SCALAKW#1{{\scalashape\bfseries#1}}
+
+% Use |...| for inline listings.  First define aliases for |
+\let\|=|
+\let\mid=|
+\def\scalaMid{\lstMakeShortInline[language=scala,showstringspaces=false,
+          basicstyle=\scalaInlineStyle,columns=fullflexible]|}
+%\scalaMid
+\def\unScalaMid{\lstDeleteShortInline|}
+
+
+%% \ifx \smaller\undefined \def\smaller{\normalsize} \fi
+%% \ifx \xmlsize\undefined \def\classsize{\smaller} \fi
+%% \ifx \classsize\undefined \def\classsize{\smaller} \fi
+%% \ifx \javasize\undefined \def\javasize{\smaller} \fi
+%% \ifx \Javasize\undefined \def\Javasize{} \fi
+%% \ifx \smalljavasize\undefined \def\smalljavasize{\normalsize} \fi
+
+\def\JavaSize#1{\let\scalasize=#1\let\classsize=#1}
+\def\Small{\JavaSize{\small}}
+\def\Footnotesize{\JavaSize{\tiny}}%
+
+
+% Scala from within Maths mode
+\def\ms#1{\mbox{\scalaInlineStyle #1}}
+\def\sm#1{\ms{#1}}
+\def\ss#1{\mbox{\scriptsize\scalashape #1}}
+
+
+% \def\|{\@bar}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

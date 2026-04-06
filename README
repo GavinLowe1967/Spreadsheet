@@ -57,6 +57,9 @@ Substitution.scala: substitution in types.
 
 TypeEnv.scala: a type environment for type checking.
 
+TypeParamSubstitution.scala: substitution of type parameters by type
+variables, and back again.
+
 Unification.scala: unification of types. 
 
 TypeChecker0.scala: some basics for the type checker, including
@@ -88,6 +91,9 @@ TypeCheckerTest4.scala: tests on a Haskell-style prelude.
 
 Evaluation and execution
 ========================
+
+CellWriteSource: The source for values produced by a cell write.  Also
+contains MultipleWriteError.
 
 EvaluationTypeChecker.scala -- why do we need this???  Checking a cell has
 expected type, I think.

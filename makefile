@@ -20,9 +20,11 @@ $(DIR)/BuiltInFunctions.class: $(DIR)/Value.class $(DIR)/TypeConstraint.class
 
 # Syntax
 
-$(DIR)/HasExtent.class: $(DIR)/Input.class $(DIR)/Value.class
+$(DIR)/HasExtent.class: $(DIR)/Input.class
+# $(DIR)/Value.class
 
-$(DIR)/Exp.class: $(DIR)/Value.class $(DIR)/HasExtent.class
+$(DIR)/Exp.class:  $(DIR)/HasExtent.class $(DIR)/FunctionType.class
+# $(DIR)/Value.class
 
 $(DIR)/Statement.class: $(DIR)/Exp.class 
 
@@ -35,7 +37,7 @@ $(DIR)/Reply.class: $(DIR)/HasExtent.class
 $(DIR)/EvaluationTypeChecker.class: $(DIR)/EvaluationTypeEnv.class	\
   $(DIR)/Reply.class
 
-$(DIR)/Environment.class:  $(DIR)/BuiltInFunctions.class $(DIR)/EvaluationTypeEnv.class
+$(DIR)/Environment.class: $(DIR)/CellWriteSource.class $(DIR)/BuiltInFunctions.class $(DIR)/EvaluationTypeEnv.class
 # $(DIR)/EvaluationTypeChecker.class	\
 
 $(DIR)/BinOpApply.class: $(DIR)/Value.class
@@ -52,7 +54,9 @@ $(DIR)/Substitution.class: $(DIR)/FunctionType.class $(DIR)/Reply.class
 $(DIR)/TypeEnv.class: $(DIR)/Exp.class $(DIR)/BuiltInFunctions.class	\
   $(DIR)/Substitution.class $(DIR)/EvaluationTypeEnv.class
 
-$(DIR)/Unification.class: $(DIR)/TypeEnv.class	
+$(DIR)/TypeParamSubstitution.class: $(DIR)/Substitution.class $(DIR)/TypeEnv.class
+
+$(DIR)/Unification.class: $(DIR)/TypeEnv.class	$(DIR)/TypeParamSubstitution.class
 #  $(DIR)/EvaluationTypeChecker.class
 
 $(DIR)/TypeChecker0.class: $(DIR)/Reply.class $(DIR)/TypeEnv.class	\
@@ -70,7 +74,7 @@ $(DIR)/TypeChecker.class:  $(DIR)/DeclarationTypeChecker.class
 
 $(DIR)/Parser.class: $(DIR)/Input.class
 
-$(DIR)/Parser0.class: $(DIR)/Parser.class $(DIR)/Exp.class
+$(DIR)/Parser0.class: $(DIR)/Parser.class $(DIR)/Exp.class $(DIR)/Value.class
 
 $(DIR)/ExpParser.class:  $(DIR)/Parser0.class $(DIR)/Statement.class	\
   $(DIR)/TypeConstraint.class $(DIR)/FunctionValue.class

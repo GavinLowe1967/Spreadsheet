@@ -161,9 +161,19 @@ object CellSource{
   }
 }
 
-/** A source corresponding to a write to cell(column, row) by Directive dir. */
-case class CellWriteSource(column: Int, row: Int, dir: Directive) extends Source{
-  def asString = { 
-    val cName = CellSource.colName(column); s"#$cName$row from $dir" 
-  }
-}
+// =======================================================
+// Note: subclass CellWriteSource is in its own file.
+// =======================================================
+
+// trait HasExtentT{
+//   def getExtent: Extent
+// }
+
+
+
+// /** A source corresponding to a write to cell(column, row) by Directive dir. */
+// case class CellWriteSource(column: Int, row: Int, dir: Directive) extends Source{
+//   def asString = { 
+//     val cName = CellSource.colName(column); s"#$cName$row from $dir" 
+//   }
+// }

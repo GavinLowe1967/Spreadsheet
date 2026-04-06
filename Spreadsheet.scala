@@ -50,7 +50,15 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
         else UserDataBackground
       if(hasFocus){
         val cell1 = env.getForSelection(column, row)
-        view.showSelection(cell1.forSelection) 
+        val err = cell.forError
+        val forSelection = cell.source match{
+          case CellWriteSource(_,_,d) =>
+            val e = d.getExtent
+            err+s"\nFrom cell write at line ${e.lineNumber}:\n"+e.asString
+          case _ => /* println(s"$this $forError");*/ err
+        }
+
+        view.showSelection(/*cell1.*/forSelection) 
         new MyTextField(text, background)
       }
       else{
@@ -76,7 +84,8 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
             val vString = v.toString
             val cell =
               if(vString.isEmpty) Empty() 
-              else CellParser(vString).withCellSource(column,row)
+              else CellParser(vString).withCSource(CellSource(column,row))
+              // else CellParser(vString).withCellSource(column,row)
             env.setUserCell(column, row, cell)
             spreadsheetModel.update()
           }

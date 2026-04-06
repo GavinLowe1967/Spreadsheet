@@ -20,24 +20,24 @@ trait Cell extends Value{
   /** How this is presented in a cell.  Overwritten for StringValues. */
   def asCell: String = forError
 
-  /** Text to display when this cell is selected. */ 
-  def forSelection = source match{
-    case CellWriteSource(_,_,d) =>
-      val e = d.getExtent
-      forError+s"\nFrom cell write at line ${e.lineNumber}:\n"+e.asString
-    case _ => /* println(s"$this $forError");*/ forError
-  }
+  // /** Text to display when this cell is selected. */ 
+  // def forSelection = source match{
+  //   case CellWriteSource(_,_,d) =>
+  //     val e = d.getExtent
+  //     forError+s"\nFrom cell write at line ${e.lineNumber}:\n"+e.asString
+  //   case _ => /* println(s"$this $forError");*/ forError
+  // }
 
   /** How this is represented in a CSV file. */
   def asCSV: String = forError
 
   /** Add cs to this as the source, and return this. */
-  private def withCSource(cs: Source): Cell = { source = cs; this }
+  def withCSource(cs: Source): Cell = { source = cs; this }
 
-  def withCellSource(c: Int, r: Int): Cell = withCSource(CellSource(c,r))
+  //def withCellSource(c: Int, r: Int): Cell = withCSource(CellSource(c,r))
 
-  def withCellWriteSource(c: Int, r: Int, d: Directive) = 
-    withCSource(CellWriteSource(c, r, d))
+  // def withCellWriteSource(c: Int, r: Int, d: Directive) = 
+  //   withCSource(CellWriteSource(c, r, d))
 
   /** The type of this value.  Set in subclasses. */
   def getType: CellType // TypeT
@@ -203,12 +203,12 @@ case class ColumnValue(column: Int) extends Value with Rangeable{
 }
 
 object ColumnValue{
-  /** Convert column to the corresponding Int representation. */
-  def asInt(column: String): Int = {
-    require(column.forall{ c => 'A' <= c && c<= 'Z' })
-    if(column.length == 1) column(0)-'A' 
-    else (column(0)-'A'+1)*26 + column(1)-'A'
-  }
+  // /** Convert column to the corresponding Int representation. */
+  // def asInt(column: String): Int = {
+  //   require(column.forall{ c => 'A' <= c && c<= 'Z' })
+  //   if(column.length == 1) column(0)-'A' 
+  //   else (column(0)-'A'+1)*26 + column(1)-'A'
+  // }
 
   /** The name for the collumn with index c. */
   def getName(c: Int): String = CellSource.colName(c)
@@ -303,27 +303,32 @@ case class ParseError(msg: String) extends ErrorValue{
 }
 
 
-/** A cell written to multiple times. */
-case class MultipleWriteError(sources: List[Cell]) extends ErrorValue{
-  def msg = 
-    "Cell assigned multiple times.\n"+
-      sources.map(v => v.source match{
-        case CellWriteSource(_,_,d) => 
-          val e = d.getExtent
-          s"Value ${v.forError} from cell write at line ${e.lineNumber}: "+
-            e.asString
-        case cs: CellSource => s"User data: ${v.forError}"
-        case null => s"null source: $v"
-      }
-      ).mkString("\n")
+// =======================================================
+// case class MultipleWriteError(sources: List[Cell]) extends ErrorValue is in 
+// CellWriteSource.scala
+// =======================================================
 
-  def forError = msg
-}
+// /** A cell written to multiple times. */
+// case class MultipleWriteError(sources: List[Cell]) extends ErrorValue{
+//   def msg = 
+//     "Cell assigned multiple times.\n"+
+//       sources.map(v => v.source match{
+//         case CellWriteSource(_,_,d) => 
+//           val e = d.getExtent
+//           s"Value ${v.forError} from cell write at line ${e.lineNumber}: "+
+//             e.asString
+//         case cs: CellSource => s"User data: ${v.forError}"
+//         case null => s"null source: $v"
+//       }
+//       ).mkString("\n")
 
-object MultipleWriteError{
-  /** Factory method. */
-  def apply(c1: Cell, c2: Cell) = c1 match{
-    case MultipleWriteError(cells) => new MultipleWriteError(cells:+c2)
-    case _ => new MultipleWriteError(List(c1,c2))
-  }
-}
+//   def forError = msg
+// }
+
+// object MultipleWriteError{
+//   /** Factory method. */
+//   def apply(c1: Cell, c2: Cell) = c1 match{
+//     case MultipleWriteError(cells) => new MultipleWriteError(cells:+c2)
+//     case _ => new MultipleWriteError(List(c1,c2))
+//   }
+// }

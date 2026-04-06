@@ -91,7 +91,7 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
 
   /** A parser for a row or column, e.g. "#A". */
   private def rowOrColumn =
-    lit("#") ~~ (int > RowExp | colName > ColumnExp) > { _._2 }
+    lit("#") ~~ (int > RowExp | colName > (c => ColumnExp(c))) > { _._2 }
 
   /** A parser for an expression such as "#B3". */
   private def cell0: Parser[(Exp,Exp)] =

@@ -3,8 +3,44 @@ package spreadsheet
 import FunctionDeclaration.ParameterList
 import scala.collection.mutable.ArrayBuffer
 
+
 /** Object responsible for evaluating expressions and executing statements. */
 object Execution{
+  // ===== Helper functions
+
+  /** Lift an error value, by tagging on the extent of e. 
+    * @param lineNum if true, include line number. */
+  private 
+  def liftError(e: HasExtent, error: ErrorValue, lineNum: Boolean = false)
+      : ErrorValue = {
+    val extent = e.getExtent; assert(extent != null, s"Null extent in $e")
+    val lnString = if(lineNum) " at line "+extent.lineNumber else ""
+    def extend(msg: String) = s"$msg$lnString\nin \"${extent.asString}\""
+    error match{
+      case TypeError(msg) => TypeError(extend(msg))
+      case EvalError(msg) => EvalError(extend(msg))
+      case m @ MultipleWriteError(sources) => m
+        // Note: this isn't quite right, as we'd like to lift the relevant
+        // element of sources
+    } 
+  }
+
+  /** Extend f(v) to: cases where v is an ErrorValue (passing on the error,
+    * lifting to e).  Other cases shouldn't happen. */ 
+  private def lift(e: Exp)(f: PartialFunction[Value, Value], v: Value) : Value = 
+    if(f.isDefinedAt(v)) f(v) 
+    else v match{
+      case ev: ErrorValue => liftError(e, ev)
+      case _ => sys.error(s"unexpected value: $v")
+    } //e.handleError(v)
+
+  /** If v is an error, lift it by tagging it with the extent of e. */
+  private def liftValue(e: Exp, v: Value, lineNum: Boolean = false)
+      : Value = v match{
+    case err: ErrorValue => liftError(e, err, lineNum)
+    case _ => v
+  }
+
   /** Check value `v` read from cell `name` has type `eType`.  If so, return
     * `v`.  If not, give appropriate TypeError.  */
   private def checkCellType(eType: TypeT)(v: Cell, name: String) = {
@@ -16,6 +52,8 @@ object Execution{
       s"Expected ${eType.asString}, found ${vType.asString} in cell "+name)
   }
 
+  // ===== Evaluation
+
   /** Evaluate `e` in environment `env`, adding the extent from `e`. */
   private def eval(env: Environment, e: Exp): Value = {
     /* If column and row evaluate to a ColumnValue and RowValue, respectively,
@@ -23,9 +61,9 @@ object Execution{
      * an error. */
     def applyToCell(column: Exp, row: Exp, comp: (Cell,String) => Value)
         : Value = 
-      e.lift( { 
+      lift(e)( { 
         case ColumnValue(c) =>
-          e.lift( 
+          lift(e)( 
             {case RowValue(r) =>
               comp(env.getCell(c,r), "#"+ColumnValue.getName(c)+r)},
             eval(env, row)
@@ -37,7 +75,7 @@ object Execution{
       case CellExp(column, row, theType) =>
         // Check contents of cell has type theType
         val v1 = applyToCell(column, row, checkCellType(theType))
-        e.liftValue(v1, true)
+        liftValue(e, v1, true)
 
       case CellMatchExp(column, row, branches) =>
         // Try to match v against branches
@@ -45,7 +83,7 @@ object Execution{
           val vType = v.getType
           val bs = branches.filter(_.pattern.matches(vType))
           if(bs.isEmpty) 
-            e.liftError(TypeError(
+            liftError(e, TypeError(
               s"Cannot match ${vType.asString} in cell $name"), true)
           else{ 
             val branch = bs.head
@@ -58,7 +96,7 @@ object Execution{
       case uce @ UntypedCellExp(column, row) => 
         // Check contents of cell has type uce.getType
         val v1 = applyToCell(column, row, checkCellType(uce.getType))
-        e.liftValue(v1, true)
+        liftValue(e, v1, true)
 
       case _ => eval0(env, e)
     }
@@ -75,11 +113,11 @@ object Execution{
     case c @ ColumnExp(column) => ColumnValue(c.asInt)
 
     case b @ BinOp(left, op, right) => eval(env, left) match{
-      case err1: ErrorValue => e.liftError(err1)
+      case err1: ErrorValue => liftError(e, err1)
       case v1 => eval(env, right) match{
-        case err2: ErrorValue => e.liftError(err2)
+        case err2: ErrorValue => liftError(e, err2)
         case v2 => BinOpApply(v1, op, v2) match{
-          case err: ErrorValue => e.liftError(err, true) // include line number
+          case err: ErrorValue => liftError(e, err, true) // include line number
           case res => res
         }
       }
@@ -89,34 +127,34 @@ object Execution{
       eval(env, test) match{
         case BoolValue(true) => eval(env, thenClause)
         case BoolValue(false) => eval(env, elseClause)
-        case err: ErrorValue => e.liftError(err)
+        case err: ErrorValue => liftError(e, err)
         case other => sys.error(s"Unexpected type: $other")
       }
 
     case ListLiteral(elems) => 
       evalList(env, elems) match{
-        case Left(vs) => ListValue(vs); case Right(err) => e.liftError(err)
+        case Left(vs) => ListValue(vs); case Right(err) => liftError(e, err)
       }
 
     case ListComprehension(e1, qs) =>
       val ab = new ArrayBuffer[Value]
       val error = processListComp(env, e1, qs, ab)
-      if(error != null) e.liftError(error) else ListValue(ab.toList)
+      if(error != null) liftError(e, error) else ListValue(ab.toList)
 
     case TupleLiteral(es) => 
       evalList(env, es) match{
-        case Left(vs) => TupleValue(vs); case Right(err) => e.liftError(err)
+        case Left(vs) => TupleValue(vs); case Right(err) => liftError(e, err)
       }
 
     case fa @ FunctionApp(f, args) => eval(env, f) match{
       case fv : FunctionValue =>
         evalList(env, args) match{
           case Left(vs) => fv(vs) match{
-            case err: ErrorValue => e.liftError(err); case result => result
+            case err: ErrorValue => liftError(e, err); case result => result
           }
-          case Right(err) => e.liftError(err)
+          case Right(err) => liftError(e, err)
         }
-      case err: ErrorValue => e.liftError(err)
+      case err: ErrorValue => liftError(e, err)
       case other => sys.error(s"$f -> $other")
         // Note: eval0 is never called on a CellExpr
       } // end of case FunctionApp(...)
@@ -130,10 +168,10 @@ object Execution{
       if(ok){
         assert(err == null)
         eval(env1, exp) match{
-          case ev: ErrorValue => e.liftError(ev); case res => res
+          case ev: ErrorValue => liftError(e, ev); case res => res
         }
       }
-      else e.liftError(err)
+      else liftError(e, err)
 
     case TypedExp(e, _) => eval(env, e)
   } // end of eval
@@ -202,7 +240,9 @@ object Execution{
     c: Int, r: Int, expr: Exp, d: Directive) 
   = {
     //println(s"writeCell($c $r $expr $d)")
-    val v1 = eval(env, expr).asInstanceOf[Cell].withCellWriteSource(c,r,d) 
+    // val v1 = eval(env, expr).asInstanceOf[Cell].withCellWriteSource(c,r,d) 
+    val v1 =
+      eval(env, expr).asInstanceOf[Cell].withCSource(CellWriteSource(c,r,d))
     if(env.isEmpty(c,r)){
       //println(s"$v1 ${v1.source}")
       env.setCell(c,r,v1)
@@ -229,12 +269,12 @@ object Execution{
               else handleError(EvalError("Indexing error for row: found $r"))
               // end of case RowValue(r)
 
-            case err: ErrorValue => handleError(s.liftError(err))
+            case err: ErrorValue => handleError(liftError(s, err))
           } // end of eval(env, re) match
           else handleError(EvalError("Indexing error for column: found $c"))
           // end of case ColumnValue(c)
 
-        case err: ErrorValue => handleError(s.liftError(err))
+        case err: ErrorValue => handleError(liftError(s, err))
       } // end of eval(env, ce) match
       // Note: we always return true, even if this particular directive failed
       true
@@ -242,7 +282,7 @@ object Execution{
     case ValueDeclaration(name, exp) => 
       val v = eval(env, exp)
       v match{
-        case ev: ErrorValue => handleError(s.liftError(ev)); false
+        case ev: ErrorValue => handleError(liftError(s, ev)); false
         case _ => env.update(name, v); true
       }
 
@@ -253,24 +293,24 @@ object Execution{
     case Assertion(condition) => eval(env, condition) match{
       case BoolValue(true) => true
       case BoolValue(false) =>
-        val err = s.liftError(EvalError("Assertion error"), true)
+        val err = liftError(s, EvalError("Assertion error"), true)
         handleError(err); false
-      case ev: ErrorValue => handleError(s.liftError(ev)); false
+      case ev: ErrorValue => handleError(liftError(s, ev)); false
     }
 
     case Assertion2(condition, msg) => eval(env, condition) match{
       case BoolValue(true) => true
       case BoolValue(false) => eval(env, msg) match{
         case StringValue(st) => 
-          val err = s.liftError(EvalError(s"Assertion error: $st"), true)
+          val err = liftError(s, EvalError(s"Assertion error: $st"), true)
           handleError(err); false
-        case ev: ErrorValue => handleError(s.liftError(ev)); false
+        case ev: ErrorValue => handleError(liftError(s, ev)); false
       }
-      case ev: ErrorValue => handleError(s.liftError(ev)); false
+      case ev: ErrorValue => handleError(liftError(s, ev)); false
     }
 
     case ForStatement(binders, stmts) =>
-      def he(ev: ErrorValue) = handleError(s.liftError(ev)) 
+      def he(ev: ErrorValue) = handleError(liftError(s, ev)) 
       performFor(env, he, binders, stmts); true
       // Note: always return true here.
   } // end of perform

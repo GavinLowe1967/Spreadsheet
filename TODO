@@ -28,13 +28,29 @@ Script for alternative vote.
 Priorities
 ==========
 
+- Refactor Execution.scala?
+
 X. Manual -- keep updated.
+
+1. Larger example: alternative vote. -- avoid the "X2s.
+
+
+2. Row/column subtraction
+
+2. Unary - and ! on expressions
+
+* Haskell standard prelude.  Allow "include" statements
+
+* Block comments.
+
+* Add "if" directives.
+
+---
 
 3. Allow function that expects a tuple to be applied to a vector of
 values; and vice versa, e.g. get1(x,y).
 
-
-1. Larger example: admissions spreadsheet or alternative vote. 
+* Another example: admissions spreadsheet
 
 * Tidy up FunctionAppTypeChecker.scala
 
@@ -43,8 +59,6 @@ values; and vice versa, e.g. get1(x,y).
   Int"; should really be "Expected Int => Int, found (((Int) => Int) => Int)
   => Int".
 
-* Haskell standard prelude.  Allow "include" statements
-
 * Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
   = #A3".
 
@@ -52,15 +66,12 @@ values; and vice versa, e.g. get1(x,y).
 
 * Allow assertions, error.
 
-* Negation "!".
-
 * More general expressions on LHS of cell write directives.
 
 * Expressions like Cells(#A, #0 to #5): List[Int]
 
 * "println" statements.
 
-* Add "if" directives.
 
 * Improve error messages in Unification.unify, the case of FunctionTypes.
 

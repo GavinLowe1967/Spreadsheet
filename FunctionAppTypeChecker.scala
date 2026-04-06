@@ -7,7 +7,7 @@ import TypeParam.TypeParamName   // Names of type parameters (Strings)
 import NameExp.Name // Names of identifiers (Strings)
 import TypeT.showList
 import TypeChecker0.{TypeCheckRes}
-import Substitution.{
+import TypeParamSubstitution.{
   replaceTypeParamsByTypeVars, TypeMap, emptyTypeMap, ReverseTypeMap, inverse, 
   union, emptyRevMap, reverseRemapBy, subTypeParamsInResult}
 
@@ -44,7 +44,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     else{
       // Create fresh type variables to replace tParams in domain and range
       val (te1, domain1, range1, typeMap) =
-        Substitution.replaceTypeParamsByTypeVars(
+        replaceTypeParamsByTypeVars(
           typeEnv.newScope, ft.usedTParams, domain, range)
       checkFunctionApp2(te1, domain1, range1, ft.typeParams.toSet, args).map{
         case (te2, res0) => 
