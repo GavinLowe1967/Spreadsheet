@@ -161,6 +161,7 @@ case class RowValue(row: Int) extends Value with Rangeable{
   def -(other: Arith) = other match{
     case IntValue(v) => 
       if(row >= v) RowValue(row-v) else EvalError("Negative row: "+(row-v))
+    case RowValue(r) => IntValue(row-r)
   }
 
   def to(other: Rangeable) = other match{
@@ -188,6 +189,7 @@ case class ColumnValue(column: Int) extends Value with Rangeable{
     case IntValue(v) => 
       if(column >= v) ColumnValue(column-v) 
       else EvalError("Negative column: "+(column-v))
+    case ColumnValue(c) => IntValue(column-c)
   }
 
   def to(other: Rangeable) = other match{
@@ -307,28 +309,3 @@ case class ParseError(msg: String) extends ErrorValue{
 // case class MultipleWriteError(sources: List[Cell]) extends ErrorValue is in 
 // CellWriteSource.scala
 // =======================================================
-
-// /** A cell written to multiple times. */
-// case class MultipleWriteError(sources: List[Cell]) extends ErrorValue{
-//   def msg = 
-//     "Cell assigned multiple times.\n"+
-//       sources.map(v => v.source match{
-//         case CellWriteSource(_,_,d) => 
-//           val e = d.getExtent
-//           s"Value ${v.forError} from cell write at line ${e.lineNumber}: "+
-//             e.asString
-//         case cs: CellSource => s"User data: ${v.forError}"
-//         case null => s"null source: $v"
-//       }
-//       ).mkString("\n")
-
-//   def forError = msg
-// }
-
-// object MultipleWriteError{
-//   /** Factory method. */
-//   def apply(c1: Cell, c2: Cell) = c1 match{
-//     case MultipleWriteError(cells) => new MultipleWriteError(cells:+c2)
-//     case _ => new MultipleWriteError(List(c1,c2))
-//   }
-// }

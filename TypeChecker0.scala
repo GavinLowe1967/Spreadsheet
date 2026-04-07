@@ -56,6 +56,7 @@ trait ExpTypeCheckerT{
   * @param etc object to use to recursively typecheck subexpressions.  */
 class BinOpTypeChecker(etc: ExpTypeCheckerT){
   private val typeCheckUnify = etc.typeCheckUnify _
+  private val typeCheck = etc.typeCheck _
 
   /** Make a String representing a disjunction: "<X>, <Y>, ... or <Z>". */
   private def mkDisjunction(ts: List[TypeT]): String = ts match{
@@ -71,15 +72,17 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
     val intOps = List((IntType, IntType, IntType)) // % only
     val numeric = // numeric operators
       List((IntType,IntType,IntType), (FloatType,FloatType,FloatType))
-    val arith =  // + and -
+    val arith =  // + 
       numeric ++ List((RowType,IntType,RowType), (ColumnType,IntType,ColumnType))
+    val sub =  //  -
+      arith ++ List((RowType,RowType,IntType), (ColumnType,ColumnType,IntType))
     val order = // order relations; TODO: add Row, Column
       List((IntType,IntType,BoolType), (FloatType,FloatType,BoolType))
     val bool = List((BoolType,BoolType,BoolType))
     val enumT = // enumerable types
       for(t <- List(IntType,RowType,ColumnType)) yield (t,t,ListType(t))
     Map(
-      "%" -> intOps, "+" -> arith, "-" -> arith, "*" -> numeric, "/" -> numeric,
+      "%" -> intOps, "+" -> arith, "-" -> sub, "*" -> numeric, "/" -> numeric,
       "<" -> order, "<=" -> order, ">" -> order, ">=" -> order,
       "&&" -> bool, "||" -> bool, "to" -> enumT, "until" -> enumT
     )
@@ -88,7 +91,7 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
   /** Typecheck BinOp(left, op, right). */
   def typeCheckBinOp(typeEnv: TypeEnv, left: Exp, op: String, right: Exp)
       : TypeCheckRes =
-    etc.typeCheck(typeEnv, left).map{ case (te1, tl) =>
+    typeCheck(typeEnv, left).map{ case (te1, tl) =>
       op match{
         case "==" | "!=" =>
           // Check tl is a concrete equality type
@@ -120,7 +123,18 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
               case List() =>
                 FailureR("Expected "+mkDisjunction(ts.map(_._1))+
                   ", found "+tl.asString).lift(left)
-              case _ => sys.error(s"($left,$op,$right)")// Can't happen
+              case ts1 => // Multiple possibilities for instance given left
+                typeCheck(te2, right).map{ case (te3, tr) =>
+                  ts1.filter(_._2 == tr) match{
+                    case List((`tl`,`tr`,rt)) => Ok((te3,rt))
+                    case List() =>
+                      FailureR("Expected "+mkDisjunction(ts1.map(_._2))+
+                        ", found "+tr.asString).lift(right)
+                    case _ =>  // Shouldn't happen
+                      sys.error(s"Multiple types for binary operator: "+
+                        "($left,$op,$right)")
+                  }
+                }
             } }
       } // end of "op match"
     }

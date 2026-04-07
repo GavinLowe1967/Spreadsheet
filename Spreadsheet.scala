@@ -85,7 +85,6 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
             val cell =
               if(vString.isEmpty) Empty() 
               else CellParser(vString).withCSource(CellSource(column,row))
-              // else CellParser(vString).withCellSource(column,row)
             env.setUserCell(column, row, cell)
             spreadsheetModel.update()
           }

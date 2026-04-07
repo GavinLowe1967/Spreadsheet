@@ -130,46 +130,6 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
 // FIXME, what about a type like ListType(FunctionType(_,_,_)) ???
   }
 
-  // /** Type check es in turn.  If successful, return the resulting type
-  //   * environment and list of types. */
-  // def typeCheckList(typeEnv: TypeEnv, es: List[Exp])
-  //     : Reply[(TypeEnv, List[TypeT])] = {
-  //   if(es.isEmpty) Ok(typeEnv, List[TypeT]())
-  //   else etc.typeCheck(typeEnv, es.head).map{ case(te1, t1) => 
-  //     val (te2,t2,typeMap) = mkInstance(te1,t1)
-  //     typeCheckList(te2, es.tail).map{ case (te3,ts) => Ok(te3, t2::ts) }
-  //   }
-  // }
-// Note: using etc.typeCheckList
-
-  // /** Typecheck the arguments of fa, and find the type from ts for the function.
-  //   * If successful, store the index in fa.  */
-  // def fOLDindFunctionApp(typeEnv: TypeEnv, fa: FunctionApp, ts: Array[FunctionType])
-  //     : Reply[(TypeEnv, TypeT)] = {
-  //   val FunctionApp(ne @ NameExp(fn), args) = fa
-  //   assert(ts.length >= 2 && ts.forall(_.params.isEmpty), ts.mkString("\n"))
-  //   // Get types of actual parameters
-  //   typeCheckList(typeEnv.newScope, args).lift(fa).map{ case (te1, argsTs) => 
-  //     // Find those elements that match
-  //     (0 until ts.length).toList.filter(i => ts(i).domain == argsTs) match{
-  //       case List() => 
-  //         FailureR(
-  //           s"Application of overloaded function $fn with types\n"+
-  //           ts.map(_.asString).mkString(", ")+"\ncan't be applied to argument"+
-  //           (if(args.length > 1) "s" else "")+" of type "+showList(argsTs)
-  //         ).lift(fa, true)
-  //       case List(index) =>
-  //         ne.setIndex(index); val ft = ts(index)
-  //         if(ft.finalNull) forwardRefFail.lift(fa, true)
-  //         else Ok((te1.endScope, ft.range))
-  //       case _ => 
-  //         sys.error(s"Multiple functions $fn with arguments of type(s)"+
-  //           showList(argsTs))
-  //         // I think this can't happen
-  //     }
-  //   }
-  // }
-
   def findFunctionApp(typeEnv: TypeEnv, fa: FunctionApp, ts: Array[FunctionType])
       : Reply[(TypeEnv, TypeT)] = {
     val FunctionApp(ne @ NameExp(fn), args) = fa

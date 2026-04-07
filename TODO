@@ -7,21 +7,22 @@ Not binding correclt in match expressions.  Fix then test.
 
 Script for alternative vote.
 
-1. Assertions (as statements).
+1. Row/column subtraction
 
-- Syntax
+2. Unary - and ! on expressions
 
-- Parser
+3. Add "if" directives.
 
-- Typechecking
+4. Haskell standard prelude.  Allow "include" statements
 
-- Execution.
+5. Block comments.
 
-- Test in interface; and add to TopLevelTest
 
-- TODO: manual
+-- 
 
-2. println
+* Allow cell writes in functions/blocks ???
+
+* println
 
 
 
@@ -35,15 +36,6 @@ X. Manual -- keep updated.
 1. Larger example: alternative vote. -- avoid the "X2s.
 
 
-2. Row/column subtraction
-
-2. Unary - and ! on expressions
-
-* Haskell standard prelude.  Allow "include" statements
-
-* Block comments.
-
-* Add "if" directives.
 
 ---
 

@@ -153,7 +153,10 @@ Row and column literals are written using |#|, e.g.~|#A|, |#B|, etc., and
 |#0|, |#1|, etc.  A row or column value can have an |Int| added to it or
 subtracted from it, with the obvious effect.  For example, $\sm{\#C} + 2 =
 \sm{\#E}$, and $\sm{\#C} - 2 = \sm{\#A}$.  Arithmetic underflow, e.g.~from
-$\sm{\#C} - 3$, gives an error.
+$\sm{\#C} - 3$, gives an error.  Similarly, a row value can have another row
+value subtracted from it; and a column value can have another column value
+subtracted from it.  For example, $\sm{\#5} - \sm{\#2} = \sm{\#E} - \sm{\#B} =
+3$. 
 
 Lists of row and column values can be formed using the |to| and |until|
 operators.  For example \SCALA{#B to #D} $=$ \SCALA{[#B,#C,#D]}, and \SCALA{#2

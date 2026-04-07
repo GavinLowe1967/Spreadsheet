@@ -34,8 +34,6 @@ object TypeParamSubstitution{
     case _: BaseType | _: TypeVar => t
   }
 
-//  def remapTypeVars(f: PartialFunction[TypeID, TypeConstraint]], t: Type
-
   /** Create a remapping from the type parameters in tParams to fresh TypeVars,
     * together with corresponding constraints on those TypeVars. */
   private def mkRemapping(tParams: List[TypeParameter])

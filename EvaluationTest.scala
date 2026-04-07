@@ -51,6 +51,7 @@ object EvaluationTest{
     assert(eval("#D+3") == eval("#G")); assert(eval("#4+2") == eval("#6"))
     assert(eval("#D-2") == eval("#B")); assert(eval("#7-3") == eval("#4"))
     assertFail(eval("#B-4")); assertFail(eval("#3-4"))
+    assert(eval("#5-#2") == IntValue(3)); assert(eval("#E-#B") == IntValue(3))
     // Tyeval conversion
     assert(eval("toInt 4.5") == IntValue(4))
     assert(eval("toFloat 3") == FloatValue(3.0F))

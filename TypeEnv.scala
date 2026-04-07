@@ -100,7 +100,6 @@ class TypeEnv(
   private def subInNameMap(nameMap: NameMap, tId: TypeID, t: TypeT): NameMap =
     nameMap.map{ case (n,ts) =>
       (n, ts.map(t1 => Substitution.reMap(tId, t, t1))) }
-//    nameMap.map{ case (n,t1) => (n, Substitution.reMap(tId, t, t1)) }
 
   // ========= Constraints functions
 
@@ -191,13 +190,6 @@ class TypeEnv(
     make(nameMap = newNameMap, constraints = newConstraints)
   }
 
-/*
-  def map(f: TypeT => TypeT): TypeEnv = {
-    val newNameMap = nameMap.map{ case (n,ts) => (n,ts.map(f)) }
-    make(nameMap = newNameMap)
-// *** also apply elsewhere
-  }
- */
   // ========= Scoping functions
 
   /** Record that a new scope is being entered. */
