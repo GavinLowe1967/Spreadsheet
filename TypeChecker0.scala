@@ -122,14 +122,14 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
                   Ok((te3, rt)) }
               case List() =>
                 FailureR("Expected "+mkDisjunction(ts.map(_._1))+
-                  ", found "+tl.asString).lift(left)
+                  ", found "+tl.asString).lift(left,true)
               case ts1 => // Multiple possibilities for instance given left
                 typeCheck(te2, right).map{ case (te3, tr) =>
                   ts1.filter(_._2 == tr) match{
                     case List((`tl`,`tr`,rt)) => Ok((te3,rt))
                     case List() =>
                       FailureR("Expected "+mkDisjunction(ts1.map(_._2))+
-                        ", found "+tr.asString).lift(right)
+                        ", found "+tr.asString).lift(right,true)
                     case _ =>  // Shouldn't happen
                       sys.error(s"Multiple types for binary operator: "+
                         "($left,$op,$right)")

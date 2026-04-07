@@ -85,7 +85,7 @@ $(DIR)/StatementParser.class: $(DIR)/DeclarationParser.class
 
 $(DIR)/ParserTest0.class:  $(DIR)/StatementParser.class $(DIR)/Execution.class
 
-$(DIR)/ExpParserTest.class: $(DIR)/ParserTest0.class
+$(DIR)/ExpParserTest.class: $(DIR)/ParserTest0.class $(DIR)/Model.class
 
 $(DIR)/StatementParserTest.class: $(DIR)/ExpParserTest.class
 

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2024.3.15)  7 APR 2026 09:35
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2024.3.15)  7 APR 2026 13:18
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -580,7 +580,7 @@ File: screenshot.png Graphic file (type png)
 Package pdftex.def Info: screenshot.png  used on input line 25.
 (pdftex.def)             Requested size: 387.8537pt x 265.95682pt.
  [5 <./screenshot.png>]
-<screenshot-type-error.png, id=40, 843.15pt x 578.16pt>
+<screenshot-type-error.png, id=41, 843.15pt x 578.16pt>
 File: screenshot-type-error.png Graphic file (type png)
 <use screenshot-type-error.png>
 Package pdftex.def Info: screenshot-type-error.png  used on input line 57.
@@ -592,7 +592,7 @@ ptyInCol(c, r+1) }"[]
  []
 
 [6 <./screenshot-type-error.png>]
-<screenshot-read-error.png, id=45, 843.15pt x 582.175pt>
+<screenshot-read-error.png, id=46, 843.15pt x 582.175pt>
 File: screenshot-read-error.png Graphic file (type png)
 <use screenshot-read-error.png>
 Package pdftex.def Info: screenshot-read-error.png  used on input line 103.
@@ -611,38 +611,36 @@ LaTeX Font Info:    Font shape `OML/cmr/m/sl' in size <10.95> not available
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
  ) 
 Here is how much of TeX's memory you used:
- 23191 strings out of 483183
- 592387 string characters out of 5966292
+ 23193 strings out of 483183
+ 592413 string characters out of 5966292
  952243 words of memory out of 5000000
- 37843 multiletter control sequences out of 15000+600000
- 541509 words of font info for 55 fonts, out of 8000000 for 9000
+ 37844 multiletter control sequences out of 15000+600000
+ 541888 words of font info for 56 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 68i,15n,98p,727b,1461s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 68i,15n,98p,727b,1680s stack positions out of 5000i,500n,10000p,200000b,80000s
  </home/gavin/.texlive2019/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm1200.600
-pk> </home/gavin/.texlive2019/texmf-var/fonts/pk/ljfour/jknappen/ec/tcss1095.60
-0pk></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></
-usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/sh
-are/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/te
-xlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/t
-exmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texlive/texmf-di
-st/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/font
-s/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/
-public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/a
-msfonts/cm/cmsl10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfont
-s/cm/cmss10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/c
-mssbx10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy1
-0.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb>
-</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/
-share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on manual.pdf (14 pages, 291358 bytes).
+pk> </home/gavin/.texlive2019/texmf-var/fonts/pk/ljfour/jknappen/ec/tcsl1095.60
+0pk> </home/gavin/.texlive2019/texmf-var/fonts/pk/ljfour/jknappen/ec/tcss1095.6
+00pk></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><
+/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/s
+hare/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/t
+exlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/
+texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texlive/texmf-d
+ist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/fon
+ts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1
+/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
+amsfonts/cm/cmsl10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfon
+ts/cm/cmss10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/
+cmssbx10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy
+10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb
+></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr
+/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
+Output written on manual.pdf (14 pages, 292030 bytes).
 PDF statistics:
- 130 PDF objects out of 1000 (max. 8388607)
- 90 compressed objects within 1 object stream
+ 135 PDF objects out of 1000 (max. 8388607)
+ 94 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  28 words of extra memory for PDF output out of 10000 (max. 10000000)
 

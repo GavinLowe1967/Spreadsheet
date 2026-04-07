@@ -160,6 +160,18 @@ object ExpParserTest extends ParserTest0{
     assert(p("-3") == IntExp(-3))
   }
 
+  private def blockComments() = {
+    // Remove comments and parse st
+    import Model.removeComments
+    def p1(st: String) = p(removeComments(st))
+
+    assert(p1("2 +/* comment */2") == BinOp(IntExp(2), "+", IntExp(2)))
+    assert(p1("2 +/* \n comment */2") == BinOp(IntExp(2), "+", IntExp(2)))
+    assert(p1("4/* X  */2") == IntExp(42))
+    assert(p1("4/* /* X */ */2") == IntExp(42))
+    assert(removeComments("/* \n /* */ 5") == null)
+  }
+
   /** Tests of expression parsers. */
   def apply() = {
     expressions1() // atomic values
@@ -169,6 +181,7 @@ object ExpParserTest extends ParserTest0{
     typedExpressions() // explicitly typed expressions
     listComprehensions() // list comprehensions
     functionApps() // function applications
+    blockComments()
     println("Expression tests done")
   }
 

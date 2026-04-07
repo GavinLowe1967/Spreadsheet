@@ -7,15 +7,16 @@ Not binding correclt in match expressions.  Fix then test.
 
 Script for alternative vote.
 
-1. Row/column subtraction -- done
+1. Row/column subtraction -- DONE
 
-2. Unary - and ! on expressions -- done
+2. Unary - and ! on expressions -- DONE
 
 3. Add "if" directives.
 
 4. Haskell standard prelude.  Allow "include" statements
 
-5. Block comments.
+5. Block comments. -- DONE
+-- Done, but test in interface, and add to TopLevelTest.
 
 6. toString functions.  + on strings.
 

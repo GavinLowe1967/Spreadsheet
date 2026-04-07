@@ -1,12 +1,12 @@
-// The factorial function
+/** The factorial function. */
 def fact(n: Int) : Int = { assert(n >= 0); if(n <= 1) 1 else n*fact(n-1) }
 
-// Overloaded sum functions.
+/** Overloaded sum functions. */
 def sum(xs: List[Int]): Int = 
   if(isEmpty xs) 0 else head xs + sum(tail(xs))
 def sum(xs: List[Float]): Float = 
   if(isEmpty xs) 0.0 else head xs + sum(tail(xs))
-// Apply function
+/** Apply function. */
 def apply[A,B](f: A => B)(x: A) = f x
 // Overloaded double function
 def double(n: Int) = 2*n
@@ -22,7 +22,7 @@ def firstEmptyInCol(c: Column, r: Row): Row =
 
 // =======================================================
 
-// Inputs in column A
+/* Inputs are expected in column A. */
 
 // Row 0
 #A0 = 1/0: Int // Evaluation error
@@ -32,7 +32,7 @@ val hello = "Hello"; #C0 = hello
 #E0 = double 2
 #F0 = { assert(#E0: Int == 3); 5 }
 
-// factorials, rows 1-4
+/* Produce factorials, rows 1-4. */
 for(r <- #1 to #4; c <- [#B, #C]; if r != #2){
   Cell(c, r) = fact(Cell(#A,r))
 }

@@ -16,13 +16,13 @@ We describe the script below.  The script is executed in order.
 // The input and output columns.
 val In = #A; val Out = #B £\label{line:InOut}£
 
-// The factorial of £n£.
+/* The factorial of £n£. */
 def fact(n: Int): Int = { assert(n >= 0); if(n <= 1) 1 else n*fact(n-1) }£\label{line:factorial}£
 
-// The sum of £xs£.
+/* The sum of £xs£. */
 def sum(xs: List[Int]): Int = if(xs == []) 0 else head(xs) + sum(tail(xs))£\label{line:sum}£
 
-// Row for the first empty cell in column £c£ from row £r£.
+/* Row for the first empty cell in column £c£ from row £r£. */
 def firstEmptyInCol(c: Column, r: Row): Row = £\label{line:firstEmptyInCol}£
   Cell(c,r) match{ case Empty => r; case n: Int => firstEmptyInCol(c, r+1) }£\label{line:cell-match}£
 
@@ -42,7 +42,9 @@ Cell(Out, firstEmpty+1) = sum([Cell(Out,r): Int | r <- #0 until firstEmpty])£\l
 
 %%%%%
 
-The characters ``|\\|'' Turn the rest of the line into a comment. 
+The characters ``\SCALA{//}\,'' turn the rest of the line into a comment.  Block
+comments (maybe spanning multiple lines, and maybe nested) can be written
+between ``\SCALA{/}\SCALA{*}'' and~``\SCALA{*/}\,''.
 
 Line~\ref{line:InOut} defines two values |In| and |Out|, representing the
 input and output columns.  It is a good idea to give names to relevant rows

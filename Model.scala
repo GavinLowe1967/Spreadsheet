@@ -29,34 +29,26 @@ class Model(val height: Int, val width: Int){
     reloadScript()
   }
 
-  /** Remove comments from st. */
-  private def removeComments(st: String): String = {
-    var i = 0; val sb = new StringBuilder; val len = st.length
-    while(i < len){
-      if(st(i) == '/' && i+1 < len && st(i+1) == '/'){
-        // advance to end of line
-        i += 2; while(i < len && st(i) != '\n') i += 1
-      }
-      else{ sb += st(i); i += 1 }
+  /** Parse the contents of a file (with comments removed). */
+  private def parseContents(fContents: String) = 
+    StatementParser.parseStatements(fContents) match{
+      case Left(ss) =>
+        TypeChecker(ss) match{
+          case Ok(te) => statements = ss; update1()
+          case FailureR(err) => view.addInfo(s"Type error: $err")
+        }
+
+      case Right(msg) =>
+        view.addInfo(s"Parse error: $msg"); println(s"Error!$msg")
     }
-    sb.toString
-  }
 
   /** Reload script from the saved filename. */
   def reloadScript() = {
     env.reset(); view.clearInfo()
-    val fContents = removeComments(scala.io.Source.fromFile(scriptName).mkString)
-    StatementParser.parseStatements(fContents) match{
-      case Left(ss) => 
-        TypeChecker(ss) match{
-          case Ok(te) => statements = ss; update1()
-
-          case FailureR(err) => view.addInfo(s"Type error: $err")
-        } 
-
-      case Right(msg) => 
-        view.addInfo(s"Parse error: $msg"); println(s"Error!$msg")
-    }
+    val fContents = 
+      Model.removeComments(scala.io.Source.fromFile(scriptName).mkString) 
+    if(fContents != null) parseContents(fContents)
+    else view.addInfo(s"Parse error: unclosed block comment")
   }
 
   /** Update cells based on statements.  Called by view. */
@@ -98,4 +90,43 @@ class Model(val height: Int, val width: Int){
     }
   }
 
+  // private val outer = this
+
+  // object Testhooks{
+  //   val removeComments = outer.removeComments _
+  // }
+
+}
+
+
+object Model{
+
+  /** Remove comments from st.  Return null if it contains an unclosed block
+    * comment. */
+  def removeComments(st: String): String = {
+    var i = 0; val sb = new StringBuilder; val len = st.length
+    while(i < len){
+      // Is the next character '/', not at the end of the file?
+      val slash = st(i) == '/' && i+1 < len
+      if(slash && st(i+1) == '/'){ // advance to end of line
+        i += 2; while(i < len && st(i) != '\n') i += 1
+      }
+      else if(slash && st(i+1) == '*'){
+        // Scan for corresponding "*/". `nesting` records the current level of
+        // nesting of block comments.
+        var nesting = 1; i += 2
+        while(i < len && nesting > 0){
+          if(st(i) == '*' && i+1 < len && st(i+1) == '/'){ nesting -= 1; i += 2 }
+          else if(st(i) == '/' && i+1 < len && st(i+1) == '*'){ // nested comment
+            nesting += 1; i += 2
+          }
+          else if(st(i) == '\n'){ sb += st(i); i += 1 } // for line numbers
+          else i += 1
+        }
+        if(nesting > 0) return null
+      }
+      else{ sb += st(i); i += 1 }
+    }
+    sb.toString
+  }
 }

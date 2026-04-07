@@ -1,19 +1,19 @@
-// Script to perform vote counting under the alternative vote system.
+/** Script to perform vote counting under the alternative vote system.
+  * 
+  * The script expects to find an initial line of the form
+  * Vote ID  1   2   ...   numCandidates
 
-// The script expects to find an initial line of the form
-// Vote ID  1   2   ...   numCandidates
-
-// for some numCandidates, giving the number of candidates.  Each subsequent
-// line should correspond to one voter, containing an ID for their vote,
-// followed by their choices in order, where each chocie is represented by an
-// Int in the range [1 .. numCandidates].
+  * for some numCandidates, giving the number of candidates.  Each subsequent
+  * line should correspond to one voter, containing an ID for their vote,
+  * followed by their choices in order, where each chocie is represented by an
+  * Int in the range [1 .. numCandidates]. */
 
 // ========= Standard functions
 
-// The nth element of xs, counting from 1
+/** The nth element of xs, counting from 1. */
 def nth[A](n: Int)(xs: List[A]): A = {
   assert(n >= 1 && !(isEmpty xs))
-  if(n == 1) head xs else nth(n-1) (tail xs)
+  if(n == 1) head xs else nth(n-1) (tail xs) 
 }
 def take[A](n: Int)(xs: List[A]): List[A] = {
   assert(n >= 0); if(n == 0) [] else head xs :: take(n-1)(tail xs)
@@ -23,7 +23,7 @@ def drop[A](n: Int)(xs: List[A]): List[A] = {
 }
 def append[A](xs: List[A])(ys: List[A]): List[A] = 
   if(isEmpty xs) ys else head xs :: append(tail xs) ys
-// The index, counting from 1, of the minimum element in xs
+/** The index, counting from 1, of the minimum element in xs. */
 def minIndex(xs: List[Int]): Int = {
   // The index of the minimum in ys, and its value
   def m(ys : List[Int]): (Int,Int) = {
@@ -38,13 +38,14 @@ def minIndex(xs: List[Int]): Int = {
 }
 def isEmptyCell(c: Column, r: Row) = 
   Cell(c,r) match{ case Empty => true; case _ => false }
+
 // =========
 
 val HeaderRow = #0 // Row for the headers
 val VoteIDCol = #A
 
-// Check header row is in expected form, "Vote ID", 1, 2, ..., numCandidates,
-// and find numCandidates
+/** Check header row is in expected form, "Vote ID", 1, 2, ..., numCandidates,
+  * and find numCandidates. */
 def getNumCandidates(): Int = {
   def iter(c: Column, n: Int): Int = Cell(c, HeaderRow) match{
     case m: Int => {assert(m == n+1); iter(c+1, m)}
@@ -56,7 +57,7 @@ def getNumCandidates(): Int = {
 val numCandidates = getNumCandidates()
 val candidates = 1 to numCandidates
 
-// Find first empty in VoteIDCol
+/** Find first empty in VoteIDCol. */
 def findFirstEmpty(r: Row): Row = Cell(VoteIDCol, r) match{
   case Empty => r; case _ => findFirstEmpty(r+1)
 }
@@ -70,10 +71,10 @@ val summaryHead = firstEmpty+2
 Cell(#A, summaryHead) = "Round"
 for(i <- 1 to numCandidates) Cell(#A+i, summaryHead) = i
 
-// On each round, we represent which candidates are not eliminated via a
-// List[Boolean], in candidate order.
+/* On each round, we represent which candidates are not eliminated via a
+ * List[Boolean], in candidate order. */
 
-// Count number of first preferences for each candidate marked as current. 
+/** Count number of first preferences for each candidate marked as current. */
 def processRound(current: List[Boolean]): List[Int] = {
   // Find winner in row r, from column c, or -1 if all eliminated
   def doRow(r: Row)(c: Column): Int = Cell(c,r) match{
@@ -96,7 +97,7 @@ def processRound(current: List[Boolean]): List[Int] = {
   tallyFrom #1 [0 | i <- 1 to numCandidates]
 }
 
-// Find the loser out of those current, given scores.
+/** Find the loser out of those current, given scores. */
 def findLoser(scores: List[Int])(current: List[Boolean]): Int = {
   // The index of the minimum in ys such that the corresponding entry in cs is
   // true, and its value
@@ -111,7 +112,7 @@ def findLoser(scores: List[Int])(current: List[Boolean]): Int = {
   get1(m scores current)
 }
 
-// Calculate and print results.
+/* Calculate and print results. */
 for(r <- 1 to numCandidates-1){
   val row = summaryHead+2*r-1 // Row to print results
   val current = // Candidates currently still in the race
