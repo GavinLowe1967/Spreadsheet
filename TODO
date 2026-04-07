@@ -7,9 +7,9 @@ Not binding correclt in match expressions.  Fix then test.
 
 Script for alternative vote.
 
-1. Row/column subtraction
+1. Row/column subtraction -- done
 
-2. Unary - and ! on expressions
+2. Unary - and ! on expressions -- done
 
 3. Add "if" directives.
 
@@ -17,6 +17,7 @@ Script for alternative vote.
 
 5. Block comments.
 
+6. toString functions.  + on strings.
 
 -- 
 

@@ -94,6 +94,10 @@ object TypeCheckerTestExpr{
     // assertFail(tc(BinOp(StringExp("X"), "!=", StringExp("Y"))))
     //                                            TODO: need parser for Strings
     assertEq(tcp("toInt 3.4"), IntType); assertEq(tcp("toFloat 3"), FloatType)
+    // Prefix operators
+    assertEq(tcp("!true"), BoolType)
+    assertEq(tcp("-{val x = 3; x+1}"), IntType)
+    assertEq(tcp("- (3.4+2.5)"), FloatType)
 
     // "if" expressions
     assertEq(tcp("if(2 == 3) 4.6 else 5.2"), FloatType)

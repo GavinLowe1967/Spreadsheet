@@ -155,10 +155,18 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
   // Note: numbers, and cell expressions such as #A3 are captured within
   // factor0.
 
-  /** A single parameter list, or a single unparenthesised parameter. */
+  private def singleParam0 = 
+    posNum | name1 | (cell0 > toPair(UntypedCellExp)) | atomicParam
+
+  /** A parser for a single parameter. */
+  private def singleParam: Parser[Exp] = 
+    inParens(expr) | singleParam0
+
+  /** A parser for a single parameter list, or a single unparenthesised
+    * parameter. */
   private def params: Parser[List[Exp]] = (
     inParens(repSep(expr, ","))
-    | (posNum | name1 | (cell0 > toPair(UntypedCellExp)) | atomicParam) > 
+    | singleParam0 > // (posNum | name1 | (cell0 > toPair(UntypedCellExp)) | atomicParam) > 
       { n => List(n) }
   )
   // Notes: we include only positive numbers above; negative numbers would
@@ -195,6 +203,7 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
     | name1 ~~ paramsList  > { case (n,args) => args.foldLeft(n)(FunctionApp) }
     // Note: in the above, inner FunctionApps don't receive an Extent.  
     // TODO: allow more general definitions of the function.
+    | prefixOp
     | tupleOrParens
     //| inParens(expr) // Note: sets extent to include parentheses.
     | failure("YYY") // IMPROVE
@@ -208,6 +217,12 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
     )
    inBrackets(body) > toPair(BlockExp)
   }
+
+  // ===== Prefix operators
+
+  private def prefixOp: Parser[Exp] = 
+    (lit("!") | lit("-")) ~ singleParam > {
+      case(f,arg) => FunctionApp(NameExp(f),List(arg)) }
 
   // ===== Infix operators
 

@@ -12,7 +12,7 @@
 
 // The nth element of xs, counting from 1
 def nth[A](n: Int)(xs: List[A]): A = {
-  assert(n >= 1 && not(isEmpty xs))
+  assert(n >= 1 && !(isEmpty xs))
   if(n == 1) head xs else nth(n-1) (tail xs)
 }
 def take[A](n: Int)(xs: List[A]): List[A] = {
@@ -27,7 +27,7 @@ def append[A](xs: List[A])(ys: List[A]): List[A] =
 def minIndex(xs: List[Int]): Int = {
   // The index of the minimum in ys, and its value
   def m(ys : List[Int]): (Int,Int) = {
-    assert(not(isEmpty ys))
+    assert(!(isEmpty ys))
     if(isEmpty(tail ys)) (1,head ys)
     else{
       val pair = m(tail ys); val ix1 = get1(pair); val m1 = get2(pair)
@@ -62,9 +62,9 @@ def findFirstEmpty(r: Row): Row = Cell(VoteIDCol, r) match{
 }
 
 val firstEmpty = findFirstEmpty(HeaderRow+1)
-//val numVoters = firstEmpty-#B
+val numVoters = firstEmpty-#1
 
-// Cell(VoteIDCol, firstEmpty+1) = numCandidates
+// Cell(VoteIDCol, firstEmpty+1) = numVoters
 
 val summaryHead = firstEmpty+2
 Cell(#A, summaryHead) = "Round"
@@ -101,7 +101,7 @@ def findLoser(scores: List[Int])(current: List[Boolean]): Int = {
   // The index of the minimum in ys such that the corresponding entry in cs is
   // true, and its value
   def m(ys : List[Int])(cs: List[Boolean]): (Int,Int) = {
-    if(isEmpty ys) (-1*numCandidates,999) // IMPROVE
+    if(isEmpty ys) (-numCandidates,999) // IMPROVE
     else{
       val pair = m(tail ys)(tail cs); val ix1 = get1(pair); val m1 = get2(pair)
       if(head cs && head ys < m1) (1, head ys) else (ix1+1, m1)
@@ -124,6 +124,6 @@ for(r <- 1 to numCandidates-1){
     Cell(#A+i, row) = if(nth i current) nth i results else -1 // IMPROVE, "X"
   val loser = findLoser results current // Eliminated in this round
   // Who is in for the next round. 
-  for(i <- 1 to numCandidates; if(not(nth i current) || i == loser))
+  for(i <- 1 to numCandidates; if(!(nth i current) || i == loser))
     Cell(#A+i, row+1) = "X"
 }

@@ -154,6 +154,10 @@ object ExpParserTest extends ParserTest0{
     assert(p("f {val x = 3; x}") ==
       FunctionApp(NameExp("f"), 
         List(BlockExp(List(ValueDeclaration("x",IntExp(3))), NameExp("x")))))
+    assert(p("!true") == FunctionApp(NameExp("!"), List(BoolExp(true))))
+    assert(p("-x") == FunctionApp(NameExp("-"), List(NameExp("x"))))
+    assert(p("- 3")  == FunctionApp(NameExp("-"), List(IntExp(3))))
+    assert(p("-3") == IntExp(-3))
   }
 
   /** Tests of expression parsers. */

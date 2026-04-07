@@ -57,6 +57,10 @@ object EvaluationTest{
     assert(eval("toFloat 3") == FloatValue(3.0F))
     // Tuples
     assert(eval("(2,3.5)") == TupleValue(IntValue(2), FloatValue(3.5F)))
+    assert(eval("!(2+2 == 4)") == BoolValue(false))
+    assert(eval("- (3)") == IntValue(-3))
+    assert(eval("-{ val x = 4; x+6}") == IntValue(-10))
+    assert(eval("-(3.6-2.6)") == FloatValue(-1.0F))
   }
 
   /** Blocks, if statements, list expressions. */
