@@ -2,15 +2,17 @@ package spreadsheet
 
 import Parser._
 
-/** The interface of DeclarationParser, as seen by ExpParser. */
-trait DeclarationParserT{
-  /** A parser for a declaration. */
-  def declaration: Parser[Declaration]
+/** The interface of StatementParser, as seen by ExpParser. */
+trait StatementParserT{
+  // /** A parser for a declaration. */
+  // def declaration: Parser[Declaration]
+  /** A parser for a statement. */
+  def statement: Parser[Statement]
 }
-
+ 
 
 /** A parser for expressions. */
-class ExpParser(declParser: DeclarationParserT) extends Parser0{
+class ExpParser(stmtParser: StatementParserT) extends Parser0{
 
   import TypeParser.cellType
 
@@ -211,8 +213,8 @@ class ExpParser(declParser: DeclarationParserT) extends Parser0{
 
   /** A parser for a block expression. */
   private def block: Parser[BlockExp] = {
-    def body: Parser[(List[Declaration], Exp)] = (
-      listOf(withExtent(declParser.declaration)) ~~ (separator ~> expr)
+    def body: Parser[(List[Statement], Exp)] = (
+      listOf(withExtent(stmtParser.statement)) ~~ (separator ~> expr)
       | expr > { e => (List(), e) }
     )
    inBrackets(body) > toPair(BlockExp)

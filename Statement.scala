@@ -11,7 +11,7 @@ object Statement{
 }
 
 /** Trait of declarations.  These can appear in expression blocks. */
-trait Declaration extends Statement
+// trait Declaration extends Statement
 
 // =======================================================
 
@@ -23,7 +23,7 @@ case class Directive(col: Exp, row: Exp, expr: Exp) extends Statement{
 // =======================================================
 
 /** A declaration of the form `val name = exp`. */
-case class ValueDeclaration(name: String, exp: Exp) extends Declaration
+case class ValueDeclaration(name: String, exp: Exp) extends Statement
 
 // =======================================================
 
@@ -41,7 +41,7 @@ import FunctionDeclaration.ParameterList
 case class FunctionDeclaration(
   name: String, tParams: List[FunctionType.TypeParameter], 
   params: List[ParameterList], ort: Option[TypeT], body: Exp)
-    extends Declaration{
+    extends Statement{
   private var index = -1
 
   def setIndex(ix: Int) = index = ix
@@ -83,16 +83,15 @@ case class ForStatement(qualfiers: List[Qualifier], stmts: List[Statement])
 
 // =======================================================
 
-/** An assertion.  Note: this is a declaration, since it doesn't have to
-  * appear at the top level. */
-case class Assertion(condition: Exp) extends Declaration
+/** An assertion.  */
+case class Assertion(condition: Exp) extends Statement
 
 /** An assertion with an error message. */
-case class Assertion2(condition: Exp, msg: Exp) extends Declaration
+case class Assertion2(condition: Exp, msg: Exp) extends Statement
 
 // =======================================================
 
 /* Note: we can't include this in Exp.scala, because it builds on Statement. */
 
 /** A block expression of the form { stmt_1; ...; stmt_n; exp }. */ 
-case class BlockExp(stmts: List[Declaration], exp: Exp) extends Exp
+case class BlockExp(stmts: List[Statement], exp: Exp) extends Exp

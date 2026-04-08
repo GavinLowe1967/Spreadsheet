@@ -4,7 +4,7 @@ package spreadsheet
 import TypeChecker0.TypeCheckRes
 import TypeChecker._; 
 import TypeEnv._
-import TypeChecker.TestHooks._
+// import TypeChecker.TestHooks._
 import Parser.parseAll
 import StatementParser.TestHooks.{statement,statements}
 // import NameExp.Name // Names of identifiers (Strings)
@@ -12,10 +12,10 @@ import StatementParser.TestHooks.{statement,statements}
 /** Helper functions for tests on the type checker. */
 object TypeCheckerTest0{
   // The parser for expressions. 
-  val expr = DeclarationParser.expParser.expr
+  val expr = StatementParser.expParser.expr
 
   // Checking of expressions
-  val typeCheckAndClose = DeclarationTypeChecker.etc.typeCheckAndClose _
+  val typeCheckAndClose = TypeChecker.etc.typeCheckAndClose _
 
   var printErrors = false // Should error messages be printed?
   

@@ -66,9 +66,10 @@ $(DIR)/FunctionAppTypeChecker.class: $(DIR)/TypeChecker0.class
 
 $(DIR)/ExpTypeChecker.class: $(DIR)/FunctionAppTypeChecker.class $(DIR)/Statement.class
 
-$(DIR)/DeclarationTypeChecker.class: $(DIR)/ExpTypeChecker.class
+#$(DIR)/DeclarationTypeChecker.class: $(DIR)/ExpTypeChecker.class
 
-$(DIR)/TypeChecker.class:  $(DIR)/DeclarationTypeChecker.class
+$(DIR)/TypeChecker.class:  $(DIR)/ExpTypeChecker.class 
+#$(DIR)/DeclarationTypeChecker.class
 
 # Parsing and tests
 
@@ -79,9 +80,10 @@ $(DIR)/Parser0.class: $(DIR)/Parser.class $(DIR)/Exp.class $(DIR)/Value.class
 $(DIR)/ExpParser.class:  $(DIR)/Parser0.class $(DIR)/Statement.class	\
   $(DIR)/TypeConstraint.class $(DIR)/FunctionValue.class
 
-$(DIR)/DeclarationParser.class: $(DIR)/ExpParser.class
+#$(DIR)/DeclarationParser.class: $(DIR)/ExpParser.class
 
-$(DIR)/StatementParser.class: $(DIR)/DeclarationParser.class
+$(DIR)/StatementParser.class: $(DIR)/ExpParser.class
+#$(DIR)/DeclarationParser.class
 
 $(DIR)/ParserTest0.class:  $(DIR)/StatementParser.class $(DIR)/Execution.class
 

@@ -38,7 +38,7 @@ and CSVParser, parsers for types, cells and CSV files, respectively.
 
 ExpParser.scala: Parsing of expressions.
 
-DeclarationParser.scala: parsing of declarations.
+DeclarationParser.scala: parsing of declarations. REMOVED
 
 StatementParser.scala: parsing of statements. 
 
@@ -71,7 +71,7 @@ FunctionAppTypeChecker.scala: type checking of function applications.
 
 ExpTypeChecker: type checker for expressions.
 
-DeclarationTypeChecker.scala: type checker for declarations. 
+DeclarationTypeChecker.scala: type checker for declarations. REMOVED
 
 TypeChecker.scala: the type checker.
 

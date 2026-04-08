@@ -54,7 +54,16 @@ and~|/|, over |Int| and |Float| (over |Int|, |/| performs rounding), and
 \SCALA{\%} over |Int|.  The language also contains the normal equality (|==|),
 inequality (|!=|), and order (|<|, |<=|, |>|, |>=|) operators.   Note
 that |Int| and |Float| are distinct types, so can't (currently) be combined
-using these operators.  The built-in functions |toFloat: Int => Float| and
+using these operators.  Unary negation can be written using |-|; note that the
+expression might need to be included in parentheses when the |-| could be
+interpreted as a binary operator, for example,
+\begin{scala}
+  { val x = 2
+    (-1)
+  }
+\end{scala}
+%
+The built-in functions |toFloat: Int => Float| and
 |toInt: Float => Int| can be used to convert between these types.
 
 The language includes the normal boolean binary operators, |&&| and

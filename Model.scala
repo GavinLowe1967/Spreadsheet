@@ -39,7 +39,7 @@ class Model(val height: Int, val width: Int){
         }
 
       case Right(msg) =>
-        view.addInfo(s"Parse error: $msg"); println(s"Error!$msg")
+        view.addInfo(s"Parse error: $msg") //; println(s"Error!$msg")
     }
 
   /** Reload script from the saved filename. */

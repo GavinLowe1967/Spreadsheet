@@ -3,13 +3,70 @@ package spreadsheet
 import Parser._
 
 /** A parser for statements. */
-object StatementParser extends Parser0{
+object StatementParser extends Parser0 with StatementParserT{
   // Parsing of expressions, cells.
-  private val expParser = DeclarationParser.expParser
+  val expParser = new ExpParser(this)
+  //private val expParser = DeclarationParser.expParser
   private val expr = expParser.expr
   private val cell = expParser.cell
 
-  import DeclarationParser.declaration
+  //import DeclarationParser.declaration
+
+
+  import TypeParser.{typeP,ofType}
+
+  /** A parser for a value declaration, "val <name> = <expr>". */
+  private def valDec: Parser[ValueDeclaration] =
+    keyword("val") ~> name ~ (lit("=") ~> expr) > toPair(ValueDeclaration)
+
+  /** A parser for a list of parameters, "name1: type1, ..., namek: typek". */
+  private def params: Parser[List[(String,TypeT)]] = {
+    // def param: Parser[(String,TypeT)] = name ~ ofType // <~ lit(":")) ~ typeP
+    repSep(name ~ ofType, ",")
+  }
+
+  import FunctionType.TypeParameter
+
+  private def typeConstraint: Parser[TypeParamConstraint] = (
+    lit("<:") ~> (
+      keyword("Eq") > (_ => EqTypeConstraint) 
+      // | lit("Num") > (_ => NumTypeConstraint) // MemberOf(TypeT.NumTypes))
+    ) 
+    | success(AnyTypeConstraint)
+  )
+
+  /** Parser for a single type parameter. */
+  private  def typeParam: Parser[TypeParameter] =
+    upperName ~ typeConstraint
+
+  /** Parser for type parameters. */
+  private def typeParams: Parser[List[TypeParameter]] = 
+    opt(consumeWhite ~~> inSquare(repSep(typeParam, ","))) > 
+      { case Some(ts) => ts; case None => List() }
+
+  /** A parser for a function declaration 
+    * "def <name>(<params>): <type> = <expr>", where the ": <type>" is 
+    * optional. */
+  private def funDec: Parser[FunctionDeclaration] = 
+    (keyword("def") ~> name ~~ typeParams ~ inParens(params).+) ~ 
+      (opt(ofType) ~ (lit("=") ~> expr)) >
+    { case (((n,tps),ps), (ort,e)) => FunctionDeclaration(n, tps, ps, ort, e) }
+
+
+  // ===== Assertions
+
+  /** A parser for an assertion. */
+  private def assertion: Parser[Statement] = (
+    (keyword("assert") ~~ lit("(") ~> expr) ~~ 
+      (opt(lit(",") ~> expr) <~ lit(")")) 
+      > { case (e, None) => Assertion(e); case (e, Some(m)) => Assertion2(e,m) }
+  )
+
+  /** A parser for a declaration: either a value or function declaration, or an
+    * assertion. */
+  private def declaration: Parser[Statement] = valDec | funDec | assertion
+
+  // ===== Directives
 
   /** Parser for a directive, <cell> = <expr>. */
   private def directive: Parser[Directive] = 
@@ -41,7 +98,7 @@ object StatementParser extends Parser0{
   // ===== Top-level parsers
 
   /** A parser for a statement. */
-  private def statement: Parser[Statement] = withExtent(
+  def statement: Parser[Statement] = withExtent(
     directive | forLoop | declaration
   )
 

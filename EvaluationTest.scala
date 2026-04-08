@@ -3,8 +3,8 @@ package spreadsheet
 /** Tests involving parsing, type checking and evaluation of expressions,
   * independent of any cell values. */
 object EvaluationTest{
-  val expr = DeclarationParser.expParser.expr
-  val typeCheckAndClose =  DeclarationTypeChecker.etc.typeCheckAndClose _
+  val expr = StatementParser.expParser.expr
+  val typeCheckAndClose = TypeChecker.etc.typeCheckAndClose _
 
   /** Parse, type check and evaluate st.  The parsing and type checking are
     * expected to succeed; but evaluation may fail. */

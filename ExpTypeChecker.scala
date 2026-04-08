@@ -6,19 +6,24 @@ import NameExp.Name // Names of identifiers (Strings)
 import TypeT.showList
 
 /** The interface of DeclarationTypeChecker, as seen by ExpTypeChecker. */
-trait DeclarationTypeCheckerT{
+trait TypeCheckerT{
   /** Type check decls, returning the resulting type environment if
     * successful. */
-  def typeCheckDeclList(typeEnv: TypeEnv, decls: List[Declaration])
+  // def typeCheckDeclList(typeEnv: TypeEnv, decls: List[Declaration])
+  //     : Reply[TypeEnv]
+ 
+  /** Type check stmts, returning the resulting type environment if
+    * successful. */
+  def typeCheckStmtList(typeEnv: TypeEnv, stmts: List[Statement])
       : Reply[TypeEnv] 
 }
-
+ 
 // =======================================================
 
 // Note: a single ExpTypeChecker object is created, in DeclarationTypeChecker. 
 
 /** Type checker for expressions. */
-class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
+class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
   import FunctionType.TypeParameter // (TypeParamName, TypeParamConstraint)
   import Unification.unify
   import TypeChecker0.{TypeCheckRes,close}
@@ -131,7 +136,7 @@ class ExpTypeChecker(dtc: DeclarationTypeCheckerT) extends ExpTypeCheckerT{
     case BlockExp(stmts, e) => 
       // Create a new scope for this block, but return to the outer scope at
       // the end.
-      dtc.typeCheckDeclList(typeEnv.newScope, stmts).map{ te1 => 
+      dtc.typeCheckStmtList(typeEnv.newScope, stmts).map{ te1 => 
         typeCheckAndClose(te1, e).map{ case (te2, te) => Ok((te2.endScope, te)) }
       }.lift(exp)
       // Typed expressions

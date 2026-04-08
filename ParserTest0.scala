@@ -5,7 +5,7 @@ import Parser._
 /** Common functions between the different parser test objects. */
 trait ParserTest0{
   // import ExpParser.expr
-  val expr = DeclarationParser.expParser.expr
+  val expr = StatementParser.expParser.expr
 
   def isWhite(c: Char) = c == ' ' || c == '\t' || c == '\n'
    
