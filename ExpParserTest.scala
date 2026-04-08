@@ -100,8 +100,42 @@ object ExpParserTest extends ParserTest0{
 
   // ===== Compound expressions
 
-  /** Tests of parsing blocks, if statements, and list expressions. */
+  /** Tests of parsing blocks, if statements, list, and tuple expressions. */
   private def expressions3() = {
+    // ===== Blocks
+    assert(pe("{ val x = 3; x+17 }") == IntValue(20))
+    assert(pe("{ val x = 3 \n x+4 }") == IntValue(7))
+    assert(pe("{ 4*5 }") == IntValue(20))
+    assert(p("{ #A3 = 2; 4 }") == BlockExp(
+      List(Directive(ColumnExp("A"), RowExp(3), IntExp(2))), IntExp(4)
+    ))
+
+    // ===== if statements
+    assert(pe("if(2+2 == 4) 3 else 4+2") == IntValue(3))
+    assert(pe("if(2+2 == 5) 3 else 4+2") == IntValue(6))
+    assert(pe("if(2+2 != 5) 3 else 4+2") == IntValue(3))
+    assert(pe("7 * (if(2+2 == 4) 3 else 4+2)") == IntValue(21))
+    assert(pe("7 * (if(2+2 == 5) 3 else 4+2)") == IntValue(42))
+    assertFail(pe("if(2/0 == 4) 3 else 4"))
+    //println(p("if(r == end) 0 else Cell(c,r):Int + sum(c, r+1, end)"))
+
+    // ===== List expressions
+    assert(pe("[]") == ListValue(/*AnyType,*/ List()))
+    assert(pe("[4/4, 2+0, 6-3]") == 
+      ListValue(IntValue(1), IntValue(2), IntValue(3)))
+    assertFail(pe("[4/2, 3/0]"))
+    assert(pe("head([1,2,3])") == IntValue(1))
+    assertFail(pe("head([])"))
+    assert(pe("tail([1,2,3])") == ListValue(IntValue(2), IntValue(3)))
+    assertFail(pe("tail([])"))
+    assert(pe("[1,2] == [3,4]") == BoolValue(false))
+    assert(pe("1 :: 2 :: []") == ListValue(IntValue(1), IntValue(2)))
+    assert(pe("[1,2] != tail([3,1,2])") == BoolValue(false))
+    assert(pe("[1,2] == tail([3,1,2])") == BoolValue(true))
+    assert(pe("tail([1]) == []") == BoolValue(true))
+    assert(pe("[] == tail([1])") == BoolValue(true))
+
+    // ===== Tuples
     assert(p("(1,2,3)") == TupleLiteral(List(IntExp(1),IntExp(2),IntExp(3))))
     assert(p(" ( 1, 2.5 ) ") == TupleLiteral(List(IntExp(1),FloatExp(2.5F))))
     assert(p("(1)") == IntExp(1))

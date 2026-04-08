@@ -15,29 +15,6 @@ def nth[A](n: Int)(xs: List[A]): A = {
   assert(n >= 1 && !(isEmpty xs))
   if(n == 1) head xs else nth(n-1) (tail xs) 
 }
-def take[A](n: Int)(xs: List[A]): List[A] = {
-  assert(n >= 0); if(n == 0) [] else head xs :: take(n-1)(tail xs)
-}
-def drop[A](n: Int)(xs: List[A]): List[A] = {
-  assert(n >= 0); if(n == 0) xs else drop(n-1)(tail xs)
-}
-def append[A](xs: List[A])(ys: List[A]): List[A] = 
-  if(isEmpty xs) ys else head xs :: append(tail xs) ys
-/** The index, counting from 1, of the minimum element in xs. */
-def minIndex(xs: List[Int]): Int = {
-  // The index of the minimum in ys, and its value
-  def m(ys : List[Int]): (Int,Int) = {
-    assert(!(isEmpty ys))
-    if(isEmpty(tail ys)) (1,head ys)
-    else{
-      val pair = m(tail ys); val ix1 = get1(pair); val m1 = get2(pair)
-      if(head ys < m1) (1, head ys) else (ix1+1, m1)
-    }
-  }
-  get1(m xs)
-}
-def isEmptyCell(c: Column, r: Row) = 
-  Cell(c,r) match{ case Empty => true; case _ => false }
 def map[A,B](f: A => B)(xs: List[A]): List[B] = 
   if(isEmpty xs) []: List[B] else f(head xs) :: map f (tail xs)
 def filter[A](p: A => Boolean)(xs: List[A]): List[A] = 
@@ -51,7 +28,8 @@ def sum(xs: List[Int]): Int = if(isEmpty xs) 0 else head xs + sum(tail xs)
 // =========
 
 val HeaderRow = #0 // Row for the headers
-val VoteIDCol = #A
+val VoteIDCol = #A // Column for vote IDs
+val FirstVoteCol = #B // Column for the first vote by each voter.
 
 /** Check header row is in expected form, "Vote ID", 1, 2, ..., numCandidates,
   * and find numCandidates. */
@@ -63,6 +41,7 @@ def getNumCandidates(): Int = {
   assert(Cell(VoteIDCol, HeaderRow): String == "Vote ID"); iter(VoteIDCol+1,0)
 }
 
+// Number of candidates; and the list of candidates
 val numCandidates = getNumCandidates()
 val candidates = 1 to numCandidates
 
@@ -72,17 +51,108 @@ def findFirstEmpty(r: Row): Row = Cell(VoteIDCol, r) match{
 }
 
 val firstEmpty = findFirstEmpty(HeaderRow+1)
-val numVoters = firstEmpty-#1
+val numVoters = firstEmpty-HeaderRow-1
 
-// Cell(VoteIDCol, firstEmpty+1) = numVoters
-
+// Header for the summary table.
 val summaryHead = firstEmpty+2
 Cell(#A, summaryHead) = "Round"
 for(i <- 1 to numCandidates) Cell(#A+i, summaryHead) = i
+val eliminatedColumn = #A+numCandidates+2
+Cell(eliminatedColumn, summaryHead) = "Eliminated"
 
 /* On each round, we represent which candidates are not eliminated via a
  * List[Boolean], in candidate order. */
 
+/** The vote in the round corresponding to `row`, where the current candidates
+  * are given by `current`; or -1 if there was no vote for a current candidate
+  * in that row. */
+def voteFromRow(current: List[Boolean])(row: Row): Int = {
+  def iter(c: Column): Int = Cell(c,row) match{
+    case v: Int => if(nth v current) v else iter (c+1)
+    case Empty => -1
+  }
+  iter FirstVoteCol
+}
+
+/** Find the loser out of those current, given scores. */
+def findLoser(scores: List[Int])(current: List[Boolean]): Int = {
+  // The index of the minimum in ys such that the corresponding entry in cs is
+  // true, and its value
+  def m(ys : List[Int])(cs: List[Boolean]): (Int,Int) = {
+    if(isEmpty ys) (-numCandidates,numVoters+999) // IMPROVE
+    else{
+      val pair = m(tail ys)(tail cs); val ix1 = get1(pair); val m1 = get2(pair)
+      if(head cs && head ys < m1) (1, head ys) else (ix1+1, m1)
+      // IMPROVE: pick at random if there is a tie.
+    }
+  }
+  get1(m scores current)
+}
+
+/** Process the votes.  `current` denotes which candidates are currently not
+  * eliminated.  `row` is the row in which to write the next round's
+  * results. */
+def process(current: List[Boolean], round: Int): Int = {
+  def nonNeg(n: Int) = n >= 0
+  def equal(i: Int)(j: Int) = i == j
+  // All votes for this round, including -1 for no vote
+  val votes = map (voteFromRow current) ((HeaderRow+1) until firstEmpty)
+  // Votes for each candidate
+  val tallies = [length (filter (equal i) votes) | i <- candidates]
+  // Write tallies
+  val row = summaryHead+round
+  Cell(#A, row) = round
+  for(i <- 1 to numCandidates) 
+    Cell(#A+i, row) = if(nth i current) nth i tallies else -1 // IMPROVE
+  // Try to find a winner. 
+  val total = sum tallies // total votes
+  val winners = [i | i <- candidates, nth i tallies * 2 > total]
+  if(!(isEmpty winners)){ assert(length winners == 1); head winners }
+  else{
+    val loser = findLoser tallies current // Eliminated in this round
+    Cell(eliminatedColumn, row) = loser
+    val nextCurrent = [i != loser && nth i current | i <- candidates]
+    process(nextCurrent, round+1)
+  }
+}
+
+// Calculate and print results.
+val winner = process([true | i <- candidates], 1)
+val winnerRow = summaryHead+numCandidates+2
+Cell(#A, winnerRow) = "Winner:"; Cell(#B, winnerRow) = winner
+
+// ==================================================================
+
+
+/*
+def isEmptyCell(c: Column, r: Row) = 
+  Cell(c,r) match{ case Empty => true; case _ => false }
+def take[A](n: Int)(xs: List[A]): List[A] = {
+  assert(n >= 0); if(n == 0) [] else head xs :: take(n-1)(tail xs)
+}
+def drop[A](n: Int)(xs: List[A]): List[A] = {
+  assert(n >= 0); if(n == 0) xs else drop(n-1)(tail xs)
+}
+def append[A](xs: List[A])(ys: List[A]): List[A] = 
+  if(isEmpty xs) ys else head xs :: append(tail xs) ys
+ */
+/** The index, counting from 1, of the minimum element in xs. */
+/*
+def minIndex(xs: List[Int]): Int = {
+  // The index of the minimum in ys, and its value
+  def m(ys : List[Int]): (Int,Int) = {
+    assert(!(isEmpty ys))
+    if(isEmpty(tail ys)) (1,head ys)
+    else{
+      val pair = m(tail ys); val ix1 = get1(pair); val m1 = get2(pair)
+      if(head ys < m1) (1, head ys) else (ix1+1, m1)
+    }
+  }
+  get1(m xs)
+}
+ */
+
+/*
 /** Count number of first preferences for each candidate marked as current. */
 def processRound(current: List[Boolean]): List[Int] = {
   // Find winner in row r, from column c, or -1 if all eliminated
@@ -105,22 +175,9 @@ def processRound(current: List[Boolean]): List[Int] = {
 
   tallyFrom #1 [0 | i <- 1 to numCandidates]
 }
+ */
 
-/** Find the loser out of those current, given scores. */
-def findLoser(scores: List[Int])(current: List[Boolean]): Int = {
-  // The index of the minimum in ys such that the corresponding entry in cs is
-  // true, and its value
-  def m(ys : List[Int])(cs: List[Boolean]): (Int,Int) = {
-    if(isEmpty ys) (-numCandidates,999) // IMPROVE
-    else{
-      val pair = m(tail ys)(tail cs); val ix1 = get1(pair); val m1 = get2(pair)
-      if(head cs && head ys < m1) (1, head ys) else (ix1+1, m1)
-      // IMPROVE: pick at random if there is a tie.
-    }
-  }
-  get1(m scores current)
-}
-
+/*
 /* Calculate and print results. */
 for(r <- 1 to numCandidates-1){
   val row = summaryHead+2*r-1 // Row to print results
@@ -137,43 +194,4 @@ for(r <- 1 to numCandidates-1){
   for(i <- 1 to numCandidates; if(!(nth i current) || i == loser))
     Cell(#A+i, row+1) = "X"
 }
-
-// =======================================================
-
-/** The vote in the current round corresponding to `row`, or -1 if there was
-  * no vote for a current candidate in that row. */
-def voteFromRow(current: List[Boolean])(row: Row): Int = {
-  def iter(c: Column): Int = Cell(c,row) match{
-    case v: Int => if(nth v current) v else iter (c+1)
-    case Empty => -1
-  }
-  iter #B
-}
-
-/** Process the votes.  `current` denotes which candidates are currently not
-  * eliminated.  `row` is the row in which to write the next round's
-  * results. */
-def process(current: List[Boolean], row: Row): Int = {
-  def nonNeg(n: Int) = n >= 0
-  def equal(i: Int)(j: Int) = i == j
-  // All votes for this round, including -1 for no vote
-  val votes = map (voteFromRow current) ((HeaderRow+1) until firstEmpty)
-  // Votes for each candidate
-  val tallies = [length (filter (equal i) votes) | i <- candidates]
-  /*
-  for(i <- 1 to numCandidates) 
-    Cell(#A+i, row) = if(nth i current) nth i results else -1
-   */ 
-  // Try to find a winner. 
-  val total = sum tallies // total votes
-  val winners = [i | i <- candidates, nth i tallies * 2 > total]
-  if(!(isEmpty winners)){ assert(length winners == 1); head winners }
-  else{
-    val loser = findLoser tallies current // Eliminated in this round
-    val nextCurrent = [i != loser && nth i current | i <- candidates]
-    process(nextCurrent, row+1)
-  }
-}
-
-Cell(#A, summaryHead+2*numCandidates) = 
-  process([true | i <- candidates], summaryHead+1)
+ */

@@ -165,8 +165,9 @@ object Execution{
       var err: ErrorValue = null
       def handleError(ev: ErrorValue) = { err = ev }
       val ok = performAll(stmts, env1, handleError)
-      if(ok){
-        assert(err == null)
+      if(err == null) assert(ok)
+      if(ok && err == null){
+        // assert(err == null, err.toString)
         eval(env1, exp) match{
           case ev: ErrorValue => liftError(e, ev); case res => res
         }
@@ -266,12 +267,13 @@ object Execution{
             case RowValue(r) =>
               if(0 <= r && r < env.height) 
                 writeCell(env, handleError, c, r, expr, d)
-              else handleError(EvalError("Indexing error for row: found $r"))
+              else handleError(EvalError(s"Indexing error for row: found #$r"))
               // end of case RowValue(r)
 
             case err: ErrorValue => handleError(liftError(s, err))
           } // end of eval(env, re) match
-          else handleError(EvalError("Indexing error for column: found $c"))
+          else handleError(EvalError(
+            s"Indexing error for column: found #${CellSource.colName(c)}"))
           // end of case ColumnValue(c)
 
         case err: ErrorValue => handleError(liftError(s, err))

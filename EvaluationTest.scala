@@ -12,7 +12,7 @@ object EvaluationTest{
     val e = Parser.parseAll(expr, st); val env = TypeEnv()
     typeCheckAndClose(env, e) match{
       case Ok((te,t)) => 
-        val env = Environment(0,0); Execution.TestHooks.eval(env,e)
+        val env = Environment(100,26); Execution.TestHooks.eval(env,e)
       case FailureR(err) => println(err); null
     }
   }
@@ -69,6 +69,7 @@ object EvaluationTest{
     assert(eval("{ val x = 3; x+17 }") == IntValue(20))
     assert(eval("{ val x = 3 \n x+4 }") == IntValue(7))
     assert(eval("{ 4*5 }") == IntValue(20))
+    assert(eval("{ #B3 = 4; 42 }") == IntValue(42))
     // ===== if statements
     assert(eval("if(2+2 == 4) 3 else 4+2") == IntValue(3))
     assert(eval("if(2+2 == 5) 3 else 4+2") == IntValue(6))

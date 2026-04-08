@@ -286,5 +286,6 @@ printErrors = false
     // Tests on block expressions
     assertFail(tcp("{ val x = three; x + 1 }"))
     assertFail(tcp("{ val x = 3; x + false }"))
+    assertEq(tcp("{ #A3 = 2; 4 }"), IntType)
   }
 }

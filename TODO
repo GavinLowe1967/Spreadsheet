@@ -14,11 +14,14 @@ DeclarationTypeChecker. -- DONE
   StatementParserT (ExpParser.scala) with "statement" command; Replace
   Declaration in DeclarationParser.scala. -- DONE
 
-3. Allow Statements within BlockExp (Statement.scala).
+3. Allow Statements within BlockExp (Statement.scala). -- DONE
 
-4. Remove Declaration trait (Statement.scala)
+4. Remove Declaration trait (Statement.scala) -- DONE
 
 5. Tidy up TypeChecker.scala, StatementParser.scala
+
+6. Tidy up Execution.scala, the result of performAll -- I don't think we ned it.
+
 
 
 Not binding correclt in match expressions.  Fix then test. -- DONE
@@ -28,6 +31,8 @@ Script for alternative vote.
 1. Row/column subtraction -- DONE
 
 2. Unary - and ! on expressions -- DONE
+
+3. Allow function calls with result ignored.
 
 3. Add "if" directives.
 
@@ -82,6 +87,8 @@ values; and vice versa, e.g. get1(x,y).
 * Expressions like Cells(#A, #0 to #5): List[Int]
 
 * "println" statements.
+
+* pattern matching on tuples, e.g. val (x,y) = f(3)
 
 
 * Improve error messages in Unification.unify, the case of FunctionTypes.

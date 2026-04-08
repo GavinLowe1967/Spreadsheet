@@ -45,8 +45,8 @@ object TopLevelTest{
     // for(r <- #1 to #4; c <- [#B, #C]; if r != #2){
     //   Cell(c, r) = fact(Cell(#A,r))
     // }
-    (B,1,IntValue(24)), (C,1,IntValue(24)),
-    (B,3,IntValue(720)), (C,3,IntValue(720)),
+    (B,1,IntValue(24)), (C,1,IntValue(24)), (D,1,IntValue(24)),
+    (B,3,IntValue(720)), (C,3,IntValue(720)), (D,3,IntValue(720)),
 
     // val firstEmpty = firstEmptyInCol(#A, #1) // Should give #4
     // Cell(#D, firstEmpty) = "first empty"
