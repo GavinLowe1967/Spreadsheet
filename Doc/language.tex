@@ -356,8 +356,26 @@ can also be used on the left-hand side; for example,
 #A4 = #A3:Int + 2
 \end{scala}
 
-Cell writes may not occur within a function definition, or within a block
-expression: they may appear only at the top level or within a |for| statement.
+In most simple applications, cell writes occur only at the top level of a
+script.  However, they may also appear within a function definition or a
+block expression.  For example, the following code is equivalent to the |for|
+loop at line~\ref{line:write-facts} of Figure~\ref{fig:example-script}.
+%
+\begin{scala}
+def produceFacts(r: Row): Boolean = 
+  if(r == firstEmpty) true
+  else{ Cell(out, r) = fact(Cell(In,r)); produceFacts(r+1) }
+val b = produceFacts(#0)
+\end{scala}
+%
+The function |produceFacts(r)| writes the factorials into rows \SCALA{r until
+  firstEmpty}.  (The returned |Boolean| is a dummy value: it is necessary
+since all functions must return a result.)
+
+Being able to preform cell writes within a function is useful in applications
+where the number of cells written depends upon earlier calculations.  It
+allows a recursive function that keeps calculating and writing cells until a
+suitable end state is reached.
 
 Recall that the application treats any attempt to write to a non-empty cell as
 an error. 
@@ -388,6 +406,5 @@ for(r <- #0 to #5; c <- [#A, #C]; if r != #3)
   Cell(c+1,r) = Cell(c,r):Int + 3
 \end{scala}
 
-Like cell writes, a |for| loop may not occur within a function definition, or
-within a block expression: it may appear only at the top level or within
-another |for| statement.
+Like cell writes, a |for| loop normally occurs just at the top level of a
+script, but may also occur within a function definition or a block expression.

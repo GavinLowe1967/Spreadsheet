@@ -4,26 +4,22 @@ import Parser._
 
 /** A parser for statements. */
 object StatementParser extends Parser0 with StatementParserT{
-  // Parsing of expressions, cells.
   val expParser = new ExpParser(this)
-  //private val expParser = DeclarationParser.expParser
   private val expr = expParser.expr
   private val cell = expParser.cell
 
-  //import DeclarationParser.declaration
-
-
   import TypeParser.{typeP,ofType}
+
+  // ===== val declarations
 
   /** A parser for a value declaration, "val <name> = <expr>". */
   private def valDec: Parser[ValueDeclaration] =
     keyword("val") ~> name ~ (lit("=") ~> expr) > toPair(ValueDeclaration)
 
+  // ===== def declarations
+
   /** A parser for a list of parameters, "name1: type1, ..., namek: typek". */
-  private def params: Parser[List[(String,TypeT)]] = {
-    // def param: Parser[(String,TypeT)] = name ~ ofType // <~ lit(":")) ~ typeP
-    repSep(name ~ ofType, ",")
-  }
+  private def params: Parser[List[(String,TypeT)]] = repSep(name ~ ofType, ",")
 
   import FunctionType.TypeParameter
 
@@ -52,7 +48,6 @@ object StatementParser extends Parser0 with StatementParserT{
       (opt(ofType) ~ (lit("=") ~> expr)) >
     { case (((n,tps),ps), (ort,e)) => FunctionDeclaration(n, tps, ps, ort, e) }
 
-
   // ===== Assertions
 
   /** A parser for an assertion. */
@@ -61,10 +56,6 @@ object StatementParser extends Parser0 with StatementParserT{
       (opt(lit(",") ~> expr) <~ lit(")")) 
       > { case (e, None) => Assertion(e); case (e, Some(m)) => Assertion2(e,m) }
   )
-
-  /** A parser for a declaration: either a value or function declaration, or an
-    * assertion. */
-  private def declaration: Parser[Statement] = valDec | funDec | assertion
 
   // ===== Directives
 
@@ -94,22 +85,21 @@ object StatementParser extends Parser0 with StatementParserT{
   private def forLoop: Parser[ForStatement] = 
     keyword("for") ~> (qualifiers ~ block) > toPair(ForStatement)
 
-
   // ===== Top-level parsers
 
   /** A parser for a statement. */
   def statement: Parser[Statement] = withExtent(
-    directive | forLoop | declaration
+    valDec | funDec | assertion | directive | forLoop
   )
 
   /** A parser for multiple statements. */
-  private def statements: Parser[List[Statement]] = 
-    listOf(statement) <~ atEnd
+  private def statements: Parser[List[Statement]] = listOf(statement) <~ atEnd
 
   /** Try to parse `input`, returning either the result or an error message. */
-  def parseStatements(input: String): Either[List[Statement], String] = {
+  def parseStatements(input: String): Either[List[Statement], String] = 
     parseWith(statements, input)
-  }
+
+  // ===== Test hooks
 
   private val outer = this
 
@@ -118,5 +108,4 @@ object StatementParser extends Parser0 with StatementParserT{
     val statement = outer.statement
     val statements = outer.statements
   }
-
 }

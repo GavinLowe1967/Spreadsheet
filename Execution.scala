@@ -3,7 +3,6 @@ package spreadsheet
 import FunctionDeclaration.ParameterList
 import scala.collection.mutable.ArrayBuffer
 
-
 /** Object responsible for evaluating expressions and executing statements. */
 object Execution{
   // ===== Helper functions
@@ -164,13 +163,9 @@ object Execution{
       // If an error arises in performing stmts, it will be put in err.
       var err: ErrorValue = null
       def handleError(ev: ErrorValue) = { err = ev }
-      val ok = performAll(stmts, env1, handleError)
-      if(err == null) assert(ok)
-      if(ok && err == null){
-        // assert(err == null, err.toString)
-        eval(env1, exp) match{
-          case ev: ErrorValue => liftError(e, ev); case res => res
-        }
+      performAll(stmts, env1, handleError)
+      if(err == null) eval(env1, exp) match{
+        case ev: ErrorValue => liftError(e, ev); case res => res
       }
       else liftError(e, err)
 
@@ -337,12 +332,10 @@ object Execution{
     }
 
   /** Execute the elements of `statements` in `env`, handling errors with
-    * `handleError`.  Stop if an error occurs.
-    * @return true if all succeeded.  */
+    * `handleError`.  Stop if an error occurs.  */
   def performAll(
     statements: List[Statement], env: Environment, 
-    handleError: ErrorValue => Unit) 
-      : Boolean = {
+    handleError: ErrorValue => Unit)  = {
     // We evaluate the function declarations first, because it is legal to
     // make a forward reference to a function, and at this point the functions
     // are evaluated lazily (converted into Scala functions).
@@ -351,7 +344,6 @@ object Execution{
         statements.filter(! _.isInstanceOf[FunctionDeclaration])
     var ok = true; val iter = statements1.iterator
     while(ok && iter.hasNext) ok = perform(env, handleError, iter.next())
-    ok
   }
 
   /** Execute the for loop "for(binders) stmts". */
@@ -377,7 +369,6 @@ object Execution{
         case err: ErrorValue => handleError(err)
       }
     }
-
 
   // ========= Testing hooks
 

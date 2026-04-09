@@ -18,10 +18,12 @@ DeclarationTypeChecker. -- DONE
 
 4. Remove Declaration trait (Statement.scala) -- DONE
 
-5. Tidy up TypeChecker.scala, StatementParser.scala
+5. Tidy up TypeChecker.scala, StatementParser.scala -- DONE
 
 6. Tidy up Execution.scala, the result of performAll -- I don't think we ned it.
+But we do use the result of perform. -- DONE
 
+7. Add to manual -- DONE
 
 
 Not binding correclt in match expressions.  Fix then test. -- DONE
@@ -32,11 +34,15 @@ Script for alternative vote.
 
 2. Unary - and ! on expressions -- DONE
 
+2. Don't lift TypeErrors resulting from function calls -- they're confusing.  But do include linenumbers on other function calls.
+
 3. Allow function calls with result ignored.
 
 3. Add "if" directives.
 
 4. Haskell standard prelude.  Allow "include" statements
+- Change Input to use parallel array of (lineEnds,filename,linenumber) corresponding to lineEnds. 
+- Do initial insertion of included files, similar to getLineEnds. 
 
 5. Block comments. -- DONE
 -- Done, but test in interface, and add to TopLevelTest.
