@@ -3,40 +3,15 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
-* Allow cell writes in functions/blocks:
-
-1. Merge DeclarationTypeChecker and TypeChecker with TypeCheckerT trait.  Pass
-to ExpTypeChecker.  (b). Replace typeCheckDeclList by typeCheckStmtList
-(ExpTypeChecker.scala).  Replace Declaration by Statement in
-DeclarationTypeChecker. -- DONE
-
-2. Merge DeclarationParser and StatementParser.  Replace DeclarationParserT by
-  StatementParserT (ExpParser.scala) with "statement" command; Replace
-  Declaration in DeclarationParser.scala. -- DONE
-
-3. Allow Statements within BlockExp (Statement.scala). -- DONE
-
-4. Remove Declaration trait (Statement.scala) -- DONE
-
-5. Tidy up TypeChecker.scala, StatementParser.scala -- DONE
-
-6. Tidy up Execution.scala, the result of performAll -- I don't think we ned it.
-But we do use the result of perform. -- DONE
-
-7. Add to manual -- DONE
-
-
-Not binding correclt in match expressions.  Fix then test. -- DONE
-
 Script for alternative vote.
 
-1. Row/column subtraction -- DONE
+1. Don't lift TypeErrors resulting from function calls -- they're confusing.
+But do include linenumbers on other function calls. -- DONE
 
-2. Unary - and ! on expressions -- DONE
-
-2. Don't lift TypeErrors resulting from function calls -- they're confusing.  But do include linenumbers on other function calls.
-
-3. Allow function calls with result ignored.
+2. Allow function calls with result ignored.
+- Add Unit type and value, plus parsers
+- Allow block with no final expression
+- Parser for above; type checker gives UnitType; evaluation gives UnitValue.
 
 3. Add "if" directives.
 
@@ -44,15 +19,8 @@ Script for alternative vote.
 - Change Input to use parallel array of (lineEnds,filename,linenumber) corresponding to lineEnds. 
 - Do initial insertion of included files, similar to getLineEnds. 
 
-5. Block comments. -- DONE
--- Done, but test in interface, and add to TopLevelTest.
+4. toString functions.  + on strings.
 
-6. toString functions.  + on strings.
-
--- 
-
-
-* println
 
 
 
@@ -63,8 +31,10 @@ Priorities
 
 X. Manual -- keep updated.
 
-1. Larger example: alternative vote. -- avoid the "X2s.
+1. Larger example: alternative vote. 
 
+
+* println
 
 
 ---
@@ -123,6 +93,37 @@ Low Priority
 ======================================================================
 
 ===================================== DONE
+
+* Allow cell writes in functions/blocks:
+
+1. Merge DeclarationTypeChecker and TypeChecker with TypeCheckerT trait.  Pass
+to ExpTypeChecker.  (b). Replace typeCheckDeclList by typeCheckStmtList
+(ExpTypeChecker.scala).  Replace Declaration by Statement in
+DeclarationTypeChecker. -- DONE
+
+2. Merge DeclarationParser and StatementParser.  Replace DeclarationParserT by
+  StatementParserT (ExpParser.scala) with "statement" command; Replace
+  Declaration in DeclarationParser.scala. -- DONE
+
+3. Allow Statements within BlockExp (Statement.scala). -- DONE
+
+4. Remove Declaration trait (Statement.scala) -- DONE
+
+5. Tidy up TypeChecker.scala, StatementParser.scala -- DONE
+
+6. Tidy up Execution.scala, the result of performAll -- I don't think we ned it.
+But we do use the result of perform. -- DONE
+
+7. Add to manual -- DONE
+
+
+Not binding correclt in match expressions.  Fix then test. -- DONE
+
+1. Row/column subtraction -- DONE
+
+2. Unary - and ! on expressions -- DONE
+
+5. Block comments. -- DONE
 
 Tuples
 ------

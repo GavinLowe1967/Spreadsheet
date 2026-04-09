@@ -24,6 +24,25 @@ object Execution{
     } 
   }
 
+  /** Lift an EvalError value, but not other types of error, by tagging on the
+    * extent of e.
+    * @param lineNum if true, include line number. */
+  private 
+  def maybeLiftError(e: HasExtent, error: ErrorValue, lineNum: Boolean = false)
+      : ErrorValue = {
+    val extent = e.getExtent; assert(extent != null, s"Null extent in $e")
+    val lnString = if(lineNum) " at line "+extent.lineNumber else ""
+    def extend(msg: String) = s"$msg$lnString\nin \"${extent.asString}\""
+    error match{
+      case te: TypeError => te
+      case EvalError(msg) => EvalError(extend(msg))
+      case m: MultipleWriteError => m
+      //case m @ MultipleWriteError(sources) => m
+        // Note: this isn't quite right, as we'd like to lift the relevant
+        // element of sources
+    } 
+  }
+
   /** Extend f(v) to: cases where v is an ErrorValue (passing on the error,
     * lifting to e).  Other cases shouldn't happen. */ 
   private def lift(e: Exp)(f: PartialFunction[Value, Value], v: Value) : Value = 
@@ -149,7 +168,10 @@ object Execution{
       case fv : FunctionValue =>
         evalList(env, args) match{
           case Left(vs) => fv(vs) match{
-            case err: ErrorValue => liftError(e, err); case result => result
+            case err: ErrorValue => maybeLiftError(e, err, true)
+              // Don't lift TypeErrors here, as that's confusing.  But include
+              // line number for function call.
+            case result => result
           }
           case Right(err) => liftError(e, err)
         }
