@@ -91,7 +91,14 @@ case class Assertion2(condition: Exp, msg: Exp) extends Statement
 
 // =======================================================
 
+/** The call of expression e, which is expected to be a function call
+  * returning Unit. */
+case class CallStatement(e: Exp) extends Statement
+
 /* Note: we can't include this in Exp.scala, because it builds on Statement. */
 
-/** A block expression of the form { stmt_1; ...; stmt_n; exp }. */ 
+/** A block expression of the form { stmt_1; ...; stmt_n; exp }; or
+  * { stmt_1; ...; stmt_n } if exp = null. */ 
 case class BlockExp(stmts: List[Statement], exp: Exp) extends Exp
+ 
+ 

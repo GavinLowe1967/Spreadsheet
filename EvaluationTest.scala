@@ -39,6 +39,7 @@ object EvaluationTest{
     assert(eval("(2+3)*4 <= 6 || 6*7 == 42") == BoolValue(true))
     assert(eval("(2+3)*4 <= 6 && 6*7 == 42") == BoolValue(false))
     assertFail(eval("3/0+4")); assertFail(eval("2+5/0"))
+    assert(eval("()") == UnitValue)
     // "to" and "until"
     assert(eval("3 to 5") == ListValue(List(3,4,5).map(IntValue)))
     assert(eval("3 until 5") == ListValue(List(3,4).map(IntValue)))
@@ -70,6 +71,7 @@ object EvaluationTest{
     assert(eval("{ val x = 3 \n x+4 }") == IntValue(7))
     assert(eval("{ 4*5 }") == IntValue(20))
     assert(eval("{ #B3 = 4; 42 }") == IntValue(42))
+    assert(eval("{ #B3 = 4 }") == UnitValue)
     // ===== if statements
     assert(eval("if(2+2 == 4) 3 else 4+2") == IntValue(3))
     assert(eval("if(2+2 == 5) 3 else 4+2") == IntValue(6))

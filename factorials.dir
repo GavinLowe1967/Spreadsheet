@@ -21,3 +21,9 @@ for(r <- #0 until firstEmpty) Cell(Out,r) = fact(Cell(In,r))
 Cell(In, firstEmpty+1) = "Total:"
 Cell(Out, firstEmpty+1) = sum([Cell(Out,r): Int | r <- #0 until firstEmpty])
 
+// Now using a function to simulate the for loop
+def writeFacts(r: Row): Unit = 
+  if(r == firstEmpty) ()
+  else{ Cell(Out+1,r) = fact(Cell(In,r)); writeFacts(r+1) }
+
+writeFacts(#0)

@@ -35,6 +35,9 @@ object ExpParserTest extends ParserTest0{
     assert(expr("#Aa").asInstanceOf[Success[Exp]].result == ColumnExp("A"))
     Failure.reset
     assert(expr("#a").isInstanceOf[Failure])
+
+    assert(p("()") == UnitExp)
+    assert(p("(): Unit") == TypedExp(UnitExp,UnitType))
   }
 
   // ===== Cells
@@ -108,6 +111,9 @@ object ExpParserTest extends ParserTest0{
     assert(pe("{ 4*5 }") == IntValue(20))
     assert(p("{ #A3 = 2; 4 }") == BlockExp(
       List(Directive(ColumnExp("A"), RowExp(3), IntExp(2))), IntExp(4)
+    ))
+    assert(p("{ #A3 = 2 }")== BlockExp(
+      List(Directive(ColumnExp("A"), RowExp(3), IntExp(2))), null
     ))
 
     // ===== if statements

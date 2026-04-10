@@ -38,17 +38,16 @@ for(r <- #1 to #4; c <- [#B, #C]; if r != #2){
 }
 
 /** Produce factorials in rows row-end, excluding #2, column #D. */
-def produceFacts(row: Row, end: Row): Boolean = {
-  if(row == end) true
+def produceFacts(row: Row, end: Row): Unit = 
+  if(row == end) ()
   else{
     // IMPROVE: use "if" statement
-    val x = if(row != #2){ Cell(#D, row) = fact(Cell(#A,row)); 0 } else 1//0
+    if(row != #2){ Cell(#D, row) = fact(Cell(#A,row)) } else ()
     produceFacts(row+1, end)
   }
-}
 
 /* Produce factorials, rows #1, #3 and #4 in column #D. */
-val bbb = produceFacts(#1, #4)
+produceFacts(#1, #4) 
 
 val firstEmpty = firstEmptyInCol(#A, #1) // Should give #4
 Cell(#D, firstEmpty) = "first empty"

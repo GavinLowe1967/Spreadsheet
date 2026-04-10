@@ -80,6 +80,8 @@ case class StringExp(value: String) extends Exp{
   override def toString = value
 }
 
+case object UnitExp extends Exp
+
 // ==================================================================
  
 /** An application of a binary operator. */
@@ -222,7 +224,6 @@ case class FunctionApp(f: Exp, args: List[Exp]) extends Exp
 case class TypedExp(e: Exp, theType: TypeT) extends Exp{
   assert(!e.isInstanceOf[UntypedCellExp])
 }
-
 
 // ========= Note =========
 // Statement.scala contains another subclass, BlockExp.

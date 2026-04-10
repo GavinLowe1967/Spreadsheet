@@ -146,6 +146,7 @@ object StatementParserTest extends ParserTest0{
 
   /** Tests on "for" statements. */
   private def forStatements() = {
+    // println(ps("for (if true){ #A1 = 3 }"))
     assert(ps("for (if true){ #A1 = 3 }") == ForStatement(
       List(Filter(BoolExp(true))), 
       List(Directive(ColumnExp("A"), RowExp(1), IntExp(3))) ))

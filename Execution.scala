@@ -127,6 +127,7 @@ object Execution{
     case FloatExp(value) => FloatValue(value) 
     case BoolExp(value) => BoolValue(value)
     case StringExp(value) => StringValue(value)
+    case UnitExp => UnitValue
     case RowExp(row) => RowValue(row)
     case c @ ColumnExp(column) => ColumnValue(c.asInt)
 
@@ -186,8 +187,12 @@ object Execution{
       var err: ErrorValue = null
       def handleError(ev: ErrorValue) = { err = ev }
       performAll(stmts, env1, handleError)
-      if(err == null) eval(env1, exp) match{
-        case ev: ErrorValue => liftError(e, ev); case res => res
+      if(err == null){
+        if(exp != null)
+          eval(env1, exp) match{
+            case ev: ErrorValue => liftError(e, ev); case res => res
+          }
+          else UnitValue
       }
       else liftError(e, err)
 
@@ -332,6 +337,11 @@ object Execution{
       def he(ev: ErrorValue) = handleError(liftError(s, ev)) 
       performFor(env, he, binders, stmts); true
       // Note: always return true here.
+
+    case CallStatement(e) => eval(env, e) match{
+      case UnitValue => true
+      case ev: ErrorValue => handleError(liftError(s, ev)); false
+    }
   } // end of perform
 
   /** The Value that represents the function that takes the elements of paramss

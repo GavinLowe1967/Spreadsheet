@@ -68,9 +68,11 @@ object StatementParser extends Parser0 with StatementParserT{
   /** A parser for a single statement, or several statements in curly
     * brackets. */
   private def block: Parser[List[Statement]] = (
-    statement > ((s: Statement) => List(s))
-    | inBrackets(listOf(withExtent(statement)))
+    inBrackets(listOf(withExtent(statement)))
+    | statement > ((s: Statement) => List(s))
   )
+  // Note: the order is important, of else "{#A1 = 3}" gets parsed as
+  // List( CallStmt( BlockExp( List(Directive(...)), null ) ) ).
 
   /** A parser for a single qualifier in a "for" expression. */
   private def qualifier: Parser[Qualifier] = (
@@ -85,11 +87,17 @@ object StatementParser extends Parser0 with StatementParserT{
   private def forLoop: Parser[ForStatement] = 
     keyword("for") ~> (qualifiers ~ block) > toPair(ForStatement)
 
+  // ===== "call" statements
+
+  /** Parser for a CallStmt. */
+  private def callStmt: Parser[CallStatement] = expr > CallStatement
+  /* keyword("call") ~>*/
+
   // ===== Top-level parsers
 
   /** A parser for a statement. */
   def statement: Parser[Statement] = withExtent(
-    valDec | funDec | assertion | directive | forLoop
+    valDec | funDec | assertion | directive | forLoop | callStmt
   )
 
   /** A parser for multiple statements. */

@@ -47,6 +47,7 @@ object TypeCheckerTest{
       preludeTests()
       rtTests()
       tupleTests()
+      callTests()
     }
     println("Done")
   }

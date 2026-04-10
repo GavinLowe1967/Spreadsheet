@@ -132,6 +132,10 @@ case object StringType extends CellType{
   def asString = "String"
 }
 
+case object UnitType extends BaseType{
+  def asString = "Unit"
+}
+
 case object RowType extends EqType with BaseType{
   def asString = "Row"
 }

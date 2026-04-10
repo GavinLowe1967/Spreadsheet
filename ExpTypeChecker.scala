@@ -67,6 +67,7 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
     case FloatExp(v) => Ok((typeEnv,FloatType))
     case BoolExp(v) => Ok((typeEnv,BoolType))
     case StringExp(st) => Ok((typeEnv,StringType))
+    case UnitExp => Ok((typeEnv,UnitType))
     case RowExp(row) => Ok((typeEnv, RowType))
     case ColumnExp(column) => Ok((typeEnv, ColumnType))
     // Binary operators  
@@ -137,7 +138,10 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
       // Create a new scope for this block, but return to the outer scope at
       // the end.
       dtc.typeCheckStmtList(typeEnv.newScope, stmts).map{ te1 => 
-        typeCheckAndClose(te1, e).map{ case (te2, te) => Ok((te2.endScope, te)) }
+        if(e != null) typeCheckAndClose(te1, e).map{ 
+          case (te2, te) => Ok((te2.endScope, te)) 
+        }
+        else Ok((te1.endScope, UnitType))
       }.lift(exp)
       // Typed expressions
     case ListComprehension(e, qs) => 

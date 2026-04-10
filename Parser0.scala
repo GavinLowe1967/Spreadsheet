@@ -86,8 +86,13 @@ trait Parser0{
   /** A parser running `p` repeatedly, zero or more times, with separators in
     * between. */
   protected def listOf[A](p: Parser[A]): Parser[List[A]] = 
-    //repSep(p, separator)
     p ~~ repeat1(separator ~> p) > toPair(_::_) | success(List()) 
+
+  /** A parser running `p` repeatedly, one or more times, with separators in
+    * between. */
+  protected def listOfNonEmpty[A](p: Parser[A]): Parser[List[A]] = 
+    p ~~ repeat1(separator ~> p) > toPair(_::_)
+  //(p <~ separator) ~ listOf(p) > toPair(_::_)
 
   // ========= Adding Extent
 
@@ -104,11 +109,15 @@ trait Parser0{
 
 /** A parser for types. */
 object TypeParser extends Parser0{
+  /** A parser that consumes st and returns t. */
+  private def mkP[T](st: String, t: T): Parser[T] = 
+    keyword(st) ~~> success(t)
+
   /** A parser for a CellType. */
   def cellType: Parser[CellType] = (
-    keyword("Int") > { _ => IntType } | keyword("Float") > { _ => FloatType }
-    | keyword("Boolean") > { _ => BoolType }
-    | keyword("String") > { _ => StringType }
+    mkP("Int", IntType) | mkP("Float", FloatType)
+    |  mkP("Boolean", BoolType) | mkP("String", StringType)
+    // | keyword("Boolean")  > { _ => BoolType }
   )
 
   /** Parser for a tuple type or parenthesised type. */
@@ -122,7 +131,7 @@ object TypeParser extends Parser0{
     * type. */
   private def typeP1: Parser[TypeT] = (
     cellType
-    | keyword("Row") > { _ => RowType } | keyword("Column") > { _ => ColumnType }
+    | mkP("Unit", UnitType) | mkP("Row", RowType) | mkP("Column", ColumnType)
     | keyword("List") ~> inSquare(typeP) > { t => ListType(t) }
     | upperName > { n => TypeParam(n) }
     | tupleOrParens

@@ -9,7 +9,6 @@ trait StatementParserT{
   /** A parser for a statement. */
   def statement: Parser[Statement]
 }
- 
 
 /** A parser for expressions. */
 class ExpParser(stmtParser: StatementParserT) extends Parser0{
@@ -33,6 +32,9 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
     keyword("true") ~~> success(BoolExp(true))
     | keyword("false") ~~> success(BoolExp(false))
   )
+
+  /** Parser for the unit value. */
+  private val unit: Parser[Exp] = lit("()") ~~> success(UnitExp)
 
   /** A parser for an "if" expression. */
   private def ifP: Parser[IfExp] = withExtent(
@@ -153,7 +155,7 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
   /** A parser for an expression that can be used as an argument of a function
     * without parentheses, and not otherwise captured within factor0. */
   private def atomicParam: Parser[Exp] = 
-    string > StringExp | bool | rowOrColumn | list | block
+    string > StringExp | bool | unit | rowOrColumn | list | block
   // Note: numbers, and cell expressions such as #A3 are captured within
   // factor0.
 
@@ -212,14 +214,26 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
   )
 
   /** A parser for a block expression. */
-  private def block: Parser[BlockExp] = {
-    def body: Parser[(List[Statement], Exp)] = (
-      listOf(withExtent(stmtParser.statement)) ~~ (separator ~> expr)
-      | expr > { e => (List(), e) }
-    )
-   inBrackets(body) > toPair(BlockExp)
-  }
+  private def block: Parser[BlockExp] = 
+    lit("{") ~> listOfNonEmpty(withExtent(stmtParser.statement)) <~ lit("}") > {
+      stmts => stmts.last match{
+        case CallStatement(e) => BlockExp(stmts.init, e)
+        case _ => BlockExp(stmts, null)
+      }
+    }
 
+/*
+    def body: Parser[(List[Statement], Option[Exp])] = (
+      // expr > { e => (List(), Some(e)) }
+      listOfNonEmpty(withExtent(stmtParser.statement)) ~~ opt(separator ~> expr)
+      | expr > { e => (List(), Some(e)) }
+    )
+   inBrackets(body) > { // toPair(BlockExp)
+     case (sts, Some(e)) => BlockExp(sts,e)
+     case (sts, None) => BlockExp(sts,null)
+   }
+  }
+ */
   // ===== Prefix operators
 
   private def prefixOp: Parser[Exp] = 

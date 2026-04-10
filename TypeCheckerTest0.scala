@@ -98,6 +98,7 @@ object TypeCheckerTestExpr{
     assertEq(tcp("!true"), BoolType)
     assertEq(tcp("-{val x = 3; x+1}"), IntType)
     assertEq(tcp("- (3.4+2.5)"), FloatType)
+    assertEq(tcp("()"), UnitType)
 
     // "if" expressions
     assertEq(tcp("if(2 == 3) 4.6 else 5.2"), FloatType)
@@ -269,6 +270,19 @@ printErrors = false
     assertFail(tcp("get3((2,4))"))
   }
 
+  /** Tests on block expressions. */
+  def blockTests() = {
+    // Tests on block expressions
+    assertFail(tcp("{ val x = three; x + 1 }"))
+    assertFail(tcp("{ val x = 3; x + false }"))
+    assertEq(tcp("{ #A3 = 2; 4 }"), IntType)
+    // Unit-value blocks
+    assertEq(tcp("{ #A3 = 2 }"), UnitType)
+    assertEq(tcp("{ val x = 3 }"), UnitType)
+    // Check x doesn't leak.
+    assertFail(tcp("{ call{ val x = 3 }; x }"))
+  }
+
 
   /** Tests on expressions. */
   def expTests() = {
@@ -282,10 +296,6 @@ printErrors = false
     // Repeated names 
     assertFail(tcpss("val x = 4; val x = 5"))
     assertFail(tcpss("val x = 4; def x(): Int = 5"))
-
-    // Tests on block expressions
-    assertFail(tcp("{ val x = three; x + 1 }"))
-    assertFail(tcp("{ val x = 3; x + false }"))
-    assertEq(tcp("{ #A3 = 2; 4 }"), IntType)
+    blockTests()
   }
 }

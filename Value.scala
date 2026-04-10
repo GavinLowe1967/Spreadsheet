@@ -148,6 +148,12 @@ case class BoolValue(value: Boolean) extends Cell{
   override def forError = value.toString
 }
 
+case object UnitValue extends Value{
+  def getType = UnitType
+
+  override def forError = "()"
+}
+
 // ==================================================================
 
 /** A Row with value `row`, 0-based. */

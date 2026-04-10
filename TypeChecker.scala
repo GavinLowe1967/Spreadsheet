@@ -195,6 +195,11 @@ object TypeChecker extends TypeCheckerT{
           typeCheckUnifyAndClose(te, msg, StringType).map{ case (te1,_) => 
             Ok(te1) }
         }.lift(stmt)
+
+      case CallStatement(e) =>
+        typeCheckUnifyAndClose(typeEnv, e, UnitType).map{ 
+          case (te1, `UnitType`) => Ok(te1)
+        }.lift(stmt)
     } // end of "stmt match", typeCheckStmt
 
   /** Typecheck stmts in environment typeEnv. */

@@ -9,9 +9,23 @@ Script for alternative vote.
 But do include linenumbers on other function calls. -- DONE
 
 2. Allow function calls with result ignored.
-- Add Unit type and value, plus parsers
-- Allow block with no final expression
-- Parser for above; type checker gives UnitType; evaluation gives UnitValue.
+- Add Unit type and value, plus parsers -- DONE
+- Type checker and evaluation for unit value -- DONE
+- Allow block with no final expression, captured by null -- done
+- Parser for above -- DONE
+-  type checker gives UnitType; evaluation gives UnitValue. -- done
+- Statements corresponding to call of function: done parser and typechecker, but not fully tested. 
+- Execution
+
+Note:
+
+Parsing is a bit difficult.  If we don't use the "call" keyword, then in
+{ val x = 3; x+17 }, the final x+17 gets parsed as a statement.
+
+Change block parser to expect a sequence of Statements; then test whether the
+last is a CallStmt and if so set it as the expression field in the
+BlockExpression.
+
 
 3. Add "if" directives.
 

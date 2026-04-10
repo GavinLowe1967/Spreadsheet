@@ -292,4 +292,16 @@ object TypeCheckerTest4{
 
   }
 
+  def callTests() = {
+    
+
+    // =====
+    tcpss("def f() = {#A3 = 3}; f()") match{ case Ok(te) => 
+      assert(te("f") == FunctionType( List(), List(), UnitType))
+    // tcpss("def f() = {#A3 = 3}; call f()") match{ case Ok(te) => 
+    //   assert(te("f") == FunctionType( List(), List(), UnitType))
+    }
+// IMPROVE: it would be nice to avoid the brackets.  
+  }
+
 }
