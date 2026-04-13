@@ -8,10 +8,10 @@ object StatementParserTest extends ParserTest0{
 
   /** Parse st as a statement, and check its extent. */
   private def ps(st: String): Statement = {
-    val res = parseAll(statement, st); checkExtent(res.getExtent, st); res
+    val res = parseAll(statement, Input(st)); checkExtent(res.getExtent, st); res
   }
 
-  private def pss(st: String): List[Statement] = parseAll(statements,st)
+  private def pss(st: String): List[Statement] = parseAll(statements, Input(st))
 
   /** Tests on value declarartions and cell writes. */
   private def statements1() = {
@@ -71,7 +71,7 @@ object StatementParserTest extends ParserTest0{
         BinOp(NameExp("x"), "+", NameExp("y")) ))
     assert(ps("val c = #B \n") == ValueDeclaration("c", ColumnExp("B")))
 
-    assert(parseAll(TypeParser.typeP, "List[Boolean]") ==
+    assert(parseAll(TypeParser.typeP, Input("List[Boolean]")) ==
       ListType(BoolType))
     assert(ps("def add[A](x: Int, y: Int) : Int = x+y") == 
       FunctionDeclaration("add", List(("A",AnyTypeConstraint)),
@@ -174,7 +174,9 @@ object StatementParserTest extends ParserTest0{
     assert(ps("assert(2 > 3)") == Assertion(BinOp(IntExp(2), ">", IntExp(3))))
     assert(ps("assert(2 > 3, \"XXX\")") == 
       Assertion2(BinOp(IntExp(2), ">", IntExp(3)), StringExp("XXX")))
-    assert(parseStatements("assert(2,3,4)").isRight)
+    // Failure.reset
+    assert(parseStatements(Input("assert(2,3,4)")).isRight)
+    // assert(parseStatements(new Input("assert(2,3,4)")).isRight)
   }
 
   /** Tests on parsing of statements. */

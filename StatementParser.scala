@@ -103,8 +103,12 @@ object StatementParser extends Parser0 with StatementParserT{
   /** A parser for multiple statements. */
   private def statements: Parser[List[Statement]] = listOf(statement) <~ atEnd
 
+  // /** Try to parse `input`, returning either the result or an error message. */
+  // def parseStatements(input: String): Either[List[Statement], String] = 
+  //   parseWith(statements, input)
+
   /** Try to parse `input`, returning either the result or an error message. */
-  def parseStatements(input: String): Either[List[Statement], String] = 
+  def parseStatements(input: Input): Either[List[Statement], String] = 
     parseWith(statements, input)
 
   // ===== Test hooks

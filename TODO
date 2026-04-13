@@ -3,48 +3,44 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
-Script for alternative vote.
 
-1. Don't lift TypeErrors resulting from function calls -- they're confusing.
-But do include linenumbers on other function calls. -- DONE
+Allow "include" statements
 
-2. Allow function calls with result ignored.
-- Add Unit type and value, plus parsers -- DONE
-- Type checker and evaluation for unit value -- DONE
-- Allow block with no final expression, captured by null -- done
-- Parser for above -- DONE
--  type checker gives UnitType; evaluation gives UnitValue. -- done
-- Statements corresponding to call of function: done parser and typechecker, but not fully tested.  -- DONE, maybe test more
-- Execution -- DONE
+- Call sequence: Model.reloadScript -> Model.parseContents ->
+  StatementParser.parseStatements -> Parser.parseWith -> Parser.apply(st:
+  String) -> Parser.apply(in: Input).  Change these to use Input.
 
-Note:
+- Merge Model.removeComments with Input.getLine ends, to produce factory method.
 
-Parsing is a bit difficult.  If we don't use the "call" keyword, then in
-{ val x = 3; x+17 }, the final x+17 gets parsed as a statement.
-Change block parser to expect a sequence of Statements; then test whether the
-last is a CallStmt and if so set it as the expression field in the
-BlockExpression. -- DONE
+- Change Input to use parallel array of (lineEnds,filename,linenumber)
+  corresponding to line ends.
 
+- Extend this to also do includes of other files.  
 
-3. Add "if" directives.
-
-4. Haskell standard prelude.  Allow "include" statements
-- Change Input to use parallel array of (lineEnds,filename,linenumber) corresponding to lineEnds. 
 - Do initial insertion of included files, similar to getLineEnds. 
 
-4. toString functions.  + on strings.
+- Change use of getCurrentLine in Parser.parseWith to also give file name. 
 
+- Include filename in Extents. 
 
 
 
 Priorities
 ==========
 
+- Haskell standard prelude
+
+- Improve AV script
+
+- toString functions.  + on strings.
+
+- Add "if" directives.
+
 - Refactor Execution.scala?
 
 X. Manual -- keep updated.
 
-1. Larger example: alternative vote. 
+- Another example: admissions spreadsheet.
 
 
 * println
@@ -106,6 +102,28 @@ Low Priority
 ======================================================================
 
 ===================================== DONE
+
+
+1. Don't lift TypeErrors resulting from function calls -- they're confusing.
+But do include linenumbers on other function calls. -- DONE
+
+2. Allow function calls with result ignored.
+- Add Unit type and value, plus parsers -- DONE
+- Type checker and evaluation for unit value -- DONE
+- Allow block with no final expression, captured by null -- done
+- Parser for above -- DONE
+-  type checker gives UnitType; evaluation gives UnitValue. -- done
+- Statements corresponding to call of function: done parser and typechecker, but not fully tested.  -- DONE, maybe test more
+- Execution -- DONE
+
+Note:
+
+Parsing is a bit difficult.  If we don't use the "call" keyword, then in
+{ val x = 3; x+17 }, the final x+17 gets parsed as a statement.
+Change block parser to expect a sequence of Statements; then test whether the
+last is a CallStmt and if so set it as the expression field in the
+BlockExpression. -- DONE
+
 
 * Allow cell writes in functions/blocks:
 

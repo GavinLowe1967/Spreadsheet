@@ -46,9 +46,8 @@ abstract class Parser[+A] extends (Input => ParseResult[A]){
   def apply(in: Input): ParseResult[A]
 
   /** Apply this to `st`. */
-  def apply(st: String): ParseResult[A] = { 
-    Failure.reset; apply(new Input(st).dropWhite)
-  }
+  def apply(st: String): ParseResult[A] = apply(Input(st))
+    //Failure.reset; apply(new Input(st).dropWhite)
 
   /** The sequential composition of this and `q` (with no intervening space). */
   def ~~ [B](q: => Parser[B]) = new Parser[(A,B)]{
@@ -279,27 +278,50 @@ object Parser{
   /** A parser that applies `p` to an input in parentheses. */
   def inParens[A](p: => Parser[A]): Parser[A] =  lit("(") ~> p <~ lit(")")
 
+  /** Handle result of parsing.  If successful, return `Left` applied to the
+    * result; otherwise return `Right` applied to an error message. */
+  private 
+  def handleResult[A](res: ParseResult[A]): Either[A, String] = res match{
+    case Success(result, rest) =>
+      if(rest.dropWhite.isEmpty) Left(result)
+      else Right(s"Parser error: extra lost: \"$rest\"")
+    case f: Failure =>
+      val Some(Failure(msg, in)) = Failure.lastFailure
+      val (lineNum, colNum, currLine) = in.getCurrentLine
+      Right(s"$msg at line $lineNum: \n$currLine\n${" "*colNum}^")
+  }
+
   /** Parse `input` using `p`.  If successful, return `Left` applied to the
     * result; otherwise return `Right` applied to an error message. */
-  def parseWith[A](p: Parser[A], input: String): Either[A, String] = {
-    p(input) match{ 
-      case Success(result, rest) =>
-        if(rest.dropWhite.isEmpty) Left(result)
-        else Right(s"Parser error: extra lost: \"$rest\"")
-      case f: Failure => 
-        val Some(Failure(msg, in)) = Failure.lastFailure
-        val (lineNum, colNum, currLine) = in.getCurrentLine
-        Right(s"$msg at line $lineNum: \n$currLine\n${" "*colNum}^")
-    }
-  }
+  def parseWith[A](p: Parser[A], input: String): Either[A, String] = 
+    handleResult(p(input))
+  //  match{
+  //     case Success(result, rest) =>
+  //       if(rest.dropWhite.isEmpty) Left(result)
+  //       else Right(s"Parser error: extra lost: \"$rest\"")
+  //     case f: Failure => 
+  //       val Some(Failure(msg, in)) = Failure.lastFailure
+  //       val (lineNum, colNum, currLine) = in.getCurrentLine
+  //       Right(s"$msg at line $lineNum: \n$currLine\n${" "*colNum}^")
+  //   }
+  // }
+
+  /** Parse `input` using `p`.  If successful, return `Left` applied to the
+    * result; otherwise return `Right` applied to an error message. */
+  def parseWith[A](p: Parser[A], input: Input): Either[A, String] = 
+    handleResult(p(input))
 
   /** Parse `input` using `p`, allowing initial and trailing white space.
     * Expect all the input to be consumed, and return the result. */
-  def parseAll[A](p: Parser[A], input: String) = 
-    parseWith(p, input) match{
-      case Left(result) => result
-      case Right(msg) => println(msg); sys.exit()
-    }
+  def parseAll[A](p: Parser[A], input: String): A = 
+    parseAll(p, Input(input))
+
+  /** Parse `input` using `p`, allowing initial and trailing white space.
+    * Expect all the input to be consumed, and return the result. */
+  def parseAll[A](p: Parser[A], input: Input): A = parseWith(p, input) match{
+    case Left(result) => result
+    case Right(msg) => println(msg); sys.exit()
+  }
 
   // ========= Specific parsers
 
@@ -366,10 +388,9 @@ object Parser{
     assert(parseAll(p2, "  Hello \t \n  world  ") == "Hello#world")
 
     // Tests on int
-    assert(parseAll(int, "1234") == 1234)   //println(int(new Input("1234")))
-    assert(parseAll(int, "-234") == -234) // println(int(new Input("-1234")))
-    // println("X"); println(int("one"))
-    assert(int("one").isInstanceOf[Failure])   // println(int(new Input("one")))
+    assert(parseAll(int, "1234") == 1234) 
+    assert(parseAll(int, "-234") == -234) 
+    assert(int("one").isInstanceOf[Failure])
 
     assert(parseAll(name, " fooBar5 ") == "fooBar5")
     assert(name("foo!Bar").asInstanceOf[Success[String]].get == "foo") 

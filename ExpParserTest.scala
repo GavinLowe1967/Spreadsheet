@@ -209,7 +209,7 @@ object ExpParserTest extends ParserTest0{
 
   private def blockComments() = {
     // Remove comments and parse st
-    import Model.removeComments
+    import Input.TestHooks.removeComments
     def p1(st: String) = p(removeComments(st))
 
     assert(p1("2 +/* comment */2") == BinOp(IntExp(2), "+", IntExp(2)))

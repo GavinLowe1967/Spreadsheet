@@ -101,7 +101,7 @@ class Input(
 
 object Input{
   /** Get the indices of ends of lines in st. */
-  def getLineEnds(st: Array[Char]): Array[Int] = {
+  private def getLineEnds(st: Array[Char]): Array[Int] = {
     val le = new scala.collection.mutable.ArrayBuffer[Int]; le += -1
     var i = 0; val len = st.length
     while(i < len){
@@ -112,6 +112,48 @@ object Input{
     // positions in the file are strictly before the last line end.
     le += len+1; le.toArray
   }
+
+  /** Remove comments from st.  Return null if it contains an unclosed block
+    * comment. */
+  private def removeComments(st: String): String = {
+    var i = 0; val sb = new StringBuilder; val len = st.length
+    while(i < len){
+      // Is the next character '/', not at the end of the file?
+      val slash = st(i) == '/' && i+1 < len
+      if(slash && st(i+1) == '/'){ // advance to end of line
+        i += 2; while(i < len && st(i) != '\n') i += 1
+      }
+      else if(slash && st(i+1) == '*'){
+        // Scan for corresponding "*/". `nesting` records the current level of
+        // nesting of block comments.
+        var nesting = 1; i += 2
+        while(i < len && nesting > 0){
+          if(st(i) == '*' && i+1 < len && st(i+1) == '/'){ nesting -= 1; i += 2 }
+          else if(st(i) == '/' && i+1 < len && st(i+1) == '*'){ // nested comment
+            nesting += 1; i += 2
+          }
+          else if(st(i) == '\n'){ sb += st(i); i += 1 } // for line numbers
+          else i += 1
+        }
+        if(nesting > 0) return null
+      }
+      else{ sb += st(i); i += 1 }
+    }
+    sb.toString
+  }
+
+  /** Factory method.  Returns null if there is an unclosed block comment. */
+  def apply(st: String): Input = {
+    Failure.reset; val fContents = removeComments(st) 
+    if(fContents != null) new Input(fContents).dropWhite
+    else null
+  }
+
+  private val outer = this
+  object TestHooks{
+    val removeComments = outer.removeComments _ 
+  }
+
 }
 
 // =======================================================

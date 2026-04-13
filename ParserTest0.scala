@@ -21,11 +21,11 @@ trait ParserTest0{
   }
 
   // Parse as expression
-  def p0(st: String): Exp = parseAll(expr, st)
+  def p0(st: String): Exp = parseAll(expr, Input(st))
   
   // Parse as expression, and check extent
   def p(st: String): Exp = {
-    val e = parseAll(expr, st); checkExtent(e.getExtent, st); e
+    val e = p0(st); checkExtent(e.getExtent, st); e
   }
 
   var printParseErrors = false
@@ -39,7 +39,7 @@ trait ParserTest0{
   
   // Parse and print the extent
   def pp(st: String) = {
-    val e = parseAll(expr, st); println(s"$e.")
+    val e = p0(st); println(s"$e.")
     println("\""+e.getExtent.asString+"\""); checkExtent(e.getExtent, st)
   }
 

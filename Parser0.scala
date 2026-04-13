@@ -172,7 +172,7 @@ object CellParser extends Parser0{
   )
 
   /** Parse a value input into a cell.  Called by Spreadsheet. */
-  def apply(st: String): Cell = parseAll(userValue, st)
+  def apply(st: String): Cell = parseAll(userValue, Input(st))
 }
 
 // =======================================================
@@ -203,5 +203,5 @@ object CSVParser extends Parser0{
   def line: Parser[List[Cell]] = repSep(field, ",") <~ atEnd
 
   /** Parse `st`. */
-  def apply(st: String): List[Cell] = parseAll(line, st)
+  def apply(st: String): List[Cell] = parseAll(line, Input(st))
 }
