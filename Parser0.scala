@@ -203,5 +203,5 @@ object CSVParser extends Parser0{
   def line: Parser[List[Cell]] = repSep(field, ",") <~ atEnd
 
   /** Parse `st`. */
-  def apply(st: String): List[Cell] = parseAll(line, Input(st))
+  def apply(st: String): List[Cell] = parseAll(line, Input.fromField(st))
 }

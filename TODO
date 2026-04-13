@@ -8,9 +8,11 @@ Allow "include" statements
 
 - Call sequence: Model.reloadScript -> Model.parseContents ->
   StatementParser.parseStatements -> Parser.parseWith -> Parser.apply(st:
-  String) -> Parser.apply(in: Input).  Change these to use Input.
+  String) -> Parser.apply(in: Input).  Change these to use Input. -- DONE
 
-- Merge Model.removeComments with Input.getLine ends, to produce factory method.
+- Produce factory method for Input -- DONE
+
+- Merge Model.removeComments with Input.getLine ends,.
 
 - Change Input to use parallel array of (lineEnds,filename,linenumber)
   corresponding to line ends.

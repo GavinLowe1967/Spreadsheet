@@ -47,7 +47,6 @@ abstract class Parser[+A] extends (Input => ParseResult[A]){
 
   /** Apply this to `st`. */
   def apply(st: String): ParseResult[A] = apply(Input(st))
-    //Failure.reset; apply(new Input(st).dropWhite)
 
   /** The sequential composition of this and `q` (with no intervening space). */
   def ~~ [B](q: => Parser[B]) = new Parser[(A,B)]{

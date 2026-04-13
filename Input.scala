@@ -1,5 +1,5 @@
 package spreadsheet
-
+import scala.collection.mutable.ArrayBuffer
 
 /** An input corresponding to `text` from `pos` onwards.
   * @param lineEnds an array giving the indices of ends of lines (including -1
@@ -9,7 +9,7 @@ class Input(
     private val lineEnds: Array[Int]
 ){
   /** Auxilliary constructor. */
-  def this(st: String) = this(st.toArray, 0, Input.getLineEnds(st.toArray))
+  // def this(st: String) = this(st.toArray, 0, Input.getLineEnds(st.toArray))
 
   private val len = text.length
 
@@ -50,8 +50,7 @@ class Input(
   /** An `Input` corresponding to dropping all white space from the start of
     * this. */
   def dropWhite = {
-    def isWhite(c: Char) = c == ' ' || c == '\t' || c == '\n'
-    var p = pos; while(p < len && isWhite(text(p))) p += 1
+    val p = Input.findNonWhite(text, pos)
     if(p == pos) this else new Input(text, p, lineEnds)
   }
 
@@ -100,6 +99,8 @@ class Input(
 // ==================================================================
 
 object Input{
+
+/*
   /** Get the indices of ends of lines in st. */
   private def getLineEnds(st: Array[Char]): Array[Int] = {
     val le = new scala.collection.mutable.ArrayBuffer[Int]; le += -1
@@ -112,47 +113,117 @@ object Input{
     // positions in the file are strictly before the last line end.
     le += len+1; le.toArray
   }
+ */
 
   /** Remove comments from st.  Return null if it contains an unclosed block
     * comment. */
-  private def removeComments(st: String): String = {
-    var i = 0; val sb = new StringBuilder; val len = st.length
+  // private def removeComments(st: String): String = {
+  //   var i = 0; val sb = new StringBuilder; val len = st.length
+  //   while(i < len){
+  //     // Is the next character '/', not at the end of the file?
+  //     val slash = st(i) == '/' && i+1 < len
+  //     if(slash && st(i+1) == '/'){ // advance to end of line
+  //       i += 2; while(i < len && st(i) != '\n') i += 1
+  //     }
+  //     else if(slash && st(i+1) == '*'){
+  //       // Scan for corresponding "*/". `nesting` records the current level of
+  //       // nesting of block comments.
+  //       var nesting = 1; i += 2
+  //       while(i < len && nesting > 0){
+  //         if(st(i) == '*' && i+1 < len && st(i+1) == '/'){ nesting -= 1; i += 2 }
+  //         else if(st(i) == '/' && i+1 < len && st(i+1) == '*'){ // nested comment
+  //           nesting += 1; i += 2
+  //         }
+  //         else if(st(i) == '\n'){ sb += st(i); i += 1 } // for line numbers
+  //         else i += 1
+  //       }
+  //       if(nesting > 0) return null
+  //     }
+  //     else{ sb += st(i); i += 1 }
+  //   }
+  //   sb.toString
+  // }
+
+
+  /** The position of the first non-white character from pos onwards. */
+  private def findNonWhite(text: Array[Char], pos: Int): Int = {
+    def isWhite(c: Char) = c == ' ' || c == '\t' || c == '\n'
+    var p = pos; while(p < text.length && isWhite(text(p))) p += 1
+    p
+  }
+
+  /** Preprocess text, removing comments, and giving array of indices
+    * corresponding to newlines.  Returns (null,null) if there is an unclosed
+    * comment.*/
+  private def preprocess(text: Array[Char]): (Array[Char], Array[Int]) = {
+    var i = 0; val len = text.length; val ab = new ArrayBuffer[Char]
+    val le = new ArrayBuffer[Int]; le += -1 // for line ends
     while(i < len){
       // Is the next character '/', not at the end of the file?
-      val slash = st(i) == '/' && i+1 < len
-      if(slash && st(i+1) == '/'){ // advance to end of line
-        i += 2; while(i < len && st(i) != '\n') i += 1
+      val slash = text(i) == '/' && i+1 < len
+      if(slash && text(i+1) == '/'){ // advance to end of line
+        i += 2; while(i < len && text(i) != '\n') i += 1
       }
-      else if(slash && st(i+1) == '*'){
+      else if(slash && text(i+1) == '*'){
         // Scan for corresponding "*/". `nesting` records the current level of
         // nesting of block comments.
         var nesting = 1; i += 2
         while(i < len && nesting > 0){
-          if(st(i) == '*' && i+1 < len && st(i+1) == '/'){ nesting -= 1; i += 2 }
-          else if(st(i) == '/' && i+1 < len && st(i+1) == '*'){ // nested comment
+          if(text(i) == '*' && i+1 < len && text(i+1) == '/'){ 
+            nesting -= 1; i += 2 
+          }
+          else if(text(i) == '/' && i+1 < len && text(i+1) == '*'){ 
+            // nested comment
             nesting += 1; i += 2
           }
-          else if(st(i) == '\n'){ sb += st(i); i += 1 } // for line numbers
+          else if(text(i) == '\n'){ // retain as a separator
+            le += ab.length; ab += text(i); i += 1 
+          }
           else i += 1
         }
-        if(nesting > 0) return null
+        if(nesting > 0) return (null,null)
       }
-      else{ sb += st(i); i += 1 }
+      else{ 
+        if(text(i) == '\n') le += ab.length
+        ab += text(i); i += 1 
+      }
     }
-    sb.toString
+    le += ab.length+1
+    (ab.toArray, le.toArray)
   }
 
   /** Factory method.  Returns null if there is an unclosed block comment. */
   def apply(st: String): Input = {
-    Failure.reset; val fContents = removeComments(st) 
-    if(fContents != null) new Input(fContents).dropWhite
+    Failure.reset; val (text, lineEnds) = preprocess(st.toArray)
+    if(text != null){
+      val pos = findNonWhite(text, 0); new Input(text, pos, lineEnds)
+    }
     else null
   }
+/*
+    val fContents = removeComments(st)
+    if(fContents != null){ 
+      val (text1,lineEnds1) = preprocess(st.toArray)
+      val text = fContents.toArray; val lineEnds = getLineEnds(text)
 
-  private val outer = this
-  object TestHooks{
-    val removeComments = outer.removeComments _ 
+      assert(text.sameElements(text1), text.mkString+"\n"+text1.mkString)
+      assert(lineEnds.sameElements(lineEnds1), 
+        "\n"+lineEnds.mkString(",")+"\n"+lineEnds1.mkString(","))
+ 
+      println("lineEnds:  "+lineEnds.mkString(","))
+      println("lineEnds1: "+lineEnds1.mkString(","))
+ */
+
+  /** Produce an Input corresponding to a field in a CSV file. */
+  def fromField(st: String) = {
+    Failure.reset; val text = st.toArray; val lineEnds = Array(-1, text.length+1)
+    new Input(text, 0, lineEnds)
   }
+
+  // private val outer = this
+  // object TestHooks{
+  //   val removeComments = outer.removeComments _ 
+  // }
 
 }
 
