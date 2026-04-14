@@ -12,20 +12,28 @@ Allow "include" statements
 
 - Produce factory method for Input -- DONE
 
-- Merge Model.removeComments with Input.getLine ends,.
+- Merge Model.removeComments with Input.getLine ends,. -- DONE
 
 - Change Input to use parallel array of (lineEnds,filename,linenumber)
-  corresponding to line ends.
+  corresponding to line ends. -- DONE
+---- Including other file, but need to store line numbers.  
 
-- Extend this to also do includes of other files.  
+- Extend this to also do includes of other files.  -- DONE
 
-- Do initial insertion of included files, similar to getLineEnds. 
+- Do initial insertion of included files, similar to getLineEnds. -- DONE
 
-- Change use of getCurrentLine in Parser.parseWith to also give file name. 
+- Change use of getCurrentLine in Parser.parseWith to also give file name --
+  just return a String. -- DONE
 
-- Include filename in Extents. 
+
+- Include filename in Extents.  In fact, replace lineNumber by a String
+  "<linenumber> of <filename>". -- DONE
 
 
+- Also handle incorrect #include lines and unclosed block comments.  Change
+  preprocess to return Either[(_,_,_,_), String] value.  Have Input.apply
+  assume correct result.  Have fromFile return Either[Input,String], and for
+  Model.reloadScript to act appropriately.
 
 Priorities
 ==========

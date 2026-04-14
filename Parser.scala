@@ -292,18 +292,8 @@ object Parser{
 
   /** Parse `input` using `p`.  If successful, return `Left` applied to the
     * result; otherwise return `Right` applied to an error message. */
-  def parseWith[A](p: Parser[A], input: String): Either[A, String] = 
+  def parseWith[A](p: Parser[A], input: String): Either[A, String] =
     handleResult(p(input))
-  //  match{
-  //     case Success(result, rest) =>
-  //       if(rest.dropWhite.isEmpty) Left(result)
-  //       else Right(s"Parser error: extra lost: \"$rest\"")
-  //     case f: Failure => 
-  //       val Some(Failure(msg, in)) = Failure.lastFailure
-  //       val (lineNum, colNum, currLine) = in.getCurrentLine
-  //       Right(s"$msg at line $lineNum: \n$currLine\n${" "*colNum}^")
-  //   }
-  // }
 
   /** Parse `input` using `p`.  If successful, return `Left` applied to the
     * result; otherwise return `Right` applied to an error message. */
@@ -378,20 +368,23 @@ object Parser{
 
   /** Some tests. */
   def main(args: Array[String]) = {
+    def parseAll1[A](p: Parser[A], st: String): A =
+      parseAll(p, Input(st, ""))
+
     // Generic tests on combinators
     val p = lit("Hello") ~~ (lit(" world") | lit(" all")) > toPair(_+_)
-    assert(parseAll(p, "Hello world") == "Hello world")
+    assert(parseAll1(p, "Hello world") == "Hello world")
 
     val p2 = lit("Hello") ~ (lit("world") | lit("all")) > 
       { case (s1,s2) => s1+"#"+s2 }
-    assert(parseAll(p2, "  Hello \t \n  world  ") == "Hello#world")
+    assert(parseAll1(p2, "  Hello \t \n  world  ") == "Hello#world")
 
     // Tests on int
-    assert(parseAll(int, "1234") == 1234) 
-    assert(parseAll(int, "-234") == -234) 
+    assert(parseAll1(int, "1234") == 1234) 
+    assert(parseAll1(int, "-234") == -234) 
     assert(int("one").isInstanceOf[Failure])
 
-    assert(parseAll(name, " fooBar5 ") == "fooBar5")
+    assert(parseAll1(name, " fooBar5 ") == "fooBar5")
     assert(name("foo!Bar").asInstanceOf[Success[String]].get == "foo") 
     assert(name("FooBar").isInstanceOf[Failure])  // 
     println(name("foo bar"))

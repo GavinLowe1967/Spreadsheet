@@ -215,7 +215,6 @@ object ExpParserTest extends ParserTest0{
     assert(p0("4/* X  */2") == IntExp(42))
     assert(p0("4/* /* X */ */2") == IntExp(42))
     assert(Input("/* \n /* */ 5") == null)
-//    assert(removeComments("/* \n /* */ 5") == null)
   }
 
   /** Tests of expression parsers. */

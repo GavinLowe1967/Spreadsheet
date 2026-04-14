@@ -30,12 +30,15 @@ $(DIR)/Statement.class: $(DIR)/Exp.class
 
 # Evaluation/execution
 
+$(DIR)/CellWriteSource.class: $(DIR)/Input.class $(DIR)/Statement.class $(DIR)/Value.class
+
 $(DIR)/EvaluationTypeEnv.class: $(DIR)/TypeConstraint.class
 
 $(DIR)/Reply.class: $(DIR)/HasExtent.class
 
 $(DIR)/EvaluationTypeChecker.class: $(DIR)/EvaluationTypeEnv.class	\
   $(DIR)/Reply.class
+
 
 $(DIR)/Environment.class: $(DIR)/CellWriteSource.class $(DIR)/BuiltInFunctions.class $(DIR)/EvaluationTypeEnv.class
 # $(DIR)/EvaluationTypeChecker.class	\

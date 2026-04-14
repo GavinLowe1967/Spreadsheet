@@ -172,7 +172,7 @@ object CellParser extends Parser0{
   )
 
   /** Parse a value input into a cell.  Called by Spreadsheet. */
-  def apply(st: String): Cell = parseAll(userValue, Input(st))
+  def apply(st: String): Cell = parseAll(userValue, Input.fromField(st))
 }
 
 // =======================================================

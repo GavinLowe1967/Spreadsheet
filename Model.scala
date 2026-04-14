@@ -30,9 +30,7 @@ class Model(val height: Int, val width: Int){
   }
 
   /** Parse the contents of a file (with comments removed). */
-  private def parseContents(input: Input) /*(fContents: String)*/ = {
-    // Failure.reset
-    // val input = new Input(fContents).dropWhite
+  private def parseContents(input: Input) = {
     StatementParser.parseStatements(input) match{
       case Left(ss) =>
         TypeChecker(ss) match{
@@ -48,11 +46,9 @@ class Model(val height: Int, val width: Int){
   /** Reload script from the saved filename. */
   def reloadScript() = {
     env.reset(); view.clearInfo()
-    val input = Input(scala.io.Source.fromFile(scriptName).mkString)
+    val input = Input.fromFile(scriptName) 
+    // Input(scala.io.Source.fromFile(scriptName).mkString, scriptName)
     if(input != null) parseContents(input)
-    // val fContents = 
-    //   Input.removeComments(scala.io.Source.fromFile(scriptName).mkString) 
-    // if(fContents != null) parseContents(fContents)
     else view.addInfo(s"Parse error: unclosed block comment")
   }
 
@@ -89,17 +85,12 @@ class Model(val height: Int, val width: Int){
       for(r <- 0 until lines.length){
         val fields = CSVParser(lines(r)).toArray 
         for(c <- 0 until fields.length) 
-          //env.setUserCell(c, r, fields(c).withCellSource(c,r))
           env.setUserCell(c, r, fields(c).withCSource(CellSource(c,r)))
       }
     }
+    else println(s"File not found: $sheetName")
   }
 
-  // private val outer = this
-
-  // object Testhooks{
-  //   val removeComments = outer.removeComments _
-  // }
 
 }
 

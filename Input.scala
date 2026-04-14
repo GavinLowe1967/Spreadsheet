@@ -1,16 +1,18 @@
 package spreadsheet
 import scala.collection.mutable.ArrayBuffer
+// import scala.io.Source
 
 /** An input corresponding to `text` from `pos` onwards.
   * @param lineEnds an array giving the indices of ends of lines (including -1
-  * and the overall length). */
+  * and the overall length). 
+  * @param lineNumbers an array giving line numbers in the associated file; the
+  * line starting lineEnds(i)+1 is line lineNumbers(i) of the file.
+  * @param filenames the corresponding filenames.
+  */
 class Input(
-    private val text: Array[Char], private val pos: Int = 0,
-    private val lineEnds: Array[Int]
+  private val text: Array[Char], private val pos: Int = 0,
+  lineEnds: Array[Int], linenumbers: Array[Int], filenames: Array[String]
 ){
-  /** Auxilliary constructor. */
-  // def this(st: String) = this(st.toArray, 0, Input.getLineEnds(st.toArray))
-
   private val len = text.length
 
   /* This represents text[pos..len). */
@@ -19,11 +21,6 @@ class Input(
 
   require(pos <= len,
     s"Advanced beyond end of ${text.mkString}: pos = $pos; len = $len")
-
-  /** Indices of ends of lines. */
-  // private val lineEnds: Array[Int] = {
-  //   val les = new ArrayBuffer[Int]
-  // }
 
   /** Is this empty, i.e. all the original text has been consumed. */
   def isEmpty = pos == len
@@ -45,13 +42,13 @@ class Input(
   }
 
   /** An `Input` corresponding to advancing `k` places in this. */
-  def advance(k: Int) = new Input(text, pos+k, lineEnds)
+  def advance(k: Int) = new Input(text, pos+k, lineEnds, linenumbers, filenames)
 
   /** An `Input` corresponding to dropping all white space from the start of
     * this. */
   def dropWhite = {
     val p = Input.findNonWhite(text, pos)
-    if(p == pos) this else new Input(text, p, lineEnds)
+    if(p == pos) this else new Input(text, p, lineEnds, linenumbers, filenames)
   }
 
   /** Create an Extent corresponding to the prefix of this up until the start of
@@ -81,8 +78,9 @@ class Input(
     text.drop(pos).take(i-pos max 20).mkString
   }
 
-  /** Get the current line: line number, column number, and contents. */
-  def getCurrentLine: (Int, Int, String) = {
+  /** Get the current line: a string giving the line number and optionally the
+    * filename; the column number; and contents. */
+  def getCurrentLine: (String, Int, String) = {
     // Find j s.t. le[0..j) <= pos < le[j..)
     // Inv le[0..i) <= pos < le[j..)
     require(pos < lineEnds.last, s"$pos ${lineEnds.last}")
@@ -91,60 +89,17 @@ class Input(
       val m = (i+j)/2 // i <= m < j
       if(lineEnds(m) <= pos) i = m+1 else j = m
     }
-    assert(j > 0) 
-    (j, pos-lineEnds(j-1)-1, text.slice(lineEnds(j-1)+1, lineEnds(j)).mkString)
+    assert(j > 0)
+    val thisLine = text.slice(lineEnds(j-1)+1, lineEnds(j)).mkString
+    val fname = filenames(j-1); val linenumber = linenumbers(j-1).toString
+    val lineString = if(fname.isEmpty) linenumber else s"$linenumber of $fname"
+    (lineString, pos-lineEnds(j-1)-1, thisLine)
   }
 }
 
 // ==================================================================
 
 object Input{
-
-/*
-  /** Get the indices of ends of lines in st. */
-  private def getLineEnds(st: Array[Char]): Array[Int] = {
-    val le = new scala.collection.mutable.ArrayBuffer[Int]; le += -1
-    var i = 0; val len = st.length
-    while(i < len){
-      if(st(i) == '\n') le += i 
-      i += 1
-    }
-    // Note: we add a sentinel beyond the end of the input, to ensure all
-    // positions in the file are strictly before the last line end.
-    le += len+1; le.toArray
-  }
- */
-
-  /** Remove comments from st.  Return null if it contains an unclosed block
-    * comment. */
-  // private def removeComments(st: String): String = {
-  //   var i = 0; val sb = new StringBuilder; val len = st.length
-  //   while(i < len){
-  //     // Is the next character '/', not at the end of the file?
-  //     val slash = st(i) == '/' && i+1 < len
-  //     if(slash && st(i+1) == '/'){ // advance to end of line
-  //       i += 2; while(i < len && st(i) != '\n') i += 1
-  //     }
-  //     else if(slash && st(i+1) == '*'){
-  //       // Scan for corresponding "*/". `nesting` records the current level of
-  //       // nesting of block comments.
-  //       var nesting = 1; i += 2
-  //       while(i < len && nesting > 0){
-  //         if(st(i) == '*' && i+1 < len && st(i+1) == '/'){ nesting -= 1; i += 2 }
-  //         else if(st(i) == '/' && i+1 < len && st(i+1) == '*'){ // nested comment
-  //           nesting += 1; i += 2
-  //         }
-  //         else if(st(i) == '\n'){ sb += st(i); i += 1 } // for line numbers
-  //         else i += 1
-  //       }
-  //       if(nesting > 0) return null
-  //     }
-  //     else{ sb += st(i); i += 1 }
-  //   }
-  //   sb.toString
-  // }
-
-
   /** The position of the first non-white character from pos onwards. */
   private def findNonWhite(text: Array[Char], pos: Int): Int = {
     def isWhite(c: Char) = c == ' ' || c == '\t' || c == '\n'
@@ -152,12 +107,41 @@ object Input{
     p
   }
 
-  /** Preprocess text, removing comments, and giving array of indices
-    * corresponding to newlines.  Returns (null,null) if there is an unclosed
-    * comment.*/
-  private def preprocess(text: Array[Char]): (Array[Char], Array[Int]) = {
+  /** Get a filename, expected to be inclosed in quotation marks, starting from
+    * position i0 in text.  Return the filename and the index of the next
+    * character. */
+  private def getFilename(text: Array[Char], i0: Int): (String, Int) = {
+    var i = i0; val len = text.length
+    while(i < len && text(i) == ' ') i += 1
+    assert(i < len && text(i) == '"') // FIXME
+    i += 1; val start = i
+    while(i < len && text(i) != '"' && text(i) != '\n') i += 1
+    assert(i < len && text(i) == '"') // FIXME
+// FIXME: don't allow anything else on line; but don't consume newline
+    val filename = text.slice(start,i).mkString
+    // println(s"Including $filename")
+    (filename, i+1)
+  }
+
+  /** Preprocess text.  Returns a tuple (processed, lineEnds, lineNumbers,
+    * filenames) where (1) processed is text with comments removed and
+    * included files in-lined; (2) lineEnds is an array of indices into
+    * processed giving the ends of lines; (3) each lineNumbers(i) is the line
+    * number of the line starting at lineEnds(i)+1; (4) filenames(i) is the
+    * corresponding filename.  Returns (null,null,null,null) if there is an
+    * unclosed comment.*/
+  private def preprocess(text: Array[Char], filename: String)
+      : (Array[Char], Array[Int], Array[Int], Array[String]) = {
     var i = 0; val len = text.length; val ab = new ArrayBuffer[Char]
+    var linenumber = 1
+    val linenumbers = new ArrayBuffer[Int]; linenumbers += linenumber
     val le = new ArrayBuffer[Int]; le += -1 // for line ends
+    val filenames = new ArrayBuffer[String]; filenames += filename
+    // Record an end of line
+    def newline() = {
+      le += ab.length; linenumber += 1; 
+      linenumbers += linenumber; filenames += filename
+    }
     while(i < len){
       // Is the next character '/', not at the end of the file?
       val slash = text(i) == '/' && i+1 < len
@@ -177,53 +161,60 @@ object Input{
             nesting += 1; i += 2
           }
           else if(text(i) == '\n'){ // retain as a separator
-            le += ab.length; ab += text(i); i += 1 
+            newline(); ab += text(i); i += 1
           }
           else i += 1
         }
-        if(nesting > 0) return (null,null)
+        if(nesting > 0) return (null,null,null,null)
+      } // end of "*" case
+      else if(text.slice(i, i+8).mkString == "#include"){
+        // Find filename
+        val (incFilename,j) = getFilename(text,i+8); i = j
+        val included = scala.io.Source.fromFile(incFilename).toArray
+        val (text1, lineEnds1, linenumbers1, filenames1) = 
+          preprocess(included, incFilename)
+        assert(lineEnds1.length == linenumbers1.length && 
+          filenames1.length == linenumbers1.length)
+        le ++= lineEnds1.map(_ + ab.length)
+        ab ++= text1; linenumbers ++= linenumbers1
+        filenames ++= filenames1 //; filenames += filename // TEST THIS
+// I think we need to include linenumber again
       }
       else{ 
-        if(text(i) == '\n') le += ab.length
+        if(text(i) == '\n') newline()
         ab += text(i); i += 1 
       }
-    }
-    le += ab.length+1
-    (ab.toArray, le.toArray)
+    } // end of main while loop
+    // Add artificial newline
+    ab += '\n'; newline()
+    // println(linenumbers.mkString(",")); println(filenames.mkString(","))
+    (ab.toArray, le.toArray, linenumbers.toArray, filenames.toArray)
   }
 
   /** Factory method.  Returns null if there is an unclosed block comment. */
-  def apply(st: String): Input = {
-    Failure.reset; val (text, lineEnds) = preprocess(st.toArray)
+  def apply(st: String, filename: String = ""): Input = {
+    Failure.reset
+    val (text, lineEnds, linenumbers, filenames) = 
+      preprocess(st.toArray, filename)
     if(text != null){
-      val pos = findNonWhite(text, 0); new Input(text, pos, lineEnds)
+      val pos = findNonWhite(text, 0)
+      new Input(text, pos, lineEnds, linenumbers, filenames)
     }
     else null
   }
-/*
-    val fContents = removeComments(st)
-    if(fContents != null){ 
-      val (text1,lineEnds1) = preprocess(st.toArray)
-      val text = fContents.toArray; val lineEnds = getLineEnds(text)
 
-      assert(text.sameElements(text1), text.mkString+"\n"+text1.mkString)
-      assert(lineEnds.sameElements(lineEnds1), 
-        "\n"+lineEnds.mkString(",")+"\n"+lineEnds1.mkString(","))
- 
-      println("lineEnds:  "+lineEnds.mkString(","))
-      println("lineEnds1: "+lineEnds1.mkString(","))
- */
+  def fromFile(filename: String): Input =
+    apply(scala.io.Source.fromFile(filename).mkString, filename)
 
-  /** Produce an Input corresponding to a field in a CSV file. */
+  /** Produce an Input corresponding to a field in a cell or a CSV file. */
   def fromField(st: String) = {
-    Failure.reset; val text = st.toArray; val lineEnds = Array(-1, text.length+1)
-    new Input(text, 0, lineEnds)
+    // println(s"fromField($st)")
+    Failure.reset; val text = st.toArray
+    // ; val lineEnds = Array(-1, text.length+1)
+    //new Input(text, 0, lineEnds, Array(1,2), Array("", ""))
+    new Input(text, 0, null, null, null)
+    // Note: the lineEnds, line numbers and filenames aren't used.
   }
-
-  // private val outer = this
-  // object TestHooks{
-  //   val removeComments = outer.removeComments _ 
-  // }
 
 }
 
@@ -241,7 +232,7 @@ trait Source{
   * text[start..end). */
 class Extent(
   private val text: Array[Char],
-  private val start: Int, private val end: Int, val lineNumber: Int)
+  private val start: Int, private val end: Int, val lineNumber: String)
     extends Source{
 
   def asString = text.slice(start, end).mkString

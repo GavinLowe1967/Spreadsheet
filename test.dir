@@ -1,13 +1,16 @@
 /** The factorial function. */
 def fact(n: Int) : Int = { assert(n >= 0); if(n <= 1) 1 else n*fact(n-1) }
 
-/** Overloaded sum functions. */
-def sum(xs: List[Int]): Int = 
-  if(isEmpty xs) 0 else head xs + sum(tail(xs))
-def sum(xs: List[Float]): Float = 
-  if(isEmpty xs) 0.0 else head xs + sum(tail(xs))
+#include "test-include.dir" 
+
+// /** Overloaded sum functions. */
+// def sum(xs: List[Int]): Int = 
+//   if(isEmpty xs) 0 else head xs + sum(tail(xs))
+// def sum(xs: List[Float]): Float = 
+//   if(isEmpty xs) 0.0 else head xs + sum(tail(xs))
+
 /** Apply function. */
-def apply[A,B](f: A => B)(x: A) = f x
+//def apply[A,B](f: A => B)(x: A) = f x
 // Overloaded double function
 def double(n: Int) = 2*n
 def double(y: Float) = 2.0*y
@@ -72,5 +75,6 @@ for(r <- 2 to 2; r <- #5+r to #6+r) Cell(#C, r) = six
 
 // Test of empty blocks.
 for(x <- #0 until #10){ }
+
 
 

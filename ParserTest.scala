@@ -26,6 +26,7 @@ object ParserTest extends ParserTest0{
     assert(CellParser("-3.5") == FloatValue(-3.5F))
     assert(CellParser("true") == BoolValue(true))
     assert(CellParser("false") == BoolValue(false))
+    // println(CellParser("Hello, world"))
     assert(CellParser("Hello, world") == StringValue("Hello, world"))
     assert(CellParser("\"Hello\"") == StringValue("Hello"))
     assert(CellParser("\"3\"") == StringValue("3"))
