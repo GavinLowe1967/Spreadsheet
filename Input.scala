@@ -107,31 +107,47 @@ object Input{
     p
   }
 
+  private def isWhite(c: Char) = c == ' ' || c == '\t'
+
   /** Get a filename, expected to be inclosed in quotation marks, starting from
-    * position i0 in text.  Return the filename and the index of the next
-    * character. */
-  private def getFilename(text: Array[Char], i0: Int): (String, Int) = {
+    * position i0 in text.  If successful, return the filename and the index
+    * of the next character (in a Left value).  Otherwise return Right value
+    * explaining error. */
+  private def getFilename(text: Array[Char], i0: Int)
+      : Either[(String, Int), String] = {
     var i = i0; val len = text.length
-    while(i < len && text(i) == ' ') i += 1
-    assert(i < len && text(i) == '"') // FIXME
-    i += 1; val start = i
-    while(i < len && text(i) != '"' && text(i) != '\n') i += 1
-    assert(i < len && text(i) == '"') // FIXME
-// FIXME: don't allow anything else on line; but don't consume newline
-    val filename = text.slice(start,i).mkString
-    // println(s"Including $filename")
-    (filename, i+1)
+    def mkError = {
+      var ii = i0; while(ii < len && text(ii) != '\n') ii += 1
+      val line = text.slice(i0-8, ii).mkString
+      Right(s"Bad #include statement: $line")
+    }
+    // Find opening quote
+    while(i < len && isWhite(text(i))) i += 1
+    if(i == len || text(i) != '"') mkError
+    else{
+      i += 1; val start = i
+      // Find closing quote
+      while(i < len && text(i) != '"' && text(i) != '\n') i += 1
+      if(i == len || text(i) != '"') mkError
+      else{
+        val filename = text.slice(start,i).mkString; i += 1
+        // Check nothing else on line except white space.  
+        while(i < len && isWhite(text(i))) i += 1
+        if(i < len && text(i) != '\n') mkError
+        else Left((filename, i)) // Don't consume newline
+      }
+    }
   }
 
-  /** Preprocess text.  Returns a tuple (processed, lineEnds, lineNumbers,
-    * filenames) where (1) processed is text with comments removed and
-    * included files in-lined; (2) lineEnds is an array of indices into
-    * processed giving the ends of lines; (3) each lineNumbers(i) is the line
-    * number of the line starting at lineEnds(i)+1; (4) filenames(i) is the
-    * corresponding filename.  Returns (null,null,null,null) if there is an
-    * unclosed comment.*/
+  /** Preprocess text.  If successful, returns a tuple Left((processed,
+    * lineEnds, lineNumbers, filenames)) where (1) processed is text with
+    * comments removed and included files in-lined; (2) lineEnds is an array
+    * of indices into processed giving the ends of lines; (3) each
+    * lineNumbers(i) is the line number of the line starting at lineEnds(i)+1;
+    * (4) filenames(i) is the corresponding filename.  Returns
+    * Right(err) if there is an error.*/
   private def preprocess(text: Array[Char], filename: String)
-      : (Array[Char], Array[Int], Array[Int], Array[String]) = {
+      : Either[(Array[Char], Array[Int], Array[Int], Array[String]), String] = {
     var i = 0; val len = text.length; val ab = new ArrayBuffer[Char]
     var linenumber = 1
     val linenumbers = new ArrayBuffer[Int]; linenumbers += linenumber
@@ -151,7 +167,7 @@ object Input{
       else if(slash && text(i+1) == '*'){
         // Scan for corresponding "*/". `nesting` records the current level of
         // nesting of block comments.
-        var nesting = 1; i += 2
+        val start = linenumber; var nesting = 1; i += 2
         while(i < len && nesting > 0){
           if(text(i) == '*' && i+1 < len && text(i+1) == '/'){ 
             nesting -= 1; i += 2 
@@ -165,20 +181,24 @@ object Input{
           }
           else i += 1
         }
-        if(nesting > 0) return (null,null,null,null)
+        if(nesting > 0) 
+          return Right(s"Parse error: unclosed block comment from line $start")
       } // end of "*" case
       else if(text.slice(i, i+8).mkString == "#include"){
         // Find filename
-        val (incFilename,j) = getFilename(text,i+8); i = j
-        val included = scala.io.Source.fromFile(incFilename).toArray
-        val (text1, lineEnds1, linenumbers1, filenames1) = 
-          preprocess(included, incFilename)
-        assert(lineEnds1.length == linenumbers1.length && 
-          filenames1.length == linenumbers1.length)
-        le ++= lineEnds1.map(_ + ab.length)
-        ab ++= text1; linenumbers ++= linenumbers1
-        filenames ++= filenames1 //; filenames += filename // TEST THIS
-// I think we need to include linenumber again
+        getFilename(text,i+8) match{
+          case Left((incFilename,j)) =>
+            i = j; val included = scala.io.Source.fromFile(incFilename).toArray
+            preprocess(included, incFilename) match{
+              case Left((text1, lineEnds1, linenumbers1, filenames1)) =>
+                assert(lineEnds1.length == linenumbers1.length &&
+                  filenames1.length == linenumbers1.length)
+                le ++= lineEnds1.map(_ + ab.length); ab ++= text1
+                linenumbers ++= linenumbers1; filenames ++= filenames1
+              case r @ Right(err) => return r
+            } // end of inner match
+          case Right(err) => return Right(err)
+        }
       }
       else{ 
         if(text(i) == '\n') newline()
@@ -187,32 +207,34 @@ object Input{
     } // end of main while loop
     // Add artificial newline
     ab += '\n'; newline()
-    // println(linenumbers.mkString(",")); println(filenames.mkString(","))
-    (ab.toArray, le.toArray, linenumbers.toArray, filenames.toArray)
+    Left((ab.toArray, le.toArray, linenumbers.toArray, filenames.toArray))
   }
 
-  /** Factory method.  Returns null if there is an unclosed block comment. */
-  def apply(st: String, filename: String = ""): Input = {
+  /** Try to construct an Input from st from file filename.  If unsuccessful,
+    * return a Right value explaining the error. */
+  private def apply0(st: String, filename: String): Either[Input, String] = {
     Failure.reset
-    val (text, lineEnds, linenumbers, filenames) = 
-      preprocess(st.toArray, filename)
-    if(text != null){
-      val pos = findNonWhite(text, 0)
-      new Input(text, pos, lineEnds, linenumbers, filenames)
+    preprocess(st.toArray, filename) match{
+      case Left((text, lineEnds, linenumbers, filenames)) =>
+        val pos = findNonWhite(text, 0)
+        Left(new Input(text, pos, lineEnds, linenumbers, filenames))
+      case Right(err) => Right(err)
     }
-    else null
   }
 
-  def fromFile(filename: String): Input =
-    apply(scala.io.Source.fromFile(filename).mkString, filename)
+  /** Factory method.  This expects the script to have no unclosed comments of
+    * incorrect #include statements. */
+  def apply(st: String, filename: String = ""): Input = 
+    apply0(st, filename) match{
+      case Left(input) => input; case Right(err) => sys.error(err)
+    }
+
+  def fromFile(filename: String): Either[Input, String] =
+    apply0(scala.io.Source.fromFile(filename).mkString, filename)
 
   /** Produce an Input corresponding to a field in a cell or a CSV file. */
-  def fromField(st: String) = {
-    // println(s"fromField($st)")
-    Failure.reset; val text = st.toArray
-    // ; val lineEnds = Array(-1, text.length+1)
-    //new Input(text, 0, lineEnds, Array(1,2), Array("", ""))
-    new Input(text, 0, null, null, null)
+  def fromField(st: String): Input = {
+    Failure.reset; new Input(st.toArray, 0, null, null, null)
     // Note: the lineEnds, line numbers and filenames aren't used.
   }
 

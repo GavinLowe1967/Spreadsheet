@@ -214,7 +214,12 @@ object ExpParserTest extends ParserTest0{
     assert(p0("2 +/* \n comment */2") == BinOp(IntExp(2), "+", IntExp(2)))
     assert(p0("4/* X  */2") == IntExp(42))
     assert(p0("4/* /* X */ */2") == IntExp(42))
-    assert(Input("/* \n /* */ 5") == null)
+    // Expect following to fail. 
+    var error = false
+    try{ Input("/* \n /* */ 5") } catch{ 
+      case _: java.lang.RuntimeException => error = true 
+    }
+    assert(error)
   }
 
   /** Tests of expression parsers. */

@@ -1,7 +1,7 @@
 /** The factorial function. */
 def fact(n: Int) : Int = { assert(n >= 0); if(n <= 1) 1 else n*fact(n-1) }
 
-#include "test-include.dir" 
+#include "test-include.dir"
 
 // /** Overloaded sum functions. */
 // def sum(xs: List[Int]): Int = 

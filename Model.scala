@@ -25,7 +25,6 @@ class Model(val height: Int, val width: Int){
   def loadScript(scN: String, shN: String) = {
     scriptName = scN; sheetName = shN
     if(sheetName != null) loadSheet()
-// TODO: check sheetName exists
     reloadScript()
   }
 
@@ -46,10 +45,10 @@ class Model(val height: Int, val width: Int){
   /** Reload script from the saved filename. */
   def reloadScript() = {
     env.reset(); view.clearInfo()
-    val input = Input.fromFile(scriptName) 
-    // Input(scala.io.Source.fromFile(scriptName).mkString, scriptName)
-    if(input != null) parseContents(input)
-    else view.addInfo(s"Parse error: unclosed block comment")
+    Input.fromFile(scriptName) match{
+      case Left(input) => parseContents(input)
+      case Right(err) => view.addInfo(err)
+    }
   }
 
   /** Update cells based on statements.  Called by view. */
