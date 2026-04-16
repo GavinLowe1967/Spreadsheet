@@ -133,14 +133,23 @@ object Execution{
 
     case b @ BinOp(left, op, right) => eval(env, left) match{
       case err1: ErrorValue => liftError(e, err1)
-      case v1 => eval(env, right) match{
-        case err2: ErrorValue => liftError(e, err2)
-        case v2 => BinOpApply(v1, op, v2) match{
-          case err: ErrorValue => liftError(e, err, true) // include line number
-          case res => res
+      case v1 =>
+        if(BinOpApply.isLazy(op))
+          BinOpApply.lazyEval(v1, op, eval(env, right)) match{
+            case err: ErrorValue => liftError(e, err); case v => v
+              // Don't include line number in former case: it was an error in
+              // right, so the line number is already included.
+          }
+        else eval(env, right) match{
+          case err2: ErrorValue => liftError(e, err2)
+          case v2 => BinOpApply(v1, op, v2) match{
+            case err: ErrorValue => liftError(e, err, true)
+            // Include line number, because this error results from the
+            // operator itself (e.g. division by 0).
+            case res => res
+          }
         }
       }
-    }
 
     case IfExp(test, thenClause, elseClause) => 
       eval(env, test) match{

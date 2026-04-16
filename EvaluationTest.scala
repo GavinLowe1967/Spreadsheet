@@ -155,6 +155,19 @@ object EvaluationTest{
     assertFail(eval("{ assert(false, if(1/0 != 3) \"XX\" else \"YY\"); 3 }"))
   }
 
+  private def scriptTests() = {
+    // def mkScript(st: String) = s"{#include \"haskell.dir\" \n $st }"
+    // def eval1(st: String) = eval(mkScript(st))
+    // assert(eval1("nonEmpty []"))
+    val Height = 100; val Width = 26
+    val model = new Model(Height,Width); model.setView(DummyView)
+    val env = model.getEnv; val isCalculated = env.isCalculated _
+    model.loadScript("evaluationTest.dir", null)
+    assert(env("b1") == BoolValue(false) && env("b2") == BoolValue(true))
+    assert(env("b3") == BoolValue(true) && env("b4") == BoolValue(false))
+    assert(env("b5") == BoolValue(false)) // lazy evaluation of &&
+  }
+
 
   def main(args: Array[String]) = {
     println("===EvaluationTest===")
@@ -162,6 +175,7 @@ object EvaluationTest{
     tests2() // blocks, if statements, list expressions
     tests3() // functions
     tests4()
+    scriptTests()
   }
 
 

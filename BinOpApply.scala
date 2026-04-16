@@ -20,12 +20,26 @@ object BinOpApply{
       case "<" => mkBinRelOp((_<_), (_<_))
       case ">=" => mkBinRelOp((_>=_), (_>=_))
       case ">" => mkBinRelOp((_>_), (_>_))
-      case "&&" => mkBoolOp((_&&_)); case "||" => mkBoolOp((_||_))
+      // case "&&" => andOp /*mkBoolOp((_&&_))*/; case "||" => mkBoolOp((_||_))
       case "==" => equalOp(true); case "!=" => equalOp(false)
       case "::" => consOp
       case "to" => toOp; case "until" => untilOp
     }    
     f(v1)(v2)
+  }
+
+  /** Is op an operator that evaluates its second argument lazily? */
+  def isLazy(op: String) = op == "&&" || op == "||"
+
+  /** Apply the operation represented by `op` to values `v1` and `v2`.  `v2` is
+    * passed by name, to allow for lazy evaluation.  However, `v2` may be an
+    * ErrorValue. */
+  def lazyEval(v1: Value, op: String, v2: => Value): Value = v1 match{
+    //case err1: ErrorValue => err1
+    case BoolValue(b) => op match{
+      case "&&" => if(b) v2 else BoolValue(false)
+      case "||" => if(b) BoolValue(true) else v2
+    }
   }
 
   /** Shorthand for a partial function Value => A. */
@@ -42,10 +56,10 @@ object BinOpApply{
     case IntValue(m) => { case IntValue(n) => f(m,n) }
   }
 
-  /** (Bool,Bool) -> Bool functions. */
-  private def mkBoolOp(f: (Boolean,Boolean) => Boolean): BinOpRep = {
-    case BoolValue(b1) => { case BoolValue(b2) => BoolValue(f(b1,b2)) }
-  }
+  /** (Bool,Bool) -> Bool functions.  Replaced by lazyEval. */
+  // private def mkBoolOp(f: (Boolean,Boolean) => Boolean): BinOpRep = {
+  //   case BoolValue(b1) => { case BoolValue(b2) => BoolValue(f(b1,b2)) }
+  // }
 
   /** (Num, Num) -> Value functions. */
   private def mkBinOp(fi: (Int,Int) => Value, ff: (Float,Float) => Value) 

@@ -46,6 +46,25 @@ object TypeCheckerTest4{
 
   val script = script0 + "\n" + script1
 
+  // ===== Expected types for some functions. 
+
+  // map: [A,B] (A => B) => List[A] => List[B]
+  val mapType = FunctionType(
+    List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
+    List( FunctionType(List(), List(TypeParam("A")), TypeParam("B")) ),
+    FunctionType( List(),
+      List(ListType(TypeParam("A"))), ListType(TypeParam("B")) ))
+  val reverseType = FunctionType(
+    List(("A",AnyTypeConstraint)),
+    List(ListType(TypeParam("A"))), ListType(TypeParam("A")) )
+  // filter: [A] (A => Boolean) => List[A] => List[A]
+  val filterType = FunctionType(
+    List(("A",AnyTypeConstraint)),
+    List(FunctionType(List(), List(TypeParam("A")), BoolType)),
+    FunctionType(List(), List(ListType(TypeParam("A"))),
+      ListType(TypeParam("A")) ))
+
+  /** Tests on script. */
   def preludeTests() = {
     println("===preludeTests===")
     tcpss(script) match{ 
@@ -117,13 +136,7 @@ object TypeCheckerTest4{
     // Note: the "[]" in the definition of concatp has a specific type,
     // which is constrained to be IntType by the definition of xsp; so we
     // can't now apply it to [[2.3]], say.
-
-    // map: [A,B] (A => B) => List[A] => List[B]
-    val mapType = FunctionType(
-      List(("A",AnyTypeConstraint), ("B",AnyTypeConstraint)),
-      List( FunctionType(List(), List(TypeParam("A")), TypeParam("B")) ),
-      FunctionType( List(), 
-        List(ListType(TypeParam("A"))), ListType(TypeParam("B")) ))
+ 
     assert(te("map") == mapType); assert(te("map1") == mapType)
     assert(te("map2") == mapType)
 
@@ -137,18 +150,8 @@ object TypeCheckerTest4{
       ) => assert(a == a1)
     }
     assert(te("ls") == ListType(IntType)); assert(te("ls2") == ListType(IntType))
-
-    assert(te("reverse") == FunctionType(
-      List(("A",AnyTypeConstraint)), 
-      List(ListType(TypeParam("A"))), ListType(TypeParam("A")) ))
-
-    // filter: [A] (A => Boolean) => List[A] => List[A]
-    assert(te("filter") == FunctionType(
-      List(("A",AnyTypeConstraint)),
-      List(FunctionType(List(), List(TypeParam("A")), BoolType)),
-      FunctionType(List(), List(ListType(TypeParam("A"))), 
-        ListType(TypeParam("A")) )))
-
+    assert(te("reverse") == reverseType)
+    assert(te("filter") == filterType)
     assert(te("filterP") == 
       FunctionType(List(), List(ListType(IntType)), ListType(IntType)) )
   }
@@ -255,6 +258,15 @@ object TypeCheckerTest4{
       "def add(x: Int)(y: Int): Int = x+y; def add(x: Float)(y: Float) = x+y"
     tcpss(script13a) match{ case Ok(te) =>
       assert(te("add3") == FunctionType(List(), List(IntType), IntType))
+    }
+  }
+
+  /** Tests on the result of loading haskell.dir. */
+  def haskellTests() = {
+    tcpss("#include \"haskell.dir\"\n") match{ case Ok(te) => 
+      assert(te("map") == mapType)
+      assert(te("reverse") == reverseType)
+      assert(te("filter") == filterType)
     }
   }
 

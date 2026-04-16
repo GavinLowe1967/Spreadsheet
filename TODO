@@ -38,13 +38,14 @@ Allow "include" statements
 Priorities
 ==========
 
+- Haskell standard prelude
+** Test evaluation -- EvaluationTest.scriptTests()
+
 - Allow more general function applications. 
 
-- Make &&, || lazy, e.g.
-def singleton[A](xs: List[A]) = nonEmpty xs && isEmpty (tail xs)
+- Make &&, || lazy, e.g. -- DONE
 
-- Haskell standard prelude
--- Test evaluation
+
 
 - Improve AV script
 

@@ -46,6 +46,7 @@ object TypeCheckerTest{
       // ------                     TypeCheckerTest4.scala
       preludeTests()
       rtTests()
+      haskellTests()
       tupleTests()
       callTests()
     }

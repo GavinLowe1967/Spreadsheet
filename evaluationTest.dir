@@ -1,0 +1,8 @@
+// This file is used by EvaluationTest.scriptTests to perform some tests on
+// the prelude file haskell.dir.
+
+#include "haskell.dir"
+
+val b1 = nonEmpty []; val b2 = nonEmpty [3] 
+val b3 = singleton [2]; val b4 = singleton[2,3]
+val b5 = singleton []

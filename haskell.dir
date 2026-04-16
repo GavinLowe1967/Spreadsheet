@@ -7,9 +7,17 @@ def id[A](x: A): A = x
 
 def const[A,B](x: A)(y: B): A = x
 
-def after[A,B,C](f: B => C)(g: A => B)(x: A) = f(g x)
+def after[A,B,C](f: B => C)(g: A => B)(x: A): C = f(g x)
 
 def flip[A,B,C](f: A => B => C)(x: B)(y: A): C = f y x
+
+def fst[A,B](pair: (A,B)): A = get1 pair
+
+def snd[A,B](pair: (A,B)): B = get2 pair
+
+def curry[A,B,C](f: (A,B) => C)(x: A)(y: B): C = f ((x,y))
+
+def uncurry[A,B,C](f: A => B => C)(p: (A,B)): C = f (get1 p) (get2 p)
 
 // ========= List functions =========
 
@@ -87,7 +95,7 @@ def span[A](p: A => Boolean)(xs: List[A]): (List[A], List[A]) =
 def break[A](p: A => Boolean): List[A] => (List[A], List[A]) =
   span (after not p)
 
-val reverse = foldl (flip cons) []
+def reverse[A](xs: List[A]): List[A] = foldl (flip cons) [] xs
 
 def and(xs: List[Boolean]): Boolean = 
   isEmpty xs || (head xs && and (tail xs))

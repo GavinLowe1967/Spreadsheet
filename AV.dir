@@ -112,4 +112,8 @@ val winner = process([true | i <- candidates], 1)
 val winnerRow = summaryHead+numCandidates+2
 Cell(#A, winnerRow) = "Winner:"; Cell(#B, winnerRow) = winner
 
-
+// #A17 = true || 1/0 == 3
+// #B17 = false || 1/0 == 3
+// #C17 = true && 1/0 == 3
+// #D17 = false && 1/0 == 3
+// #E17 = false || true
