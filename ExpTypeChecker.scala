@@ -122,7 +122,11 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
       case Some(List()) => 
         FailureR(s"Forward reference to name $fn").lift(exp, true)
       case Some(List(t)) => 
-        fatc.checkFunctionApp(typeEnv, t, args).lift(exp, true)
+        // println(s"$fn $args $t")
+        fatc.checkFunctionApp(typeEnv, t, args) .lift(fa, true)
+        //   case ok @ Ok(_) => ok
+        //   case f @ FailureR(err) => println(s"**$err"); f.lift(fa,true)
+        // }
       case Some(ts) => 
         assert(ts.nonEmpty && ts.forall(_.isInstanceOf[FunctionType])) 
         val ts1 = ts.map(_.asInstanceOf[FunctionType]).toArray

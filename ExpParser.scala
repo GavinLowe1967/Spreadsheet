@@ -76,12 +76,7 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
   private def qualifiers: Parser[List[Qualifier]] = 
     repSepNonEmpty(qualifier, ",")
 
-  // ===== Tuples
-
-  // /** A parser for a tuple, with at least two elements. */
-  // private def tuple: Parser[TupleLiteral] = 
-  //   (lit("(") ~> expr) ~ (lit(",") ~> repSep(expr, ",") <~ lit(")")) > {
-  //     case (e, es) => TupleLiteral(e::es) }
+  // ===== A tuple or an expression in parentheses.
 
   /** A parser for a tuple with at least two elements, or an expression in
     * parentheses. */
@@ -170,8 +165,7 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
     * parameter. */
   private def params: Parser[List[Exp]] = (
     inParens(repSep(expr, ","))
-    | singleParam0 > // (posNum | name1 | (cell0 > toPair(UntypedCellExp)) | atomicParam) > 
-      { n => List(n) }
+    | singleParam0 > { n => List(n) }
   )
   // Notes: we include only positive numbers above; negative numbers would
   // need parentheses.  The parsers name1 and cell0 are included in more
@@ -204,14 +198,27 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
     number | cellExp | atomicParam // | tuple 
     // Note: cellExp must precede the rowOrColumn within atomicParam 
     // Name or application of named function
-    | name1 ~~ paramsList  > { case (n,args) => args.foldLeft(n)(FunctionApp) }
-    // Note: in the above, inner FunctionApps don't receive an Extent.  
-    // TODO: allow more general definitions of the function.
+    | name1 ~~ paramsList  > { case (n,args) => args.foldLeft(n)(makeFunApp) }
+    // TODO: allow more general definitions of the function.  Following causes 
+    //stack overflow:
+    //   | expr ~ expr > { case (f,TupleLiteral(es)) => FunctionApp(f,es) }
+    // Maybe require first expr to be a name1 or in parentheses.  
     | prefixOp
     | tupleOrParens
     //| inParens(expr) // Note: sets extent to include parentheses.
     | failure("YYY") // IMPROVE
   )
+
+  /** Make a FunctionApp from f and arg, including an extent if possible. */
+  private def makeFunApp(f: Exp, arg: List[Exp]) = {
+    val fa = FunctionApp(f,arg)
+    if(arg.nonEmpty){
+      val e1 = f.getExtent; val e2 = arg.last.getExtent
+      if(e1 != null && e2 != null) fa.setExtent(e1 until e2)
+      // else println(s"Null extent $f $e1 $arg $e2")
+    }
+    fa
+  }
 
   /** A parser for a block expression. */
   private def block: Parser[BlockExp] = 

@@ -38,7 +38,13 @@ Allow "include" statements
 Priorities
 ==========
 
+- Allow more general function applications. 
+
+- Make &&, || lazy, e.g.
+def singleton[A](xs: List[A]) = nonEmpty xs && isEmpty (tail xs)
+
 - Haskell standard prelude
+-- Test evaluation
 
 - Improve AV script
 
@@ -52,6 +58,8 @@ X. Manual -- keep updated.
 
 - Another example: admissions spreadsheet.
 
+- Remove repetition in "Type error: Unknown type(s): A, A, A ...
+in def foldr1(f: A => A => A)(xs: List[A]): A = { ... "
 
 * println
 

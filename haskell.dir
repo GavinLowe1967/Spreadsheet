@@ -1,0 +1,192 @@
+// This file gives versions of most of the functions from the Haskell standard
+// prelude <https://www.haskell.org/onlinereport/standard-prelude.html>.  Note
+// we are a little stricter in some cases, for example requiring non-negative
+// arguments for `take` and `drop`.
+
+def id[A](x: A): A = x
+
+def const[A,B](x: A)(y: B): A = x
+
+def after[A,B,C](f: B => C)(g: A => B)(x: A) = f(g x)
+
+def flip[A,B,C](f: A => B => C)(x: B)(y: A): C = f y x
+
+// ========= List functions =========
+
+val nonEmpty = after not isEmpty
+
+def singleton[A](xs: List[A]) = nonEmpty xs && isEmpty (tail xs)
+
+def map[A,B](f: A => B)(xs: List[A]): List[B] = 
+  if(isEmpty xs) []: List[B] else f(head xs) :: map f (tail xs)
+
+def append[A](xs: List[A])(ys: List[A]): List[A] = 
+  if(isEmpty xs) ys else head xs :: append (tail xs) ys
+
+def filter[A](p: A => Boolean)(xs: List[A]): List[A] = 
+  if(isEmpty xs) xs
+  else if(p(head xs)) head xs :: filter p (tail xs) 
+  else filter p (tail xs)
+
+/** The nth element of xs, counting from 0. */
+def index[A](n: Int)(xs: List[A]): A = {
+  assert(n >= 0 && !(isEmpty xs), "Indexing error")
+  if(n == 0) head xs else index(n-1) (tail xs) 
+}
+
+val concat = foldr append []
+
+def concatMap[A,B] (f: A => List[B]) = after concat (map f)
+
+def last[A](xs: List[A]): A = {
+  assert(nonEmpty xs, "last []")
+  if(singleton xs) head xs else last(tail xs)
+}
+
+def init[A](xs: List[A]): List[A] = {
+  assert(nonEmpty xs, "init []")
+  if(singleton xs) [] else head xs :: init(tail xs)
+}
+
+def cons[A](x: A)(xs: List[A]) = x::xs 
+
+def length[A](xs: List[A]): Int =
+  if(isEmpty xs) 0 else 1 + length(tail xs)
+
+def replicate[A](n: Int)(x: A): List[A] = {
+  assert(n >= 0, "replicate with negative argument")
+  if(n == 0) [] else x :: replicate (n-1) x
+}
+
+def take[A](n: Int)(xs: List[A]): List[A] = {
+  assert(n >= 0, "take with negative argument")
+  if(n == 0 || isEmpty xs) [] else head xs :: take (n-1) (tail xs)
+}
+
+def drop[A](n: Int)(xs: List[A]): List[A] = {
+  assert(n >= 0, "drop with negative argument")
+  if(n == 0 || isEmpty xs) xs else drop (n-1) (tail xs)
+}
+
+def splitAt[A](n: Int)(xs: List[A]): (List[A],List[A]) = 
+  (take n xs, drop n xs)
+
+def takeWhile[A](p: A => Boolean)(xs: List[A]): List[A] = 
+  if(isEmpty xs || !(p (head xs))) [] else head xs :: takeWhile p (tail xs)
+
+def dropWhile[A](p: A => Boolean)(xs: List[A]): List[A] = 
+  if(isEmpty xs || !(p (head xs))) xs else dropWhile p (tail xs)
+
+def span[A](p: A => Boolean)(xs: List[A]): (List[A], List[A]) =
+  if(isEmpty xs) ([], [])
+  else if(p (head xs)){ 
+    val pair = span p (tail xs); (head xs :: get1 pair, get2 pair)
+  }
+  else ([], xs)
+
+def break[A](p: A => Boolean): List[A] => (List[A], List[A]) =
+  span (after not p)
+
+val reverse = foldl (flip cons) []
+
+def and(xs: List[Boolean]): Boolean = 
+  isEmpty xs || (head xs && and (tail xs))
+
+def or(xs: List[Boolean]): Boolean =
+  nonEmpty xs && (head xs || or (tail xs))
+
+def all[A](p: A => Boolean)(xs: List[A]): Boolean =
+  isEmpty xs || (p (head xs) && all p (tail xs))
+
+def any[A](p: A => Boolean)(xs: List[A]): Boolean =
+  nonEmpty xs && (p (head xs) || any p (tail xs))
+
+def elem[A <: Eq](x: A)(xs: List[A]): Boolean =
+  nonEmpty xs && (x == head xs || elem x (tail xs))
+
+def notElem[A <: Eq](x: A)(xs: List[A]): Boolean =
+  isEmpty xs || (x != head xs && notElem x (tail xs))
+
+def zip[A,B](xs: List[A])(ys: List[B]): List[(A,B)] = 
+  if(isEmpty xs || isEmpty ys) [] 
+  else (head xs, head ys) :: zip (tail xs) (tail ys)
+
+
+def zipWith[A,B,C](f: A => B => C)(xs: List[A])(ys: List[B]): List[C] = 
+  if(isEmpty xs || isEmpty ys) [] 
+  else f (head xs) (head ys) :: zipWith f (tail xs) (tail ys)
+
+def unzip[A,B](ps: List[(A,B)]): (List[A], List[B]) =
+  if(isEmpty ps) ([], [])
+  else{ 
+    val h = head ps; val pair = unzip (tail ps)
+    (get1 h :: get1 pair, get2 h :: get2 pair) 
+  }
+
+// ===== Fold and scan operators
+
+def foldr[A,B](f: A => B => B)(e: B)(xs: List[A]): B = 
+  if(isEmpty xs) e else f(head xs)(foldr f e (tail xs))
+
+def foldr1[A](f: A => A => A)(xs: List[A]): A = {
+  assert(nonEmpty xs, "foldr1 on []")
+  if(singleton xs) head xs else f (head xs) (foldr1 f xs)
+}
+
+def foldl[A,B](f: B => A => B)(e: B)(xs: List[A]): B = 
+  if(isEmpty xs) e else foldl f (f e (head xs)) (tail xs)
+
+def foldl1[A](f: A => A => A)(xs: List[A]): A = {
+  assert(nonEmpty xs, "foldl1 on []"); foldl f (head xs) (tail xs)
+}
+
+def scanr[A,B](f: A => B => B)(e: B)(xs: List[A]): List[B] = 
+  if(isEmpty xs) [e] 
+  else{ val qs = scanr f e (tail xs); f (head xs) (head qs) :: qs }
+
+def scanr1[A](f: A => A => A)(xs: List[A]): List[A] = 
+  if(isEmpty xs || singleton xs) []
+  else{ val qs = scanr1 f (tail xs); f (head xs) (head qs) :: qs }
+
+def scanl[A,B](f: A => B => A)(e: A)(xs: List[B]): List[A] =
+  if(isEmpty xs) [e] else e :: scanl f (f e (head xs)) (tail xs)
+
+def scanl1[A](f: A => A => A)(xs: List[A]): List[A] = 
+  if(isEmpty xs) [] else scanl f (head xs) (tail xs)
+
+// ===== Overloaded functions on lists of numbers
+
+def sum(xs: List[Int]): Int = if(isEmpty xs) 0 else head xs + sum (tail xs)
+def sum(xs: List[Float]): Float = if(isEmpty xs) 0.0 else head xs + sum (tail xs)
+
+def product(xs: List[Int]): Int = 
+  if(isEmpty xs) 1 else head xs * product (tail xs)
+def product(xs: List[Float]): Float = 
+  if(isEmpty xs) 1.0 else head xs * product (tail xs)
+
+def min(x: Int)(y: Int): Int = if(x <= y) x else y
+def min(x: Float)(y: Float): Float = if(x <= y) x else y
+def max(x: Int)(y: Int): Int = if(x <= y) y else x
+def max(x: Float)(y: Float): Float = if(x <= y) y else x
+
+def minimum(xs: List[Int]): Int = {
+  assert(nonEmpty xs, "minimum []"); foldl1 (min: Int => Int => Int) xs
+}
+def minimum(xs: List[Float]): Float = {
+  assert(nonEmpty xs, "minimum []"); foldl1 (min: Float => Float => Float) xs
+}
+def maximum(xs: List[Int]): Int = {
+  assert(nonEmpty xs, "maximum []"); foldl1 (max: Int => Int => Int) xs
+}
+def maximum(xs: List[Float]): Float = {
+  assert(nonEmpty xs, "maximum []"); foldl1 (max: Float => Float => Float) xs
+}
+
+def power(x: Int)(n: Int): Int = {
+  assert(n >= 0, "power with negative exponent")
+  if(n == 0) 1 else if(n%2 == 0) power (x*x) (n/2) else x * power (x*x) (n/2)
+}
+def power(x: Float)(n: Int): Float = {
+  assert(n >= 0, "power with negative exponent")
+  if(n == 0) 1.0 else if(n%2 == 0) power (x*x) (n/2) else x * power (x*x) (n/2)
+}

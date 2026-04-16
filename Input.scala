@@ -83,14 +83,15 @@ class Input(
   def getCurrentLine: (String, Int, String) = {
     // Find j s.t. le[0..j) <= pos < le[j..)
     // Inv le[0..i) <= pos < le[j..)
-    require(pos < lineEnds.last, s"$pos ${lineEnds.last}")
+    require(pos <= lineEnds.last, s"$pos ${lineEnds.last}")
     var i = 0; var j = lineEnds.length
     while(i < j){
       val m = (i+j)/2 // i <= m < j
       if(lineEnds(m) <= pos) i = m+1 else j = m
     }
     assert(j > 0)
-    val thisLine = text.slice(lineEnds(j-1)+1, lineEnds(j)).mkString
+    val end = if(j == lineEnds.length) text.length else lineEnds(j)
+    val thisLine = text.slice(lineEnds(j-1)+1, end).mkString
     val fname = filenames(j-1); val linenumber = linenumbers(j-1).toString
     val lineString = if(fname.isEmpty) linenumber else s"$linenumber of $fname"
     (lineString, pos-lineEnds(j-1)-1, thisLine)

@@ -1,0 +1,12 @@
+// ===== File included from test.dir. =====
+
+/** Overloaded sum functions. */
+def sum(xs: List[Int]): Int = 
+  if(isEmpty xs) 0 else head xs + sum(tail(xs))
+def sum(xs: List[Float]): Float = 
+  if(isEmpty xs) 0.0 else head xs + sum(tail(xs))
+
+/** Apply function. */
+def apply[A,B](f: A => B)(x: A) = f x
+
+

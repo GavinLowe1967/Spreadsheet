@@ -1,3 +1,5 @@
+// ===== Testing file used in TopLevelTest.scala. =====
+
 /** The factorial function. */
 def fact(n: Int) : Int = { assert(n >= 0); if(n <= 1) 1 else n*fact(n-1) }
 

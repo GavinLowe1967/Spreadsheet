@@ -423,3 +423,15 @@ script, but may also occur within a function definition or a block expression.
 
 If a function returns the |Unit| type, a function call can be used as a
 statement.  Section~\ref{ssec:cell-writes} contained an example. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{{\scalashape \#include} statements}
+
+A script may import the contents of another script via an \SCALA{#include}
+statement, for example
+\begin{scala}
+#include "other-file.dir"
+\end{scala}
+The name of the other file should be enclosed in quotation marks.  There
+should be nothing following on the same line.

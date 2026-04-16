@@ -10,20 +10,11 @@
 
 // ========= Standard functions
 
+#include "haskell.dir"
+
 /** The nth element of xs, counting from 1. */
-def nth[A](n: Int)(xs: List[A]): A = {
-  assert(n >= 1 && !(isEmpty xs))
-  if(n == 1) head xs else nth(n-1) (tail xs) 
-}
-def map[A,B](f: A => B)(xs: List[A]): List[B] = 
-  if(isEmpty xs) []: List[B] else f(head xs) :: map f (tail xs)
-def filter[A](p: A => Boolean)(xs: List[A]): List[A] = 
-  if(isEmpty xs) xs
-  else if(p(head xs)) head xs :: filter p (tail xs) 
-  else filter p (tail xs)
-def length[A](xs: List[A]): Int =
-  if(isEmpty xs) 0 else 1 + length(tail xs)
-def sum(xs: List[Int]): Int = if(isEmpty xs) 0 else head xs + sum(tail xs)
+def nth[A](n: Int)(xs: List[A]): A = index (n-1) xs
+
 
 // =========
 
@@ -121,77 +112,4 @@ val winner = process([true | i <- candidates], 1)
 val winnerRow = summaryHead+numCandidates+2
 Cell(#A, winnerRow) = "Winner:"; Cell(#B, winnerRow) = winner
 
-// ==================================================================
 
-
-/*
-def isEmptyCell(c: Column, r: Row) = 
-  Cell(c,r) match{ case Empty => true; case _ => false }
-def take[A](n: Int)(xs: List[A]): List[A] = {
-  assert(n >= 0); if(n == 0) [] else head xs :: take(n-1)(tail xs)
-}
-def drop[A](n: Int)(xs: List[A]): List[A] = {
-  assert(n >= 0); if(n == 0) xs else drop(n-1)(tail xs)
-}
-def append[A](xs: List[A])(ys: List[A]): List[A] = 
-  if(isEmpty xs) ys else head xs :: append(tail xs) ys
- */
-/** The index, counting from 1, of the minimum element in xs. */
-/*
-def minIndex(xs: List[Int]): Int = {
-  // The index of the minimum in ys, and its value
-  def m(ys : List[Int]): (Int,Int) = {
-    assert(!(isEmpty ys))
-    if(isEmpty(tail ys)) (1,head ys)
-    else{
-      val pair = m(tail ys); val ix1 = get1(pair); val m1 = get2(pair)
-      if(head ys < m1) (1, head ys) else (ix1+1, m1)
-    }
-  }
-  get1(m xs)
-}
- */
-
-/*
-/** Count number of first preferences for each candidate marked as current. */
-def processRound(current: List[Boolean]): List[Int] = {
-  // Find winner in row r, from column c, or -1 if all eliminated
-  def doRow(r: Row)(c: Column): Int = Cell(c,r) match{
-    case v: Int => if(nth v current) v else doRow r (c+1)
-    case Empty => -1
-  }
-  // Tally scores from row r onwards, given scores from earlier rows.
-  def tallyFrom(r: Row)(scores: List[Int]): List[Int] = 
-    if(r == firstEmpty) scores
-    else{ 
-      val v = doRow r #B
-      if(v >= 0){
-        val rest = drop(v-1) scores
-        val newScores = append (take (v-1) scores) (head rest+1 :: tail rest)
-        tallyFrom (r+1) newScores
-      }
-      else tallyFrom (r+1) scores
-    }
-
-  tallyFrom #1 [0 | i <- 1 to numCandidates]
-}
- */
-
-/*
-/* Calculate and print results. */
-for(r <- 1 to numCandidates-1){
-  val row = summaryHead+2*r-1 // Row to print results
-  val current = // Candidates currently still in the race
-    if(r == 1) [true | i <- candidates] 
-    else [isEmptyCell(#A+i, row-1) | i <- candidates]
-  val results = processRound current // Results from this round
-  // Print results  
-  Cell(#A, row) = r
-  for(i <- 1 to numCandidates) 
-    Cell(#A+i, row) = if(nth i current) nth i results else -1 // IMPROVE, "X"
-  val loser = findLoser results current // Eliminated in this round
-  // Who is in for the next round. 
-  for(i <- 1 to numCandidates; if(!(nth i current) || i == loser))
-    Cell(#A+i, row+1) = "X"
-}
- */
