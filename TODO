@@ -3,55 +3,33 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
+**** pattern matching on tuples, e.g. val (x,y) = f(3)
 
-Allow "include" statements
+- Introduce syntactic category of Patterns, including tuples, and allow a
+  ValueDeclaration to use a Pattern.
 
-- Call sequence: Model.reloadScript -> Model.parseContents ->
-  StatementParser.parseStatements -> Parser.parseWith -> Parser.apply(st:
-  String) -> Parser.apply(in: Input).  Change these to use Input. -- DONE
+- Parsing.
 
-- Produce factory method for Input -- DONE
+- Type checking -- unifying pattern against a value.  Also check bound names
+  disjoint.
 
-- Merge Model.removeComments with Input.getLine ends,. -- DONE
-
-- Change Input to use parallel array of (lineEnds,filename,linenumber)
-  corresponding to line ends. -- DONE
----- Including other file, but need to store line numbers.  
-
-- Extend this to also do includes of other files.  -- DONE
-
-- Do initial insertion of included files, similar to getLineEnds. -- DONE
-
-- Change use of getCurrentLine in Parser.parseWith to also give file name --
-  just return a String. -- DONE
-
-
-- Include filename in Extents.  In fact, replace lineNumber by a String
-  "<linenumber> of <filename>". -- DONE
-
-
-- Also handle incorrect #include lines and unclosed block comments.  Change
-  preprocess to return Either[(_,_,_,_), String] value.  Have Input.apply
-  assume correct result.  Have fromFile return Either[Input,String], and for
-  Model.reloadScript to act appropriately.
+- Evaluation -- binding based on a pattern.
 
 Priorities
 ==========
 
-- Haskell standard prelude
-** Test evaluation -- EvaluationTest.scriptTests()
+- Improve AV script
+
+- Add "if" directives.
+
 
 - Allow more general function applications. 
 
-- Make &&, || lazy, e.g. -- DONE
+- Anonymous functions.
 
-
-
-- Improve AV script
+---
 
 - toString functions.  + on strings.
-
-- Add "if" directives.
 
 - Refactor Execution.scala?
 
@@ -84,16 +62,11 @@ values; and vice versa, e.g. get1(x,y).
 
 * Extend arithmetic operators to, e.g. (Int,Float) => Float
 
-* Allow assertions, error.
-
 * More general expressions on LHS of cell write directives.
 
 * Expressions like Cells(#A, #0 to #5): List[Int]
 
 * "println" statements.
-
-* pattern matching on tuples, e.g. val (x,y) = f(3)
-
 
 * Improve error messages in Unification.unify, the case of FunctionTypes.
 
@@ -122,6 +95,39 @@ Low Priority
 
 ===================================== DONE
 
+- Make &&, || lazy, e.g. -- DONE
+
+- Haskell standard prelude
+** Test evaluation -- EvaluationTest.scriptTests() -- DONE
+
+Allow "include" statements
+
+- Call sequence: Model.reloadScript -> Model.parseContents ->
+  StatementParser.parseStatements -> Parser.parseWith -> Parser.apply(st:
+  String) -> Parser.apply(in: Input).  Change these to use Input. -- DONE
+
+- Produce factory method for Input -- DONE
+
+- Merge Model.removeComments with Input.getLine ends,. -- DONE
+
+- Change Input to use parallel array of (lineEnds,filename,linenumber)
+  corresponding to line ends. -- DONE
+---- Including other file, but need to store line numbers.  
+
+- Extend this to also do includes of other files.  -- DONE
+
+- Do initial insertion of included files, similar to getLineEnds. -- DONE
+
+- Change use of getCurrentLine in Parser.parseWith to also give file name --
+  just return a String. -- DONE
+
+- Include filename in Extents.  In fact, replace lineNumber by a String
+  "<linenumber> of <filename>". -- DONE
+
+- Also handle incorrect #include lines and unclosed block comments.  Change
+  preprocess to return Either[(_,_,_,_), String] value.  Have Input.apply
+  assume correct result.  Have fromFile return Either[Input,String], and for
+  Model.reloadScript to act appropriately. -- DONE
 
 1. Don't lift TypeErrors resulting from function calls -- they're confusing.
 But do include linenumbers on other function calls. -- DONE

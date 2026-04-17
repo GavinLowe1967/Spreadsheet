@@ -155,10 +155,9 @@ object EvaluationTest{
     assertFail(eval("{ assert(false, if(1/0 != 3) \"XX\" else \"YY\"); 3 }"))
   }
 
+  /** Tests on the script evaluationTest.dir, which uses haskell.dir. */
   private def scriptTests() = {
-    // def mkScript(st: String) = s"{#include \"haskell.dir\" \n $st }"
-    // def eval1(st: String) = eval(mkScript(st))
-    // assert(eval1("nonEmpty []"))
+    def mkList(xs: Int*) = ListValue(xs.toList.map(IntValue(_)))
     val Height = 100; val Width = 26
     val model = new Model(Height,Width); model.setView(DummyView)
     val env = model.getEnv; val isCalculated = env.isCalculated _
@@ -166,6 +165,9 @@ object EvaluationTest{
     assert(env("b1") == BoolValue(false) && env("b2") == BoolValue(true))
     assert(env("b3") == BoolValue(true) && env("b4") == BoolValue(false))
     assert(env("b5") == BoolValue(false)) // lazy evaluation of &&
+    assert(env("xs1") == mkList(0,1,2,3) && env("xs2") == mkList(3,3,3,0))
+    assert(env("xs3") == mkList(0,3,3,3) && env("xs4") == mkList(3,2,1,0))
+    assert(env("x1") == IntValue(32) && env("x2") == FloatValue(32.0F))
   }
 
 

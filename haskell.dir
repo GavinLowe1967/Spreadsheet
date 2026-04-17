@@ -162,7 +162,7 @@ def scanl[A,B](f: A => B => A)(e: A)(xs: List[B]): List[A] =
 def scanl1[A](f: A => A => A)(xs: List[A]): List[A] = 
   if(isEmpty xs) [] else scanl f (head xs) (tail xs)
 
-// ===== Overloaded functions on lists of numbers
+// ===== Overloaded functions on numbers.
 
 def sum(xs: List[Int]): Int = if(isEmpty xs) 0 else head xs + sum (tail xs)
 def sum(xs: List[Float]): Float = if(isEmpty xs) 0.0 else head xs + sum (tail xs)

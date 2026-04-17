@@ -15,7 +15,6 @@
 /** The nth element of xs, counting from 1. */
 def nth[A](n: Int)(xs: List[A]): A = index (n-1) xs
 
-
 // =========
 
 val HeaderRow = #0 // Row for the headers
@@ -73,6 +72,7 @@ def findLoser(scores: List[Int])(current: List[Boolean]): Int = {
     if(isEmpty ys) (-numCandidates,numVoters+999) // IMPROVE
     else{
       val pair = m(tail ys)(tail cs); val ix1 = get1(pair); val m1 = get2(pair)
+      // IMPROVE: allow pattern matching on pairs
       if(head cs && head ys < m1) (1, head ys) else (ix1+1, m1)
       // IMPROVE: pick at random if there is a tie.
     }
@@ -94,11 +94,11 @@ def process(current: List[Boolean], round: Int): Int = {
   val row = summaryHead+round
   Cell(#A, row) = round
   for(i <- 1 to numCandidates) 
-    Cell(#A+i, row) = if(nth i current) nth i tallies else -1 // IMPROVE
+    Cell(#A+i, row) = if(nth i current) nth i tallies else -1 // IMPROVE, use "X"
   // Try to find a winner. 
   val total = sum tallies // total votes
   val winners = [i | i <- candidates, nth i tallies * 2 > total]
-  if(!(isEmpty winners)){ assert(length winners == 1); head winners }
+  if(nonEmpty winners){ assert(singleton winners); head winners }
   else{
     val loser = findLoser tallies current // Eliminated in this round
     Cell(eliminatedColumn, row) = loser
@@ -111,9 +111,3 @@ def process(current: List[Boolean], round: Int): Int = {
 val winner = process([true | i <- candidates], 1)
 val winnerRow = summaryHead+numCandidates+2
 Cell(#A, winnerRow) = "Winner:"; Cell(#B, winnerRow) = winner
-
-// #A17 = true || 1/0 == 3
-// #B17 = false || 1/0 == 3
-// #C17 = true && 1/0 == 3
-// #D17 = false && 1/0 == 3
-// #E17 = false || true

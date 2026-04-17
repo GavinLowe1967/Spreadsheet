@@ -4,5 +4,10 @@
 #include "haskell.dir"
 
 val b1 = nonEmpty []; val b2 = nonEmpty [3] 
-val b3 = singleton [2]; val b4 = singleton[2,3]
-val b5 = singleton []
+val b3 = singleton [2]; val b4 = singleton[2,3]; val b5 = singleton []
+val xs1 = scanl (max: Int => Int => Int) 0 [1,2,3]
+val xs2 = scanr (max: Int => Int => Int) 0 [1,2,3]
+val xs3 = scanl (max: Int => Int => Int) 0 [3,2,1]
+val xs4 = scanr (max: Int => Int => Int) 0 [3,2,1]
+val x1 = power 2 5
+val x2 = power 2.0 5
