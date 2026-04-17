@@ -306,7 +306,6 @@ object TypeCheckerTest4{
 
   def callTests() = {
     
-
     // =====
     tcpss("def f() = {#A3 = 3}; f()") match{ case Ok(te) => 
       assert(te("f") == FunctionType( List(), List(), UnitType))

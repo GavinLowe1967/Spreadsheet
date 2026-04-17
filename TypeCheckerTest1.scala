@@ -7,8 +7,8 @@ import TypeCheckerTest0._
   * and higher-order functions. */
 object TypeCheckerTest1{
 
-  /** Tests on single declarations and function applications. */
-  def singleDecTests() = {
+  /** Tests on single value declarations. */
+  def valDecTests() = {
     // Value declarations
     val Ok(te) = tcpss("val four = 4")
     assertEq(tcp("four", te), IntType); assertEq(tcp("2+four", te), IntType)
@@ -21,6 +21,27 @@ object TypeCheckerTest1{
       case TypeVar(t) => assert(te(t) == AnyTypeConstraint)
     } }
 
+    tcpss("val (x,(y,z)) = (2,(3.3,true))") match{ case Ok(te) => 
+      assert(te("x") == IntType && te("y") == FloatType && te("z") == BoolType)
+    }
+    // "Cannot bind pattern to type Int at line 1 in (x,y) in val (x,y) = 3"
+    assertFail(tcpss("val (x,y) = 3"))
+    tcpss("val p = (2,3.0)") match{ case Ok(te) =>
+      assert(te("p") == TupleType(IntType,FloatType)) }
+    assertFail(tcpss("val ((x,y),z) = (2,3)"))
+    // --- Repeated names
+    // "x bound twice in declaration at line 1 in val (x,x) = (3,4)"
+    assertFail(tcpss("val (x,x) = (3,4)"))
+    assertFail(tcpss("val (x,(y,x)) = (2,(3,4))"))
+    // "f has both val and def definitions at lines 1, 1."
+    assertFail(tcpss("val (x,f) = (2,3); def f() = 5"))
+    // "x has two val definitions at lines 1 and 1."
+    assertFail(tcpss("val x = 3; val (y,x) = (4,5)"))
+  }
+
+  /** Tests on function declarations and applications. */
+  private def funcDecTests() = { 
+    val Ok(te) = tcpss("val four = 4")
     //Function declarations
     val Ok(te1) = tcpss("def f(x: Int): Int = x+1", te)
     assertEq(tcp("f", te1), FunctionType(List(), List(IntType), IntType))
@@ -46,8 +67,10 @@ object TypeCheckerTest1{
     assertFail(tcpss("assert(42)")); assertFail(tcpss("assert(42, \"X\")"))
     // "Expected String, found Int"
     assertFail(tcpss("assert(true, 5)"))
-
   }
+
+  /** Tests on single declarations and function applications. */
+  def singleDecTests() = { valDecTests(); funcDecTests() }
 
   // ==================================================================
 
@@ -87,6 +110,7 @@ object TypeCheckerTest1{
     assertFail(tcp("{ val x = 3; { val y = x+1; val x = 4; y } }"))
     assertFail(tcpss(
       "val x = 3; def f(y: Int): Int = { val z = x; val x = 4; y+z+x }"))
+
   }
 
   // ==================================================================

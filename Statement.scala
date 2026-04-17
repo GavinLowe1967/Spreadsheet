@@ -23,7 +23,7 @@ case class Directive(col: Exp, row: Exp, expr: Exp) extends Statement{
 // =======================================================
 
 /** A pattern in a ValueDeclaration. */
-trait ValPattern{
+trait ValPattern extends HasExtent{
   /** The names bound in the pattern. */
   def names: List[String]
 }
@@ -33,8 +33,16 @@ case class NamePattern(name: String) extends ValPattern{
   def names = List(name)
 }
 
+case class TuplePattern(patterns: List[ValPattern]) extends ValPattern{
+  require(patterns.length >= 2)
+  def names = patterns.flatMap(_.names)
+}
+
 /** A declaration of the form `val name = exp`. */
-case class ValueDeclaration(pattern: ValPattern, exp: Exp) extends Statement
+case class ValueDeclaration(pattern: ValPattern, exp: Exp) extends Statement{
+  /** Names bound by this declaration. */
+  def boundNames: List[String] = pattern.names
+}
 
 
 

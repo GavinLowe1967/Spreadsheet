@@ -103,19 +103,54 @@ object TypeChecker extends TypeCheckerT{
 
   /** Check that any overloading of names is done correctly.  If so, return the
     * type environment formed by binding the function names to their claimed
-    * types, and removing val names that duplicate names in an outer block.
+    * types, and removing val-names that duplicate names in an outer block.
     * Also label overloaded function declarations with their index.  */
   def checkOverloading(typeEnv: TypeEnv, stmts: List[Statement])
       : Reply[TypeEnv] = {
-    def sameName(vd1: ValueDeclaration, vd2: ValueDeclaration) = 
-      vd1.pattern == vd2.pattern
-// FIXME: allow more general patterns, and ensure names disjoint
-    val valDecs = for(vd @ ValueDeclaration(_,_) <- stmts) yield vd
+    val valDecs = (for(vd @ ValueDeclaration(_,_) <- stmts) yield vd).toArray
     val fnDecs = for(fd @ FunctionDeclaration(_,_,_,_,_) <- stmts) yield fd
     val grouped: GroupedFunctions = fnDecs.groupBy(_.name)
     val fnNames = grouped.keys
-    // Names in both valDecs and fnDecs 
-    // val repeats = valDecs.filter(vd => grouped.contains(vd.name))
+    // Search for repeated name declarations.
+    for(i <- 0 until valDecs.length){
+      val vd = valDecs(i); val names = vd.pattern.names
+      // Is a name bound twice in vd?
+      val doubleBinds = findPair[String]((_ == _), names.toArray)
+      if(doubleBinds.nonEmpty){
+        val (n1,n2) = doubleBinds.get; assert(n1 == n2)
+        return FailureR(s"$n1 bound twice in declaration").lift(vd,true)
+      }
+      // Is a name declared in vd and a def?
+      val repeats = names.filter(n => grouped.contains(n))
+      if(repeats.nonEmpty){
+        val name = repeats.head
+        return FailureR(s"$name has both val and def definitions at lines "+
+          (vd::grouped(name)).map(_.lineNumber).mkString(", ")+".")
+      }
+      // Is a name bound in vd and another val-dec?
+      for(j <- i+1 until valDecs.length){
+        val vd1 = valDecs(j); val common = names.intersect(vd1.boundNames)
+        if(common.nonEmpty){
+          val name = common.head
+          return FailureR(s"${name} has two val definitions at lines "+
+            s"${vd.lineNumber} and ${vd1.lineNumber}.")
+        }
+      }
+    } // end of for loop
+    // Iterate over grouped, and check each
+    var result: Reply[TypeEnv] = null; val iter = grouped.iterator
+    while(iter.hasNext && result == null){
+      val (name,defs) = iter.next(); result = checkOverloadingAllowed(name, defs)
+    }
+    if(result != null) result
+    else{
+      val te1 = typeEnv -- valDecs.toList.flatMap(_.pattern.names)
+      updateEnv(te1, grouped)
+    }
+  }
+
+
+/*
     val repeats = 
       valDecs.filter(vd => vd.pattern.names.exists(n => grouped.contains(n)))
     if(repeats.nonEmpty){
@@ -123,22 +158,8 @@ object TypeChecker extends TypeCheckerT{
       FailureR(s"$name has both val and def definitions at lines "+
         (vd::grouped(name)).map(_.lineNumber).mkString(", ")+".")
     }
-    else findPair(sameName, valDecs.toArray) match{
-      case Some((vd1,vd2)) => 
-        val name = vd1.pattern.names.head // FIXME
-        FailureR(s"${name} has two val definitions at lines "+
-          s"${vd1.lineNumber} and ${vd2.lineNumber}.")
-      case None =>
-        // Iterate over grouped, and check each
-        var result: Reply[TypeEnv] = null; val iter = grouped.iterator
-        while(iter.hasNext && result == null){
-          val (name,defs) = iter.next()
-          result = checkOverloadingAllowed(name, defs)
-        }
-        if(result != null) result
-        else updateEnv(typeEnv -- valDecs.map(_.pattern.names.head), grouped)//FIXME
-    }
-  }
+    else 
+ */
 
   /** Extend typeEnv with the claimed types of function declarations where a
     * return type is given.  Also label each function declaration with its
@@ -160,6 +181,20 @@ object TypeChecker extends TypeCheckerT{
   }
 
   // ========= Top-level functions
+
+  private def bindNames(typeEnv: TypeEnv, pat: ValPattern, t: TypeT)
+      : Reply[TypeEnv] = pat match{
+    case NamePattern(name) => Ok(typeEnv + (name, t))
+    case TuplePattern(pats) => t match{
+      case TupleType(ts) if pats.length == ts.length => 
+        // Recurse on corresponding patterns and types
+        def f(te: TypeEnv, pair: (ValPattern, TypeT)): Reply[TypeEnv] = 
+          bindNames(te, pair._1, pair._2)
+        Reply.fold(f _, typeEnv, pats.zip(ts)).lift(pat)
+      case _ => 
+        FailureR(s"Cannot bind pattern to type ${t.asString}").lift(pat,true)
+    }
+  }
 
   /** Typecheck the statement `stmt`. 
     * If successful, return the resulting type environment. */
@@ -183,10 +218,10 @@ object TypeChecker extends TypeCheckerT{
           typeCheckStmtList(te1, stmts).map{ te2 => Ok(te2.endScope) }
         }.lift(stmt)
 
-      case ValueDeclaration(NamePattern(name), exp) => 
-        typeCheckAndClose(typeEnv, exp).mapOrLift(stmt, { case (te1, t) => 
-          Ok(te1 + (name, t))
-        })
+      case ValueDeclaration(pat, exp) => 
+        typeCheckAndClose(typeEnv, exp).map{ case (te1, t) => 
+          bindNames(te1, pat, t)
+        }.lift(stmt)
 
       case fd: FunctionDeclaration =>  typeCheckDecl(typeEnv, fd).lift(fd)
 

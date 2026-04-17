@@ -184,6 +184,8 @@ case class TupleType(componentTs: List[TypeT]) extends TypeT{
 
 object TupleType{
   val MaxArity = 4 // 12
+
+  def apply(componentTs: TypeT*) = new TupleType(componentTs.toList)
   // Note: test.dir should include a test for the get function of maximum arity.
 }
 

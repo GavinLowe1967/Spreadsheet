@@ -285,6 +285,18 @@ object Execution{
       env.setCell(c, r, mwe); handleError(mwe)
     }
   }
+
+  /** Update env, binding pat to v. */
+  private def bindValDec(env: Environment, pat: ValPattern, v: Value)
+      : Unit = pat match{
+    case NamePattern(name) => env.update(name, v)
+    case TuplePattern(patterns) => v match{
+      case TupleValue(vs) if patterns.length == vs.length => 
+        for((pat1,v1) <- patterns.zip(vs)) bindValDec(env, pat1, v1)
+      case _ => sys.error(s"Bad binding: $pat = $v")
+    }
+
+  }
  
   /** Perform `s` in `env`, handling errors with `handleError`. 
     * @return false if an error occurred in a declaration. */
@@ -312,11 +324,11 @@ object Execution{
       // Note: we always return true, even if this particular directive failed
       true
 
-    case ValueDeclaration(NamePattern(name), exp) => 
+    case ValueDeclaration(pat, exp) => 
       val v = eval(env, exp)
       v match{
         case ev: ErrorValue => handleError(liftError(s, ev)); false
-        case _ => env.update(name, v); true
+        case _ => bindValDec(env, pat, v); true
       }
 
     case fd @ FunctionDeclaration(name, tParams, paramss, rt, body) => 

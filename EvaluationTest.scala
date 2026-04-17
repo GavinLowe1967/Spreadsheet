@@ -168,6 +168,16 @@ object EvaluationTest{
     assert(env("xs1") == mkList(0,1,2,3) && env("xs2") == mkList(3,3,3,0))
     assert(env("xs3") == mkList(0,3,3,3) && env("xs4") == mkList(3,2,1,0))
     assert(env("x1") == IntValue(32) && env("x2") == FloatValue(32.0F))
+    assert(env("xs5") == mkList(2,3,4,5) && env("xs6") == mkList(6,7,8,9))
+    assert(env("xs7") == mkList(2,4) && env("xs8") == mkList(5,6))
+    assert(env("x3") == IntValue(7))
+  }
+
+  /** Tests on val declarations using tuples. */
+  def tests5() = {
+    assert(eval("{ val (x,y) = (3,7); x+y }") == IntValue(10))
+    assert(eval("{ val ((x1,x2,x3), y) = ((1,3,5), 7); x1+x2+x3+y }") == 
+      IntValue(16))
   }
 
 
@@ -178,6 +188,7 @@ object EvaluationTest{
     tests3() // functions
     tests4()
     scriptTests()
+    tests5() 
   }
 
 

@@ -6,15 +6,19 @@ Current
 **** pattern matching on tuples, e.g. val (x,y) = f(3)
 
 - Introduce syntactic category of Patterns, including tuples, and allow a
-  ValueDeclaration to use a Pattern.
+  ValueDeclaration to use a Pattern. -- DONE
 
-- Parsing.  StatementParser.valPattern.
+- Parsing.  StatementParser.valPattern. -- DONE
 
 - Type checking -- unifying pattern against a value.  Also check bound names
   disjoint.
 * TypeChecker.checkOverloading
+* Test (a) name bound twice in a single val; (b) name shared between val and def;
+-- DONE
 
-- Evaluation -- binding based on a pattern.  Execution.scala, line 315
+- Evaluation -- binding based on a pattern.  Execution.scala, line 315 --
+
+- Extend to list comprehensions and for loops
 
 Priorities
 ==========
@@ -23,6 +27,7 @@ Priorities
 
 - Add "if" directives.
 
+- Allow pattern matching on ::
 
 - Allow more general function applications. 
 

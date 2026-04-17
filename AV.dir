@@ -71,8 +71,8 @@ def findLoser(scores: List[Int])(current: List[Boolean]): Int = {
   def m(ys : List[Int])(cs: List[Boolean]): (Int,Int) = {
     if(isEmpty ys) (-numCandidates,numVoters+999) // IMPROVE
     else{
-      val pair = m(tail ys)(tail cs); val ix1 = get1(pair); val m1 = get2(pair)
-      // IMPROVE: allow pattern matching on pairs
+      // val pair = m(tail ys)(tail cs); val ix1 = get1(pair); val m1 = get2(pair)
+      val (ix1, m1) = m(tail ys)(tail cs)
       if(head cs && head ys < m1) (1, head ys) else (ix1+1, m1)
       // IMPROVE: pick at random if there is a tie.
     }
@@ -111,3 +111,4 @@ def process(current: List[Boolean], round: Int): Int = {
 val winner = process([true | i <- candidates], 1)
 val winnerRow = summaryHead+numCandidates+2
 Cell(#A, winnerRow) = "Winner:"; Cell(#B, winnerRow) = winner
+

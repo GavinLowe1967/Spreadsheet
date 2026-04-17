@@ -6,6 +6,12 @@ object StatementParserTest extends ParserTest0{
   import StatementParser.parseStatements
   import StatementParser.TestHooks.{statement,statements}
 
+  private def assertStatementParseFail(st: String) = 
+    Parser.parseWith(statement, st) match{
+      case Right(err) => if(printParseErrors) println(err)
+      case l: Left[_,_] => println(s"Expected parse error, found $l"); sys.exit()
+    }
+
   /** Parse st as a statement, and check its extent. */
   private def ps(st: String): Statement = {
     val res = parseAll(statement, Input(st)); checkExtent(res.getExtent, st); res
@@ -19,6 +25,20 @@ object StatementParserTest extends ParserTest0{
     val vDecR = 
       ValueDeclaration(NamePattern("three"), BinOp(IntExp(1), "+", IntExp(2)))
     assert(ps(vDec) == vDecR)
+
+    assert(ps("val (x,y) = (3,2)") == ValueDeclaration(
+      TuplePattern(List(NamePattern("x"), NamePattern("y"))),
+      TupleLiteral(List(IntExp(3), IntExp(2))) ))
+    assert(ps("val ((x,y),(z,w,v)) = tuple") == ValueDeclaration(
+      TuplePattern(List(
+        TuplePattern(List(NamePattern("x"), NamePattern("y"))), 
+        TuplePattern(List(NamePattern("z"), NamePattern("w"), NamePattern("v")))
+      )),
+      NameExp("tuple") ))
+    // printParseErrors = true
+    assertStatementParseFail("val (x) = 3")
+    assertStatementParseFail("val (x,3) = 3") // IMPROVE error
+
 
     def cellExp(c: String, r: Int, t: CellType) = 
       CellExp(ColumnExp(c), RowExp(r), t)

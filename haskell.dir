@@ -17,7 +17,7 @@ def snd[A,B](pair: (A,B)): B = get2 pair
 
 def curry[A,B,C](f: (A,B) => C)(x: A)(y: B): C = f ((x,y))
 
-def uncurry[A,B,C](f: A => B => C)(p: (A,B)): C = f (get1 p) (get2 p)
+def uncurry[A,B,C](f: A => B => C)(p: (A,B)): C = { val (x,y) = p; f x y }
 
 // ========= List functions =========
 
@@ -87,9 +87,7 @@ def dropWhile[A](p: A => Boolean)(xs: List[A]): List[A] =
 
 def span[A](p: A => Boolean)(xs: List[A]): (List[A], List[A]) =
   if(isEmpty xs) ([], [])
-  else if(p (head xs)){ 
-    val pair = span p (tail xs); (head xs :: get1 pair, get2 pair)
-  }
+  else if(p (head xs)){ val (ys,zs) = span p (tail xs); (head xs::ys, zs) }
   else ([], xs)
 
 def break[A](p: A => Boolean): List[A] => (List[A], List[A]) =
@@ -119,17 +117,13 @@ def zip[A,B](xs: List[A])(ys: List[B]): List[(A,B)] =
   if(isEmpty xs || isEmpty ys) [] 
   else (head xs, head ys) :: zip (tail xs) (tail ys)
 
-
 def zipWith[A,B,C](f: A => B => C)(xs: List[A])(ys: List[B]): List[C] = 
   if(isEmpty xs || isEmpty ys) [] 
   else f (head xs) (head ys) :: zipWith f (tail xs) (tail ys)
 
 def unzip[A,B](ps: List[(A,B)]): (List[A], List[B]) =
   if(isEmpty ps) ([], [])
-  else{ 
-    val h = head ps; val pair = unzip (tail ps)
-    (get1 h :: get1 pair, get2 h :: get2 pair) 
-  }
+  else{ val (x,y) = head ps; val (xs,ys) = unzip (tail ps); (x::xs, y::ys) }
 
 // ===== Fold and scan operators
 

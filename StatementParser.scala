@@ -12,8 +12,13 @@ object StatementParser extends Parser0 with StatementParserT{
 
   // ===== val declarations
 
-  private def valPattern: Parser[ValPattern] =
-    name > NamePattern
+  private def valPattern: Parser[ValPattern] = (
+    name > NamePattern 
+    | withExtent(
+      inParens(valPattern ~ (lit(",") ~> repSep(valPattern, ","))) > {
+        case (p,ps) => TuplePattern(p::ps) }
+    )
+  )
 
   /** A parser for a value declaration, "val <name> = <expr>". */
   private def valDec: Parser[ValueDeclaration] =
