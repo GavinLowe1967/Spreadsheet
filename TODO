@@ -8,12 +8,13 @@ Current
 - Introduce syntactic category of Patterns, including tuples, and allow a
   ValueDeclaration to use a Pattern.
 
-- Parsing.
+- Parsing.  StatementParser.valPattern.
 
 - Type checking -- unifying pattern against a value.  Also check bound names
   disjoint.
+* TypeChecker.checkOverloading
 
-- Evaluation -- binding based on a pattern.
+- Evaluation -- binding based on a pattern.  Execution.scala, line 315
 
 Priorities
 ==========

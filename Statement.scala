@@ -22,8 +22,21 @@ case class Directive(col: Exp, row: Exp, expr: Exp) extends Statement{
 
 // =======================================================
 
+/** A pattern in a ValueDeclaration. */
+trait ValPattern{
+  /** The names bound in the pattern. */
+  def names: List[String]
+}
+
+/** A simple name as a pattern. */
+case class NamePattern(name: String) extends ValPattern{
+  def names = List(name)
+}
+
 /** A declaration of the form `val name = exp`. */
-case class ValueDeclaration(name: String, exp: Exp) extends Statement
+case class ValueDeclaration(pattern: ValPattern, exp: Exp) extends Statement
+
+
 
 // =======================================================
 

@@ -16,7 +16,8 @@ object StatementParserTest extends ParserTest0{
   /** Tests on value declarartions and cell writes. */
   private def statements1() = {
     val vDec = "val three = 1+2"
-    val vDecR = ValueDeclaration("three", BinOp(IntExp(1), "+", IntExp(2)))
+    val vDecR = 
+      ValueDeclaration(NamePattern("three"), BinOp(IntExp(1), "+", IntExp(2)))
     assert(ps(vDec) == vDecR)
 
     def cellExp(c: String, r: Int, t: CellType) = 
@@ -39,7 +40,7 @@ object StatementParserTest extends ParserTest0{
     // Test of typing information at end of line
     assert(pss("#E2 = 42: Int\nval x = 3\n") == List(
       Directive(ColumnExp("E"), RowExp(2), TypedExp(IntExp(42), IntType)),
-      ValueDeclaration("x", IntExp(3))
+      ValueDeclaration(NamePattern("x"), IntExp(3))
     ))
 
 
@@ -69,7 +70,8 @@ object StatementParserTest extends ParserTest0{
       FunctionDeclaration("add", List(), 
         List(List(("x", IntType), ("y", IntType))), None,
         BinOp(NameExp("x"), "+", NameExp("y")) ))
-    assert(ps("val c = #B \n") == ValueDeclaration("c", ColumnExp("B")))
+    assert(ps("val c = #B \n") == 
+      ValueDeclaration(NamePattern("c"), ColumnExp("B")))
 
     assert(parseAll(TypeParser.typeP, Input("List[Boolean]")) ==
       ListType(BoolType))
@@ -115,8 +117,9 @@ object StatementParserTest extends ParserTest0{
 
     // Following test previously failed when cellExp consumed the "\n".
     assert(pss("val y = #A3\nval x = 3") == List(
-      ValueDeclaration("y", UntypedCellExp(ColumnExp("A"), RowExp(3))),
-      ValueDeclaration("x", IntExp(3)) ))
+      ValueDeclaration(
+        NamePattern("y"), UntypedCellExp(ColumnExp("A"), RowExp(3))),
+      ValueDeclaration(NamePattern("x"), IntExp(3)) ))
   }
 
   /** Tests on curried function declarations. */
@@ -160,7 +163,7 @@ object StatementParserTest extends ParserTest0{
         assert(bs(0) ==
           Generator("r", ListLiteral(List(ColumnExp("A"), ColumnExp("B")))) )
         assert(bs(1) == Filter(BinOp(NameExp("r"), "!=", ColumnExp("C"))))
-        assert(sts(0) == ValueDeclaration("f", IntExp(5)))
+        assert(sts(0) == ValueDeclaration(NamePattern("f"), IntExp(5)))
         assert(sts(1) == Directive(NameExp("r"), IntExp(3), NameExp("f")))
     }
     assert(ps("for (x<-xs) {}") == ForStatement(

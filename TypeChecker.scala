@@ -108,21 +108,25 @@ object TypeChecker extends TypeCheckerT{
   def checkOverloading(typeEnv: TypeEnv, stmts: List[Statement])
       : Reply[TypeEnv] = {
     def sameName(vd1: ValueDeclaration, vd2: ValueDeclaration) = 
-      vd1.name == vd2.name
+      vd1.pattern == vd2.pattern
+// FIXME: allow more general patterns, and ensure names disjoint
     val valDecs = for(vd @ ValueDeclaration(_,_) <- stmts) yield vd
     val fnDecs = for(fd @ FunctionDeclaration(_,_,_,_,_) <- stmts) yield fd
     val grouped: GroupedFunctions = fnDecs.groupBy(_.name)
     val fnNames = grouped.keys
     // Names in both valDecs and fnDecs 
-    val repeats = valDecs.filter(vd => grouped.contains(vd.name))
+    // val repeats = valDecs.filter(vd => grouped.contains(vd.name))
+    val repeats = 
+      valDecs.filter(vd => vd.pattern.names.exists(n => grouped.contains(n)))
     if(repeats.nonEmpty){
-      val vd = repeats.head; val name = vd.name
+      val vd = repeats.head; val name = vd.pattern.names.head // FIXME
       FailureR(s"$name has both val and def definitions at lines "+
         (vd::grouped(name)).map(_.lineNumber).mkString(", ")+".")
     }
     else findPair(sameName, valDecs.toArray) match{
       case Some((vd1,vd2)) => 
-        FailureR(s"${vd1.name} has two val definitions at lines "+
+        val name = vd1.pattern.names.head // FIXME
+        FailureR(s"${name} has two val definitions at lines "+
           s"${vd1.lineNumber} and ${vd2.lineNumber}.")
       case None =>
         // Iterate over grouped, and check each
@@ -132,7 +136,7 @@ object TypeChecker extends TypeCheckerT{
           result = checkOverloadingAllowed(name, defs)
         }
         if(result != null) result
-        else updateEnv(typeEnv -- valDecs.map(_.name), grouped)
+        else updateEnv(typeEnv -- valDecs.map(_.pattern.names.head), grouped)//FIXME
     }
   }
 
@@ -179,7 +183,7 @@ object TypeChecker extends TypeCheckerT{
           typeCheckStmtList(te1, stmts).map{ te2 => Ok(te2.endScope) }
         }.lift(stmt)
 
-      case ValueDeclaration(name, exp) => 
+      case ValueDeclaration(NamePattern(name), exp) => 
         typeCheckAndClose(typeEnv, exp).mapOrLift(stmt, { case (te1, t) => 
           Ok(te1 + (name, t))
         })

@@ -1,7 +1,7 @@
 package spreadsheet
 
 /** Representation of an expression. */
-trait Exp extends HasExtent{
+trait Exp extends HasExtent{ 
 /*
   /** Handle value v, which is expected to be an ErrorValue: lift it by tagging
     * on the extent of this. */

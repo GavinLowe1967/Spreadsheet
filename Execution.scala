@@ -312,7 +312,7 @@ object Execution{
       // Note: we always return true, even if this particular directive failed
       true
 
-    case ValueDeclaration(name, exp) => 
+    case ValueDeclaration(NamePattern(name), exp) => 
       val v = eval(env, exp)
       v match{
         case ev: ErrorValue => handleError(liftError(s, ev)); false

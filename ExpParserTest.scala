@@ -193,14 +193,16 @@ object ExpParserTest extends ParserTest0{
       FunctionApp(NameExp("f"), List(ListLiteral(List(IntExp(3))))))
     assert(p("f {val x = 3; x}") ==
       FunctionApp(NameExp("f"), 
-        List(BlockExp(List(ValueDeclaration("x",IntExp(3))), NameExp("x")))))
+        List(BlockExp(List(ValueDeclaration(NamePattern("x"),IntExp(3))), 
+          NameExp("x")))))
 
     // Unary operators
     assert(p("!true") == FunctionApp(NameExp("!"), List(BoolExp(true))))
     assert(p("-x") == FunctionApp(NameExp("-"), List(NameExp("x"))))
     assert(p("- 3")  == FunctionApp(NameExp("-"), List(IntExp(3))))
     assert(p("-3") == IntExp(-3))
-    val block = BlockExp(List(ValueDeclaration("x",IntExp(2))), IntExp(-1))
+    val block = 
+      BlockExp(List(ValueDeclaration(NamePattern("x"),IntExp(2))), IntExp(-1))
     assert(p("{ val x = 2; -1 }") == block)
     assert(p("{ val x = 2;\n -1 }") == block)
     assert(p("{ val x = 2;\n (-1) }") == block)
