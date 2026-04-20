@@ -31,6 +31,8 @@ object TypeCheckerTest{
       // -----                      TypeCheckerTest2.scala
       println("===polyTests===")
       polyTests()
+      println("===concatTest===")
+      concatTest()
       println("===typeConstraintTests===")
       typeConstraintTests()
       println("===higherOrderTests===")

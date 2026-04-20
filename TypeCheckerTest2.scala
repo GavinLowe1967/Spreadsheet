@@ -56,12 +56,14 @@ object TypeCheckerTest2{
         assert(te("mkEmpty") == FunctionType(
           List(("A",AnyTypeConstraint)), List(), ListType(TypeParam("A"))
         ))
-        //println(te("xs")) // ListType(TypeParam(A))        
+        //assert(te("xs") == ListType(TypeParam("A")))      
         te("xs") match{ 
           case ListType(TypeVar(tv)) => assert(te(tv) == AnyTypeConstraint) }
     }
     tcpss("def mkEmpty[A <: Eq](): List[A] = []; val xs = mkEmpty()") match{
       case Ok(te) =>
+
+        // assert(te("xs") == ListType(TypeParam("A")))
         te("xs") match{ 
           case ListType(TypeVar(tv)) => assert(te(tv) == EqTypeConstraint) }
     }
@@ -102,6 +104,30 @@ object TypeCheckerTest2{
     nestedPolyTests()
     // Tests on lists
     polyListTests()
+  }
+
+  def concatTest() = {
+    val script = 
+      "def foldr[A,B](f: A => B => B)(e: B)(xs: List[A]): B = "+
+        "if(isEmpty xs) e else f(head xs)(foldr f e (tail xs)) \n" + 
+        "def append[A](xs: List[A])(ys: List[A]): List[A] = "+
+        "  if(isEmpty xs) ys else head xs :: append (tail xs) ys \n"+
+        // "val concat = foldr append [] \n" // +
+        "def concat[A](xss: List[List[A]]): List[A] = foldr append [] xss \n"+
+        "val xs = concat [[1]] \n" + "val ys = concat[[1.3]]"
+    tcpss(script) match{ 
+      case Ok(te) => 
+        // NOTE: this currently works, but doesn't withthe "val" definition of
+        // concat.
+        assert(te("concat") == FunctionType(
+          List(("A",AnyTypeConstraint)), 
+          List(ListType(ListType(TypeParam("A")))), ListType(TypeParam("A"))))
+        assert(te("xs") == ListType(IntType))
+        assert(te("ys") == ListType(FloatType))
+        // println("xs => "+te("xs")); println("ys => "+te("ys"))
+        // println("concat => "+te("concat"))
+      case FailureR(err) => println(err)
+    }
   }
 
   /** Tests using nested polymorphic functions. */
@@ -339,5 +365,7 @@ object TypeCheckerTest2{
     // unification fails to unify FloatType with TypeParam(A).
     assertFail(tcpss("def applyToThreeF[A](f: A => A): A = f(3.0)"))
   }
+
+  def main(args: Array[String]) = concatTest()
 
 }

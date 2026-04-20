@@ -78,5 +78,5 @@ for(r <- 2 to 2; r <- #5+r to #6+r) Cell(#C, r) = six
 // Test of empty blocks.
 for(x <- #0 until #10){ }
 
-
-
+// Test of pattern matching in "for" statement
+for((c,x) <- zip (#A to #E) (2 to 7)) Cell(c,#9) = x

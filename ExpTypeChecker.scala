@@ -209,6 +209,22 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
 
   // ========= Qualifiers
 
+  /** Try to bind `pat` to `t`, giving updated TypeEnv. */
+  def bindNames(typeEnv: TypeEnv, pat: Pattern, t: TypeT)
+      : Reply[TypeEnv] = pat match{
+    case NamePattern(name) => Ok(typeEnv + (name, t))
+    case TuplePattern(pats) => t match{
+      case TupleType(ts) if pats.length == ts.length => 
+        // Recurse on corresponding patterns and types
+        def f(te: TypeEnv, pair: (Pattern, TypeT)): Reply[TypeEnv] = 
+          bindNames(te, pair._1, pair._2)
+        Reply.fold(f _, typeEnv, pats.zip(ts)).lift(pat)
+      case _ => 
+        FailureR(s"Cannot bind pattern to type ${t.asString}").lift(pat,true)
+    }
+  }
+
+
   /** Typecheck qs, returning an updated TypeEnv if successful. */
   def checkQualifiers(typeEnv: TypeEnv, qs: List[Qualifier]): Reply[TypeEnv] = 
     Reply.fold(checkQualifier, typeEnv, qs)
@@ -216,9 +232,10 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
   /** Typecheck q, returning an updated TypeEnv if successful. */
   private 
   def checkQualifier(typeEnv: TypeEnv, q: Qualifier): Reply[TypeEnv] = q match{
-    case Generator(name, list) =>   // list should be a ListType
+    case Generator(pattern, list) =>   // list should be a ListType
       typeCheckAndClose(typeEnv, list).map{
-        case (te1, ListType(t)) => Ok(te1+(name,t)) // bind name
+        //case (te1, ListType(t)) => Ok(te1+(name,t)) // bind name
+        case (te1, ListType(t)) => bindNames(te1, pattern, t) // bind names
         case (_, t1) =>
           FailureR(s"Expected List, found ${t1.asString}").lift(list,true)
       }.lift(q)

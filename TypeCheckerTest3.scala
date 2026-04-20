@@ -27,6 +27,8 @@ object TypeCheckerTest3{
     assertOk(tcpss("for(if false; r <- [#1,#2,#3]; if r != #2) Cell(#A, r) = 3"))
     // "Expected Boolean, found Int"
     assertFail(tcpss("for(r <- [#1,#2,#3]; if 13) Cell(#A, r) = 3"))
+    assertOk(tcpss("for((x,y) <- [(1,2)]) #A3 = x+y"))
+    assertFail(tcpss("for((x,y) <- [(1,2.0)]) #A3 = x+y"))
   }
 
   def overloadingTests() = {

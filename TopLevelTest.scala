@@ -66,7 +66,10 @@ object TopLevelTest{
     (B,7,BoolValue(true)), (B,8, BoolValue(true)),
     // for(r <- 2 to 2; r <- #5+r to #6+r) Cell(#C, r) = 6
     (C,7,IntValue(6)), (C,8,IntValue(6)),
-    (E, 7, IntValue(7))
+    (E, 7, IntValue(7)),
+    // for((c,x) <- zip (#A to #E) (2 to 7)) Cell(c,#9) = x
+    (A, 9, IntValue(2)), (B, 9, IntValue(3)), (C, 9, IntValue(4)),
+    (D, 9, IntValue(5)), (E, 9, IntValue(6))
   )
 
   /** Lit of cells where type errors are expected. */

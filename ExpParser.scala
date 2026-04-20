@@ -44,6 +44,29 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
     }
   )
 
+  // ===== Patterns and generators
+
+  /** A pattern for the generator of a list comprehension or "for" loop, or for
+    * a "val" declaration. */
+  def pattern: Parser[Pattern] = (
+    name > NamePattern 
+    | withExtent(
+      inParens(pattern ~ (lit(",") ~> repSep(pattern, ","))) > {
+        case (p,ps) => TuplePattern(p::ps) }
+    )
+  )
+
+  /** A generator in a list comprehension or "for" expression. */
+  def generator = withExtent(pattern ~ (lit("<-") ~> expr) > toPair(Generator))
+
+  /** A parser for a single qualifier in a list comprehension. */
+  private def qualifier: Parser[Qualifier] = 
+    /*withExtent*/(generator | expr > Filter)
+
+  /** A parser for one or more qualifiers. */
+  private def qualifiers: Parser[List[Qualifier]] = 
+    repSepNonEmpty(qualifier, ",")
+
   // ===== Lists
 
   /** A parser for a list expression, either a list literal or a list
@@ -64,17 +87,6 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
     | lit(",") ~> repSep(expr, ",") <~ lit("]") > (Left(_)) // 2+ elements
     | lit("|") ~> (qualifiers <~ lit("]")) > (Right(_)) // list comprehension
   )
-
-  /** A generator in a list comprehension or "for" expression. */
-  def generator = withExtent(name ~ (lit("<-") ~> expr) > toPair(Generator))
-
-  /** A parser for a single qualifier in a list comprehension. */
-  private def qualifier: Parser[Qualifier] = 
-    /*withExtent*/(generator | expr > Filter)
-
-  /** A parser for one or more qualifiers. */
-  private def qualifiers: Parser[List[Qualifier]] = 
-    repSepNonEmpty(qualifier, ",")
 
   // ===== A tuple or an expression in parentheses.
 
@@ -118,7 +130,7 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
   )
 
   /** A parser for a pattern in a cell match expression. */
-  private def pattern: Parser[Pattern] = (
+  private def matchPattern: Parser[MatchPattern] = (
     keyword("Empty") ~> success(EmptyPattern)
     | lit("_") ~> ( 
       lit(":") ~> cellType > { t => TypedPattern(None, t) } | success(Wildcard)
@@ -129,7 +141,7 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
   /** A parser for a branch of a cell match expression, 
     * "case <pattern> => <expr>". */
   private def matchBranch: Parser[MatchBranch] = withExtent(
-    keyword("case") ~> pattern ~ (lit("=>") ~> expr) > {
+    keyword("case") ~> matchPattern ~ (lit("=>") ~> expr) > {
       case (p, e) => MatchBranch(p, e) 
     }
   )

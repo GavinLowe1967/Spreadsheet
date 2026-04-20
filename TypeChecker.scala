@@ -182,19 +182,6 @@ object TypeChecker extends TypeCheckerT{
 
   // ========= Top-level functions
 
-  private def bindNames(typeEnv: TypeEnv, pat: ValPattern, t: TypeT)
-      : Reply[TypeEnv] = pat match{
-    case NamePattern(name) => Ok(typeEnv + (name, t))
-    case TuplePattern(pats) => t match{
-      case TupleType(ts) if pats.length == ts.length => 
-        // Recurse on corresponding patterns and types
-        def f(te: TypeEnv, pair: (ValPattern, TypeT)): Reply[TypeEnv] = 
-          bindNames(te, pair._1, pair._2)
-        Reply.fold(f _, typeEnv, pats.zip(ts)).lift(pat)
-      case _ => 
-        FailureR(s"Cannot bind pattern to type ${t.asString}").lift(pat,true)
-    }
-  }
 
   /** Typecheck the statement `stmt`. 
     * If successful, return the resulting type environment. */
@@ -220,7 +207,7 @@ object TypeChecker extends TypeCheckerT{
 
       case ValueDeclaration(pat, exp) => 
         typeCheckAndClose(typeEnv, exp).map{ case (te1, t) => 
-          bindNames(te1, pat, t)
+          etc.bindNames(te1, pat, t)
         }.lift(stmt)
 
       case fd: FunctionDeclaration =>  typeCheckDecl(typeEnv, fd).lift(fd)

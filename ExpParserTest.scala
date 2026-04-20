@@ -163,18 +163,25 @@ object ExpParserTest extends ParserTest0{
   /** Tests for list comprehensions. */
   private def listComprehensions() = {
     assert(p("[x+2 | x <- xs]") == ListComprehension(
-      BinOp(NameExp("x"), "+", IntExp(2)), List(Generator("x", NameExp("xs"))) 
+      BinOp(NameExp("x"), "+", IntExp(2)), 
+      List(Generator(NamePattern("x"), NameExp("xs")))
     ) )
     assert(p("[x+2 | x <- xs, x > 3]") == ListComprehension(
       BinOp(NameExp("x"), "+", IntExp(2)), 
-      List(Generator("x", NameExp("xs")), 
+      List(Generator(NamePattern("x"), NameExp("xs")), 
         Filter(BinOp(NameExp("x"), ">", IntExp(3))) )
     ) )
 
     assert(p("[(Cell(c,#6):Int) | c <- [#A, #D] ]") == ListComprehension(
       CellExp(NameExp("c"), RowExp(6), IntType),
-      List(Generator("c", ListLiteral(List(ColumnExp("A"), ColumnExp("D")))))
+      List(Generator(NamePattern("c"), 
+        ListLiteral(List(ColumnExp("A"), ColumnExp("D")))))
     ))
+    assert(p("[x | (x,y) <- pairs]") == ListComprehension(
+      NameExp("x"),
+      List(Generator(TuplePattern(List(NamePattern("x"), NamePattern("y"))),
+        NameExp("pairs") ))))
+
   }
 
   /** Tests on function applications, mostly without parentheses. */

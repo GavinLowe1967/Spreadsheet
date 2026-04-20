@@ -267,6 +267,13 @@ object TypeCheckerTest4{
       assert(te("map") == mapType)
       assert(te("reverse") == reverseType)
       assert(te("filter") == filterType)
+      //println(te("nonEmpty"))
+      // FunctionType(List((A#24,AnyTypeConstraint)),
+      //  List(ListType(TypeParam(A#24))), BoolType)
+      // println(te("concat"))
+      // FunctionType(List(), List(ListType(ListType(TypeVar(443)))),
+      //   ListType(TypeVar(443)))
+      // I don't really understand why the former uses TypeParams. 
     }
   }
 

@@ -3,6 +3,7 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
+
 **** pattern matching on tuples, e.g. val (x,y) = f(3)
 
 - Introduce syntactic category of Patterns, including tuples, and allow a
@@ -16,12 +17,60 @@ Current
 * Test (a) name bound twice in a single val; (b) name shared between val and def;
 -- DONE
 
-- Evaluation -- binding based on a pattern.  Execution.scala, line 315 --
+- Evaluation -- binding based on a pattern.  Execution.scala, line 315 -- DONE
 
 - Extend to list comprehensions and for loops
 
+1. Rename Pattern to MatchPattern -- DONE
+
+2. Rename ValPattern to Pattern, and move to Exp.scala -- DONE
+
+3. Change Generator to use a Pattern -- DONE.  
+
+4. Parser for patterns ExpParser.generator -- DONE
+
+5. In ExpTypeChecker.checkQualifier use TypeChecker.bindNames (more to ETC),
+line 219 -- DONE
+
+6. In Execution.processListComp, use bindValDec (rename), line 233 -- DONE
+
+7. In Execution.performFor, use bindValDec. line 409 -- DONE
+
+*** Add to manual 
+
+Type checking
+=============
+
+*** Make "val" definition of concat have a type parameter argument. 
+
+Typechecking concat in checkFunctionApp1 gets
+
+res0 = FunctionType(
+  List((A#0,AnyTypeConstraint)), List(ListType(TypeParam(A#0))),
+  FunctionType(List(), List(ListType(ListType(TypeParam(A#0)))), 
+    ListType(TypeParam(A#0))))
+
+which is what we want.  But the use of subTypeParamsInResult, replaces the
+TypeParam(A#0) by a TypeVar.
+
+If we remove subTypeParamsInResult then the mkEmpty examples
+(TypeCheckerTest2, l54-)
+
+def mkEmpty[A](): List[A] = []; val xs = mkEmpty()
+def mkEmpty[A <: Eq](): List[A] = []; val xs = mkEmpty()
+
+give xs type ListType(TypeParam("A")), where "A" is never introduced; and
+loses the Eq constraint in the latter case.  I think we'd like the latter to
+have type [A <: Eq] ListType(TypeParam("A")), but there's currently no way to
+say that in the type system.
+
+
 Priorities
 ==========
+
+- Refactor Execution.scala
+
+-- More testing on haskell.dir, especially "val" definitions, via EvaluationTest.scala
 
 - Improve AV script
 
@@ -37,7 +86,6 @@ Priorities
 
 - toString functions.  + on strings.
 
-- Refactor Execution.scala?
 
 X. Manual -- keep updated.
 

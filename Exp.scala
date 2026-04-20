@@ -158,28 +158,28 @@ case class UntypedCellExp(column: Exp, row: Exp) extends Exp{
 // =================================================== cell match expressions
 
 /** A pattern in a cell match expression. */
-trait Pattern{
+trait MatchPattern{
   /** Does this pattern match type t? */
   def matches(t: CellType): Boolean 
 }
 
 /** A pattern "name: theType" or "_: theType. */
 case class TypedPattern(oName: Option[NameExp.Name], theType: CellType)
-    extends Pattern{
+    extends MatchPattern{
   def matches(t: CellType) = t == theType
 }
 
 /** A pattern "Empty". */
-case object EmptyPattern extends Pattern{
+case object EmptyPattern extends MatchPattern{
   def matches(t: CellType) = t == EmptyType
 }
 
-case object Wildcard extends Pattern{
+case object Wildcard extends MatchPattern{
   def matches(t: CellType) = true
 }
 
 /** A pattern of the form "case pattern => body". */
-case class MatchBranch(pattern: Pattern, body: Exp) extends HasExtent
+case class MatchBranch(pattern: MatchPattern, body: Exp) extends HasExtent
 
 /** An expression of the form "Cell(column, row) match{ branches }". */
 case class CellMatchExp(column: Exp, row: Exp, branches: List[MatchBranch]) 
@@ -198,10 +198,29 @@ case class ListLiteral(elems: List[Exp]) extends Exp
 
 // ================================================================
 
+/** A pattern in a Generator of a list comprehension or for loop, or in a
+  * ValueDeclaration. */
+trait Pattern extends HasExtent{
+  /** The names bound in the pattern. */
+  def names: List[String]
+}
+
+/** A simple name as a pattern. */
+case class NamePattern(name: String) extends Pattern{
+  def names = List(name)
+}
+
+case class TuplePattern(patterns: List[Pattern]) extends Pattern{
+  require(patterns.length >= 2)
+  def names = patterns.flatMap(_.names)
+}
+
 /** A qualifier for a list comprehension of a "for" statement. */
 trait Qualifier extends HasExtent
-/** A generator, "name <- exp". */
-case class Generator(name: String, exp: Exp) extends Qualifier
+
+/** A generator, "pat <- exp". */
+case class Generator(pat: Pattern, exp: Exp) extends Qualifier
+
 // IMPROVE: more general forms of pattern matching?
 /** A filter, "if exp". */
 case class Filter(exp: Exp) extends Qualifier

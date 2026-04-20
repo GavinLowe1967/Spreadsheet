@@ -97,6 +97,9 @@ object EvaluationTest{
     assert(eval(
       "{val xs = [x+y | x <- [1,2,3], y <- [4,7], x != 2]; xs == [5,8,7,10]}"
     ) == BoolValue(true))
+    assert(eval(
+      "{val xs = [x+y | (x,y) <- [(1,4),(2,3),(3,4)], x != 2]; xs == [5,7]}"
+    ) == BoolValue(true))
     // ===== Pairs
     assert(eval("{val pair = (2,3.5); get1 pair}") == IntValue(2))
     assert(eval("get1((2,4,6,8))") == IntValue(2))
@@ -159,10 +162,12 @@ object EvaluationTest{
   private def scriptTests() = {
     def mkList(xs: Int*) = ListValue(xs.toList.map(IntValue(_)))
     val Height = 100; val Width = 26
-    val model = new Model(Height,Width); model.setView(DummyView)
+    val model = new Model(Height,Width); model.setView(TestingView)
     val env = model.getEnv; val isCalculated = env.isCalculated _
     model.loadScript("evaluationTest.dir", null)
+
     assert(env("b1") == BoolValue(false) && env("b2") == BoolValue(true))
+    assert(env("b2a")  == BoolValue(true))
     assert(env("b3") == BoolValue(true) && env("b4") == BoolValue(false))
     assert(env("b5") == BoolValue(false)) // lazy evaluation of &&
     assert(env("xs1") == mkList(0,1,2,3) && env("xs2") == mkList(3,3,3,0))
@@ -171,6 +176,8 @@ object EvaluationTest{
     assert(env("xs5") == mkList(2,3,4,5) && env("xs6") == mkList(6,7,8,9))
     assert(env("xs7") == mkList(2,4) && env("xs8") == mkList(5,6))
     assert(env("x3") == IntValue(7))
+    assert(env("xs9") == mkList(1,2,3))
+    assert(env("xs10") == ListValue(List(FloatValue(3.4F))))
   }
 
   /** Tests on val declarations using tuples. */

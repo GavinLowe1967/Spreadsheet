@@ -106,7 +106,7 @@ object Execution{
           else{ 
             val branch = bs.head
             val env1 = env.clone // clone env to prevent leakage
-            bind(env1, branch.pattern, v); eval(env1, branch.body)
+            bindMatch(env1, branch.pattern, v); eval(env1, branch.body)
           }
         }
         applyToCell(column, row, doMatch)
@@ -230,13 +230,13 @@ object Execution{
       case ev: ErrorValue => ev; case v => ab += v; null
     }
     else qs.head match{
-      case Generator(name, list) =>
+      case Generator(pattern, list) =>
         eval(env, list) match{
           case ListValue(vs) => 
             // bind name to each element of vs; recurse; and combine results.
             var vs1 = vs; var error: ErrorValue = null
             while(vs1.nonEmpty && error == null){
-              val env1 = env.clone; env1.update(name, vs1.head); vs1 = vs1.tail
+              val env1 = env.clone; bind(env1, pattern, vs1.head); vs1 = vs1.tail
               error = processListComp(env1, e, qs.tail, ab)
             }
             error
@@ -251,9 +251,21 @@ object Execution{
     }
 
   /** Update env by performing the binding corresponding to v matching cell. */
-  private def bind(env: Environment, pat: Pattern, v: Cell): Unit = pat match{
+  private 
+  def bindMatch(env: Environment, pat: MatchPattern, v: Cell): Unit = pat match{
     case TypedPattern(Some(name), _) => env.update(name, v)
     case _ => {}
+  }
+
+  /** Update env, binding pat to v. */
+  private def bind(env: Environment, pat: Pattern, v: Value)
+      : Unit = pat match{
+    case NamePattern(name) => env.update(name, v)
+    case TuplePattern(patterns) => v match{
+      case TupleValue(vs) if patterns.length == vs.length => 
+        for((pat1,v1) <- patterns.zip(vs)) bind(env, pat1, v1)
+      case _ => sys.error(s"Bad binding: $pat = $v")
+    }
   }
 
   // ==================================================================
@@ -284,18 +296,6 @@ object Execution{
       val mwe = MultipleWriteError(env.getCell1(c,r), v1) 
       env.setCell(c, r, mwe); handleError(mwe)
     }
-  }
-
-  /** Update env, binding pat to v. */
-  private def bindValDec(env: Environment, pat: ValPattern, v: Value)
-      : Unit = pat match{
-    case NamePattern(name) => env.update(name, v)
-    case TuplePattern(patterns) => v match{
-      case TupleValue(vs) if patterns.length == vs.length => 
-        for((pat1,v1) <- patterns.zip(vs)) bindValDec(env, pat1, v1)
-      case _ => sys.error(s"Bad binding: $pat = $v")
-    }
-
   }
  
   /** Perform `s` in `env`, handling errors with `handleError`. 
@@ -328,7 +328,7 @@ object Execution{
       val v = eval(env, exp)
       v match{
         case ev: ErrorValue => handleError(liftError(s, ev)); false
-        case _ => bindValDec(env, pat, v); true
+        case _ => bind(env, pat, v); true
       }
 
     case fd @ FunctionDeclaration(name, tParams, paramss, rt, body) => 
@@ -406,11 +406,11 @@ object Execution{
       : Unit =
     if(binders.isEmpty) performAll(stmts, env.clone, handleError)
     else binders.head match{
-      case Generator(name, list) => eval(env, list) match{
+      case Generator(pattern, list) => eval(env, list) match{
         case ListValue(vs) => // bind name to v for each v in vs
           for(v <- vs){
             // Note: need to clone the environment here to prevent leakage.
-            val env1 = env.clone; env1.update(name, v)
+            val env1 = env.clone; bind(env1, pattern, v) 
             performFor(env1, handleError, binders.tail, stmts)
           }
         case err: ErrorValue => handleError(err)

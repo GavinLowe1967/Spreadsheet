@@ -7,22 +7,16 @@ object StatementParser extends Parser0 with StatementParserT{
   val expParser = new ExpParser(this)
   private val expr = expParser.expr
   private val cell = expParser.cell
+  private val pattern = expParser.pattern
 
   import TypeParser.{typeP,ofType}
 
   // ===== val declarations
 
-  private def valPattern: Parser[ValPattern] = (
-    name > NamePattern 
-    | withExtent(
-      inParens(valPattern ~ (lit(",") ~> repSep(valPattern, ","))) > {
-        case (p,ps) => TuplePattern(p::ps) }
-    )
-  )
 
   /** A parser for a value declaration, "val <name> = <expr>". */
   private def valDec: Parser[ValueDeclaration] =
-    keyword("val") ~> valPattern ~ (lit("=") ~> expr) > toPair(ValueDeclaration)
+    keyword("val") ~> pattern ~ (lit("=") ~> expr) > toPair(ValueDeclaration)
 
   // ===== def declarations
 

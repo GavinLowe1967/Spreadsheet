@@ -3,7 +3,7 @@
 
 #include "haskell.dir"
 
-val b1 = nonEmpty []; val b2 = nonEmpty [3] 
+val b1 = nonEmpty []; val b2 = nonEmpty [3]; val b2a = nonEmpty [3.4]
 val b3 = singleton [2]; val b4 = singleton[2,3]; val b5 = singleton []
 val xs1 = scanl (max: Int => Int => Int) 0 [1,2,3]
 val xs2 = scanr (max: Int => Int => Int) 0 [1,2,3]
@@ -16,3 +16,6 @@ def even(n: Int) = n%2 == 0
 val (xs7,xs8) = span even [2,4,5,6]
 def add(x: Int)(y: Int) = x+y
 val x3 = uncurry add ((3,4))
+val xs9 = concat [[1],[2,3]]
+val xs10 = concat[[3.4]]
+

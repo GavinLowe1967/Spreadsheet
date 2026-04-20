@@ -174,23 +174,26 @@ object StatementParserTest extends ParserTest0{
       List(Filter(BoolExp(true))), 
       List(Directive(ColumnExp("A"), RowExp(1), IntExp(3))) ))
     assert(ps("for (x<-xs)  #A1 = x ") == ForStatement(
-      List(Generator("x", NameExp("xs"))),
+      List(Generator(NamePattern("x"), NameExp("xs"))),
       List(Directive(ColumnExp("A"), RowExp(1), NameExp("x"))) ))
     //println(ps("for (r <- [#A,#B]; if r != #C) Cell(r,3) = 5"))
     ps("for (r <- [#A,#B]; if r != #C){ val f = 5; Cell(r,3) = f }") match{ 
       case ForStatement(bs,sts) =>
         assert(bs.length == 2 && sts.length == 2)
         assert(bs(0) ==
-          Generator("r", ListLiteral(List(ColumnExp("A"), ColumnExp("B")))) )
+          Generator(NamePattern("r"), 
+            ListLiteral(List(ColumnExp("A"), ColumnExp("B")))) )
         assert(bs(1) == Filter(BinOp(NameExp("r"), "!=", ColumnExp("C"))))
         assert(sts(0) == ValueDeclaration(NamePattern("f"), IntExp(5)))
         assert(sts(1) == Directive(NameExp("r"), IntExp(3), NameExp("f")))
     }
     assert(ps("for (x<-xs) {}") == ForStatement(
-      List(Generator("x", NameExp("xs"))), List()
+      List(Generator(NamePattern("x"), NameExp("xs"))), List()
     ))
-
-    //println(ps("for(x <- [#A3]) #B2 = 0"))
+    assert(ps("for((x,y) <- pairs) #A1 = 3") == ForStatement(
+      List(Generator(TuplePattern(List(NamePattern("x"), NamePattern("y"))),
+        NameExp("pairs"))),
+      List(Directive(ColumnExp("A"), RowExp(1), IntExp(3))) ))
   }
 
   private def assertions() = {

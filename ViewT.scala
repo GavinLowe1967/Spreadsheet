@@ -25,3 +25,14 @@ object DummyView extends ViewT{
 
   def clearInfo() = {}
 }
+
+/** A dummy view, for use in testing.  Errors are printed in the terminal. */
+object TestingView extends ViewT{
+  def redisplay() = {}
+
+  def showSelection(text: String) = println(text)
+
+  def addInfo(text: String) = println(text)
+
+  def clearInfo() = {}
+}

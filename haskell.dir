@@ -42,7 +42,9 @@ def index[A](n: Int)(xs: List[A]): A = {
   if(n == 0) head xs else index(n-1) (tail xs) 
 }
 
-val concat = foldr append []
+// val concat = foldr append []
+
+def concat[A](xss: List[List[A]]) : List[A] = foldr append [] xss
 
 def concatMap[A,B] (f: A => List[B]) = after concat (map f)
 

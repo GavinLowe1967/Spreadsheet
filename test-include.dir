@@ -9,4 +9,7 @@ def sum(xs: List[Float]): Float =
 /** Apply function. */
 def apply[A,B](f: A => B)(x: A) = f x
 
-
+/** zip function. */
+def zip[A,B](xs: List[A])(ys: List[B]): List[(A,B)] = 
+  if(isEmpty xs || isEmpty ys) [] 
+  else (head xs, head ys) :: zip (tail xs) (tail ys)

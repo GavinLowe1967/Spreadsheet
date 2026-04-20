@@ -113,6 +113,7 @@ object TypeParamSubstitution{
     val tParams = rtMap.toList.sortBy{ case ((TypeVar(tv),_)) => tv }.map(_._2)
     // Note: the "sortBy" sorts the type parameters back to their original
     // order.
+//println(s"reverseRemapBy($rtMap,\n\t $tParams,\n\t $t)")
     reverseRemapBy(rtMap, tParams, t)
   }
 

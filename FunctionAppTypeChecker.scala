@@ -36,7 +36,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   private 
   def checkFunctionApp1(typeEnv: TypeEnv, ft: FunctionType, args: List[Exp])
       : TypeCheckRes = {
-// println(s"checkFunctionApp1(\n\t$ft,\n\t$args)")
+//println(s"***\ncheckFunctionApp1(\n\t$ft,\n\t$args)")
     val FunctionType(tParams, domain, range) = ft
     if(domain.length != args.length)
       FailureR(s"Expected ${domain.length} arguments, found "+args.length)
@@ -48,8 +48,10 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
           typeEnv.newScope, ft.usedTParams, domain, range)
       checkFunctionApp2(te1, domain1, range1, ft.typeParams.toSet, args).map{
         case (te2, res0) => 
+// println(s"res0 = $res0")
           val (te3, res) = subTypeParamsInResult(te2, ft.unusedTParams, res0)
           Ok((te3.endScope, res))
+//          Ok((te2.endScope, res0))
       }
     }
   }
@@ -62,6 +64,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     typeEnv: TypeEnv, domain: List[TypeT], range: TypeT, 
     typeParams: Set[TypeParamName], args: List[Exp])
       : TypeCheckRes = {
+//println(s"checkFunctionApp2(\n\t domain = $domain,\n\t range = $range, \n\t args = $args)")
     // Generate a new name, and bind it to range in the environment;
     // then unify the types of args with domain, so the new name gets
     // updated to the appropriate return type.
@@ -73,6 +76,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
         // Extract type of name.  Need to apply invMap to reverse renaming
         // done in unifyList.
 //println(s"te3 = $te3")
+//println(s"name: "+te3(name))
 //println(s"invMap = $invMap")
         Ok((te3, reverseRemapBy(invMap, te3(name))))
       }

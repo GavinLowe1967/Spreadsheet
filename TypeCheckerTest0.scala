@@ -249,6 +249,7 @@ printErrors = false
     assertFail(tcp("[x | x <- 3 to 7.0]"))
     assertFail(tcp("[x | x <- [2,4,5], x < 3.4]"))
     assertFail(tcp("[x && true | x <- [2,3,4]]"))
+    assertEq(tcp("[x*y | (x,y) <- [(1,2), (3,4)]]"), ListType(IntType))
 printErrors = false
   }
 
