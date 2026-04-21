@@ -98,6 +98,15 @@ case class Assertion2(condition: Exp, msg: Exp) extends Statement
   * returning Unit. */
 case class CallStatement(e: Exp) extends Statement
 
+// =======================================================
+
+/** A conditional statement, "if(condition) ifCase" or "if(condition) ifCase
+  * else elseCase". */
+case class IfStatement(
+  condition: Exp, ifCase: List[Statement], elseCase: List[Statement])
+    extends Statement
+
+// =======================================================
 /* Note: we can't include this in Exp.scala, because it builds on Statement. */
 
 /** A block expression of the form { stmt_1; ...; stmt_n; exp }; or

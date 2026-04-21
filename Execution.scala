@@ -1,14 +1,14 @@
 package spreadsheet
 
 import FunctionDeclaration.ParameterList
-import Evaluation.liftError
+import Evaluation.{liftError,bind}
 
 /** Object responsible for evaluating expressions and executing statements. */
 object Execution extends ExecutionT{
   // Functions provided by the Evaluation object
   private val evaluation = new Evaluation(this)
   private val eval = evaluation.eval _
-  private val bind = evaluation.bind _ 
+  //private val bind = evaluation.bind _ 
 
   // ==================================================================
 
@@ -103,6 +103,13 @@ object Execution extends ExecutionT{
 
     case CallStatement(e) => eval(env, e) match{
       case UnitValue => true
+      case ev: ErrorValue => handleError(liftError(s, ev)); false
+    }
+
+    case IfStatement(condition, ifCase, elseCase) => eval(env, condition) match{
+      case BoolValue(b) => 
+        // Note: clone environment to prevent leakage; and always return true
+        performAll(if(b) ifCase else elseCase, env.clone, handleError); true
       case ev: ErrorValue => handleError(liftError(s, ev)); false
     }
   } // end of perform

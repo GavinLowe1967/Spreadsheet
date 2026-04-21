@@ -4,39 +4,18 @@ Current
 =======
 
 
-**** pattern matching on tuples, e.g. val (x,y) = f(3)
 
-- Introduce syntactic category of Patterns, including tuples, and allow a
-  ValueDeclaration to use a Pattern. -- DONE
+- Add "if" directives.
 
-- Parsing.  StatementParser.valPattern. -- DONE
+1. Add to Statement -- DONE
 
-- Type checking -- unifying pattern against a value.  Also check bound names
-  disjoint.
-* TypeChecker.checkOverloading
-* Test (a) name bound twice in a single val; (b) name shared between val and def;
--- DONE
+2. Parser -- DONE
 
-- Evaluation -- binding based on a pattern.  Execution.scala, line 315 -- DONE
+3. Type checker -- DONE
 
-- Extend to list comprehensions and for loops
+4. Execution. -- DONE
 
-1. Rename Pattern to MatchPattern -- DONE
-
-2. Rename ValPattern to Pattern, and move to Exp.scala -- DONE
-
-3. Change Generator to use a Pattern -- DONE.  
-
-4. Parser for patterns ExpParser.generator -- DONE
-
-5. In ExpTypeChecker.checkQualifier use TypeChecker.bindNames (more to ETC),
-line 219 -- DONE
-
-6. In Execution.processListComp, use bindValDec (rename), line 233 -- DONE
-
-7. In Execution.performFor, use bindValDec. line 409 -- DONE
-
-*** Add to manual 
+5. Manual, TODO.  Note declarations are local. 
 
 Type checking
 =============
@@ -68,13 +47,11 @@ say that in the type system.
 Priorities
 ==========
 
-- Refactor Execution.scala
+- Refactor Execution.scala -- DONE
 
 -- More testing on haskell.dir, especially "val" definitions, via EvaluationTest.scala
 
 - Improve AV script
-
-- Add "if" directives.
 
 - Allow pattern matching on ::
 
@@ -109,6 +86,7 @@ values; and vice versa, e.g. get1(x,y).
 
 * Expressions like Cells(#A, #0 to #5): List[Int]
 
+* Catch stack overflows -- limit depth of recursion.
 
 Low Priority
 ============
@@ -135,8 +113,6 @@ Low Priority
 
 * Look again at Unification.scala.  Are all branches tested?
 
-* Catch stack overflows.
-
 * In Environment, use null intead of Empty() (to save memory). 
 
 
@@ -145,6 +121,42 @@ Low Priority
 
 ===================================== DONE
 
+
+**** pattern matching on tuples, e.g. val (x,y) = f(3)
+
+- Introduce syntactic category of Patterns, including tuples, and allow a
+  ValueDeclaration to use a Pattern. -- DONE
+
+- Parsing.  StatementParser.valPattern. -- DONE
+
+- Type checking -- unifying pattern against a value.  Also check bound names
+  disjoint.
+* TypeChecker.checkOverloading
+* Test (a) name bound twice in a single val; (b) name shared between val and def;
+-- DONE
+
+- Evaluation -- binding based on a pattern.  Execution.scala, line 315 -- DONE
+
+- Extend to list comprehensions and for loops
+
+1. Rename Pattern to MatchPattern -- DONE
+
+2. Rename ValPattern to Pattern, and move to Exp.scala -- DONE
+
+3. Change Generator to use a Pattern -- DONE.  
+
+4. Parser for patterns ExpParser.generator -- DONE
+
+5. In ExpTypeChecker.checkQualifier use TypeChecker.bindNames (more to ETC),
+line 219 -- DONE
+
+6. In Execution.processListComp, use bindValDec (rename), line 233 -- DONE
+
+7. In Execution.performFor, use bindValDec. line 409 -- DONE
+
+*** Add to manual -- DONE
+
+---
 - Make &&, || lazy, e.g. -- DONE
 
 - Haskell standard prelude

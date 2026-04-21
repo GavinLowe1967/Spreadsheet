@@ -51,6 +51,7 @@ object TypeCheckerTest{
       haskellTests()
       tupleTests()
       callTests()
+      ifStmtTests()
     }
     println("Done")
   }

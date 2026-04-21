@@ -119,6 +119,10 @@ def zip[A,B](xs: List[A])(ys: List[B]): List[(A,B)] =
   if(isEmpty xs || isEmpty ys) [] 
   else (head xs, head ys) :: zip (tail xs) (tail ys)
 
+def zip3[A,B,C](xs: List[A])(ys: List[B])(zs: List[C]): List[(A,B,C)] = 
+  if(isEmpty xs || isEmpty ys || isEmpty zs) [] 
+  else (head xs, head ys, head zs) :: zip3 (tail xs) (tail ys) (tail zs)
+
 def zipWith[A,B,C](f: A => B => C)(xs: List[A])(ys: List[B]): List[C] = 
   if(isEmpty xs || isEmpty ys) [] 
   else f (head xs) (head ys) :: zipWith f (tail xs) (tail ys)
@@ -134,7 +138,7 @@ def foldr[A,B](f: A => B => B)(e: B)(xs: List[A]): B =
 
 def foldr1[A](f: A => A => A)(xs: List[A]): A = {
   assert(nonEmpty xs, "foldr1 on []")
-  if(singleton xs) head xs else f (head xs) (foldr1 f xs)
+  if(singleton xs) head xs else f (head xs) (foldr1 f (tail xs))
 }
 
 def foldl[A,B](f: B => A => B)(e: B)(xs: List[A]): B = 

@@ -312,14 +312,18 @@ object TypeCheckerTest4{
   }
 
   def callTests() = {
-    
-    // =====
     tcpss("def f() = {#A3 = 3}; f()") match{ case Ok(te) => 
       assert(te("f") == FunctionType( List(), List(), UnitType))
-    // tcpss("def f() = {#A3 = 3}; call f()") match{ case Ok(te) => 
-    //   assert(te("f") == FunctionType( List(), List(), UnitType))
     }
-// IMPROVE: it would be nice to avoid the brackets.  
+  }
+
+  def ifStmtTests() = {
+    assertOk(tcpss("IF (true) #A3 = 3 ELSE{ #A4 = 4 }"))
+    assertOk(tcpss("IF (true) {#A3 = 3}"))
+    // "Expected Boolean, found Int at line 1 in 3 in IF..."
+    assertFail(tcpss("IF(3) #A3 = 3"))
+    assertFail(tcpss("IF(true) #A3 = 4+true ELSE{} "))
+    assertFail(tcpss("IF(false) #A3 = 4 ELSE #A4 = 6+true"))
   }
 
 }

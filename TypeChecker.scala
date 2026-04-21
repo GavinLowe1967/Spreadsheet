@@ -226,6 +226,13 @@ object TypeChecker extends TypeCheckerT{
         typeCheckUnifyAndClose(typeEnv, e, UnitType).map{ 
           case (te1, `UnitType`) => Ok(te1)
         }.lift(stmt)
+
+      case IfStatement(condition, ifCase, elseCase) =>
+        typeCheckUnifyAndClose(typeEnv, condition, BoolType).map{ case (te1,_) =>
+          typeCheckStmtList(te1, ifCase).map{ case te2 => 
+            typeCheckStmtList(te2, elseCase)
+          }
+        }.lift(stmt)
     } // end of "stmt match", typeCheckStmt
 
   /** Typecheck stmts in environment typeEnv. */

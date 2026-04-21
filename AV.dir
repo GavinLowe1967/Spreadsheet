@@ -44,10 +44,10 @@ val firstEmpty = findFirstEmpty(HeaderRow+1)
 val numVoters = firstEmpty-HeaderRow-1
 
 // Header for the summary table.
-val summaryHead = firstEmpty+2
-Cell(#A, summaryHead) = "Round"
-for(i <- 1 to numCandidates) Cell(#A+i, summaryHead) = i
-val eliminatedColumn = #A+numCandidates+2
+val summaryHead = firstEmpty+2; val RoundCol = #A
+Cell(RoundCol, summaryHead) = "Round"
+for(i <- 1 to numCandidates) Cell(RoundCol+i, summaryHead) = i
+val eliminatedColumn = RoundCol+numCandidates+2
 Cell(eliminatedColumn, summaryHead) = "Eliminated"
 
 /* On each round, we represent which candidates are not eliminated via a
@@ -64,20 +64,15 @@ def voteFromRow(current: List[Boolean])(row: Row): Int = {
   iter FirstVoteCol
 }
 
-/** Find the loser out of those current, given scores. */
+// /** Find the loser out of those current, given scores. */
+
 def findLoser(scores: List[Int])(current: List[Boolean]): Int = {
-  // The index of the minimum in ys such that the corresponding entry in cs is
-  // true, and its value
-  def m(ys : List[Int])(cs: List[Boolean]): (Int,Int) = {
-    if(isEmpty ys) (-numCandidates,numVoters+999) // IMPROVE
-    else{
-      // val pair = m(tail ys)(tail cs); val ix1 = get1(pair); val m1 = get2(pair)
-      val (ix1, m1) = m(tail ys)(tail cs)
-      if(head cs && head ys < m1) (1, head ys) else (ix1+1, m1)
-      // IMPROVE: pick at random if there is a tie.
-    }
-  }
-  get1(m scores current)
+  // Current candidate numbers paired with their scores. 
+  val pairs = [(i,s) | (i,s,b) <- zip3 candidates scores current, b]
+  // The pair with the smaller score.
+  def m(p1: (Int,Int))(p2: (Int,Int)) =  if(snd p1 < snd p2) p1 else p2
+  // IMPROVE: should really chose at random
+  fst(foldr1 m pairs)
 }
 
 /** Process the votes.  `current` denotes which candidates are currently not
@@ -92,9 +87,9 @@ def process(current: List[Boolean], round: Int): Int = {
   val tallies = [length (filter (equal i) votes) | i <- candidates]
   // Write tallies
   val row = summaryHead+round
-  Cell(#A, row) = round
+  Cell(RoundCol, row) = round
   for(i <- 1 to numCandidates) 
-    Cell(#A+i, row) = if(nth i current) nth i tallies else -1 // IMPROVE, use "X"
+    Cell(RoundCol+i, row) = if(nth i current) nth i tallies else -1 // IMPROVE, use "X"
   // Try to find a winner. 
   val total = sum tallies // total votes
   val winners = [i | i <- candidates, nth i tallies * 2 > total]
@@ -112,3 +107,29 @@ val winner = process([true | i <- candidates], 1)
 val winnerRow = summaryHead+numCandidates+2
 Cell(#A, winnerRow) = "Winner:"; Cell(#B, winnerRow) = winner
 
+
+
+  // def findLoser1(m: Int)(ss: List[Int])(c: List[Boolean]): Int =
+  //   if(isEmpty ss){ assert(isEmpty c); m }
+  //   else findLoser1 (if(head c) min (head ss) m else m) (tail ss) (tail c) 
+
+  // // Iterate until we find an element of current that it true
+  // assert(nonEmpty current)
+  // if(head current) findLoser1 (head scores) (tail scores) (tail current)
+  // else findLoser (tail scores) (tail current)
+
+
+// def findLoser(scores: List[Int])(current: List[Boolean]): Int = {
+//   // The index of the minimum in ys such that the corresponding entry in cs is
+//   // true, and its value
+//   def m(ys : List[Int])(cs: List[Boolean]): (Int,Int) = {
+//     if(isEmpty ys) (-numCandidates,numVoters+999) // IMPROVE
+//     else{
+//       // val pair = m(tail ys)(tail cs); val ix1 = get1(pair); val m1 = get2(pair)
+//       val (ix1, m1) = m(tail ys)(tail cs)
+//       if(head cs && head ys < m1) (1, head ys) else (ix1+1, m1)
+//       // IMPROVE: pick at random if there is a tie.
+//     }
+//   }
+//   get1(m scores current)
+// }

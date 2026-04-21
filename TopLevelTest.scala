@@ -69,11 +69,12 @@ object TopLevelTest{
     (E, 7, IntValue(7)),
     // for((c,x) <- zip (#A to #E) (2 to 7)) Cell(c,#9) = x
     (A, 9, IntValue(2)), (B, 9, IntValue(3)), (C, 9, IntValue(4)),
-    (D, 9, IntValue(5)), (E, 9, IntValue(6))
+    (D, 9, IntValue(5)), (E, 9, IntValue(6)),
+    (A, 10, IntValue(4)), (B, 10, IntValue(4)) 
   )
 
   /** Lit of cells where type errors are expected. */
-  val expectedTypeErrs = List((B,4), (C,4))
+  val expectedTypeErrs = List((B,4), (C,4), (C,10))
 
   /** List of cells where evaluation errors are expected. */
   val expectedEvalErrs = List((A,0), (B,0), (F,0))

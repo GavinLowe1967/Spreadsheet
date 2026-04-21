@@ -73,7 +73,7 @@ object StatementParser extends Parser0 with StatementParserT{
     inBrackets(listOf(withExtent(statement)))
     | statement > ((s: Statement) => List(s))
   )
-  // Note: the order is important, of else "{#A1 = 3}" gets parsed as
+  // Note: the order is important, or else "{#A1 = 3}" gets parsed as
   // List( CallStmt( BlockExp( List(Directive(...)), null ) ) ).
 
   /** A parser for a single qualifier in a "for" expression. */
@@ -95,11 +95,24 @@ object StatementParser extends Parser0 with StatementParserT{
   private def callStmt: Parser[CallStatement] = expr > CallStatement
   /* keyword("call") ~>*/
 
+  // ===== "if" statements
+
+  /** Parser for an "IF" statement. */
+  private def ifStmt: Parser[IfStatement] = 
+    keyword("IF") ~> inParens(expr) ~ block ~~ 
+      opt(Parser.consumeWhite ~~> keyword("ELSE") ~> block) > {
+        case ((cond, ifS), Some(elseS)) => IfStatement(cond, ifS, elseS)
+        case ((cond, ifS), None) => IfStatement(cond, ifS, List())
+      }
+  // Note: if we use "if", then it seems to be impossible to distinguish if
+  // expressions and if statements, particularly where the if statement is a
+  // call statement.
+
   // ===== Top-level parsers
 
   /** A parser for a statement. */
   def statement: Parser[Statement] = withExtent(
-    valDec | funDec | assertion | directive | forLoop | callStmt
+    valDec | funDec | assertion | directive | forLoop | ifStmt | callStmt
   )
 
   /** A parser for multiple statements. */

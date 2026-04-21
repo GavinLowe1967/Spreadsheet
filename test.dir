@@ -64,9 +64,10 @@ Cell(#D, firstEmpty) = "first empty"
 #D6 = sum([Cell(c,#6):Int | c <- #A to #C]) // 17
 
 // Rows 7, 8
-// This test checks the inner declaration of flag doesn't leak. 
+// This test checks the inner declarations of flag don't leak. 
 val flag = true
 val six = 6
+IF(true) val flag = false // Local declaration only
 #E7 = #A1 match{ case six: Int => six+3 } // 7
 for(r <- #7 to #8; if r == #6 || flag){ 
   // Cell(#B, r) = flag; val flag = false // Illegal forward reference.
@@ -80,3 +81,9 @@ for(x <- #0 until #10){ }
 
 // Test of pattern matching in "for" statement
 for((c,x) <- zip (#A to #E) (2 to 7)) Cell(c,#9) = x
+
+// Tests of IF statements in row 10
+IF(true) #A10 = 4 // ELSE {}
+IF(false) {} ELSE #B10 = 4
+IF(true){ #C10 = 4+#C0 } // type error
+IF(true){}

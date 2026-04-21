@@ -196,6 +196,7 @@ object StatementParserTest extends ParserTest0{
       List(Directive(ColumnExp("A"), RowExp(1), IntExp(3))) ))
   }
 
+  /** Tests on assertions. */
   private def assertions() = {
     assert(ps("assert(2 > 3)") == Assertion(BinOp(IntExp(2), ">", IntExp(3))))
     assert(ps("assert(2 > 3, \"XXX\")") == 
@@ -205,6 +206,20 @@ object StatementParserTest extends ParserTest0{
     // assert(parseStatements(new Input("assert(2,3,4)")).isRight)
   }
 
+  /** Tests on "IF" statements. */
+  private def ifStatements() = {
+    val a1 = Directive(ColumnExp("A"), RowExp(1), IntExp(3))
+    val a2 = Directive(ColumnExp("A"), RowExp(2), IntExp(3))
+    assert(ps("IF(true){ #A1 = 3 }") == IfStatement(
+      BoolExp(true), List(a1), List() ))
+    assert(ps("IF(true) #A1 = 3") == IfStatement(
+      BoolExp(true), List(a1), List() ))
+    assert(ps("IF(true) #A1 = 3 ELSE #A2 = 3") == IfStatement(
+      BoolExp(true), List(a1), List(a2) ))
+    assert(ps("IF(true){ #A1 = 3; #A2 = 3 } ELSE { #A1 = 3; #A2 = 3 }") == 
+      IfStatement(BoolExp(true), List(a1, a2), List(a1, a2)))
+  }
+
   /** Tests on parsing of statements. */
   def apply() = {
     statements1() // value declarations and cell writes.
@@ -212,6 +227,7 @@ object StatementParserTest extends ParserTest0{
     curriedFunctions() // curried function declarations
     forStatements() // for statements 
     assertions() // assertions
+    ifStatements() // "if" statements
     println("Statement tests done")
   }
 

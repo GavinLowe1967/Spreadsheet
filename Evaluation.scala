@@ -13,7 +13,6 @@ trait ExecutionT{
 // =======================================================
 
 object Evaluation{
-
   /** Lift an error value, by tagging on the extent of e. 
     * @param lineNum if true, include line number. */
   def liftError(e: HasExtent, error: ErrorValue, lineNum: Boolean = false)
@@ -29,11 +28,21 @@ object Evaluation{
         // element of sources
     } 
   }
+
+  /** Update env, binding pat to v. */
+  def bind(env: Environment, pat: Pattern, v: Value): Unit = pat match{
+    case NamePattern(name) => env.update(name, v)
+    case TuplePattern(patterns) => v match{
+      case TupleValue(vs) if patterns.length == vs.length => 
+        for((pat1,v1) <- patterns.zip(vs)) bind(env, pat1, v1)
+      case _ => sys.error(s"Bad binding: $pat = $v")
+    }
+  }
 }
 
 // =======================================================
 
-import Evaluation.liftError
+import Evaluation.{liftError,bind}
 
 /** An evaluator for expressions.
   * @param executor An object responsible for executing embedded statements. */
@@ -53,7 +62,6 @@ class Evaluation(executor: ExecutionT){
       case te: TypeError => te
       case EvalError(msg) => EvalError(extend(msg))
       case m: MultipleWriteError => m
-      //case m @ MultipleWriteError(sources) => m
         // Note: this isn't quite right, as we'd like to lift the relevant
         // element of sources
     } 
@@ -66,7 +74,7 @@ class Evaluation(executor: ExecutionT){
     else v match{
       case ev: ErrorValue => liftError(e, ev)
       case _ => sys.error(s"unexpected value: $v")
-    } //e.handleError(v)
+    }
 
   /** If v is an error, lift it by tagging it with the extent of e. */
   private def liftValue(e: Exp, v: Value, lineNum: Boolean = false)
@@ -122,7 +130,12 @@ class Evaluation(executor: ExecutionT){
           else{ 
             val branch = bs.head
             val env1 = env.clone // clone env to prevent leakage
-            bindMatch(env1, branch.pattern, v); eval(env1, branch.body)
+            // Maybe bind name to v
+            branch.pattern match{
+              case TypedPattern(Some(name), _) => env1.update(name, v)
+              case _ => {}
+            }
+            eval(env1, branch.body)
           }
         }
         applyToCell(column, row, doMatch)
@@ -265,22 +278,4 @@ class Evaluation(executor: ExecutionT){
           case err: ErrorValue => err
         }
     }
-
-  /** Update env by performing the binding corresponding to v matching cell. */
-  private 
-  def bindMatch(env: Environment, pat: MatchPattern, v: Cell): Unit = pat match{
-    case TypedPattern(Some(name), _) => env.update(name, v)
-    case _ => {}
-  }
-
-  /** Update env, binding pat to v. */
-  def bind(env: Environment, pat: Pattern, v: Value)
-      : Unit = pat match{
-    case NamePattern(name) => env.update(name, v)
-    case TuplePattern(patterns) => v match{
-      case TupleValue(vs) if patterns.length == vs.length => 
-        for((pat1,v1) <- patterns.zip(vs)) bind(env, pat1, v1)
-      case _ => sys.error(s"Bad binding: $pat = $v")
-    }
-  }
 }
