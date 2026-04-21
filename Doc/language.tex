@@ -161,6 +161,17 @@ example,
 \mbox{\SCALA{[x*y | x <- [2,3], y <- [4,5], x+y != 7]}} & = & \sm{[8,15]}.
 \end{eqnarray*}
 
+A generator may perform pattern matching over tuples.  A generator of the form
+|(x,y) <- pairs| expects |pairs| to be a list of pairs, and binds the
+names~|x| and~|y| to the two components of each pair in turn.  For example,
+%
+\begin{eqnarray*}
+\mbox{\SCALA{[x*y | (x,y) <- [(2,4), (3,5)]]}} & = & \sm{[8,15]}.
+\end{eqnarray*}
+%
+This extends to tuples with more than two elements, and to nested tuples, in
+the obvious way.
+
 %%%%%
 
 \subsubsection{Row, column, and cell expressions}
@@ -238,200 +249,3 @@ case that matches is selected, and the corresponding expression is evaluated.
 If no case matches, an error is signalled.  Within a |match| expression, all
 the expressions on the right-hand side of cases must have the same type.  
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{Declarations}
-\label{ssec:declarations}
-
-Declarations, of values and functions, may be made either at the top level of
-a script, or within a local block.  Standard scoping rules apply. 
-
-A \emph{value declaration} is written using the keyword |val|.
-Figure~\ref{fig:example-script} contains several examples.
-
-A \emph{function declaration} is written using the keyword |def|.  Again,
-Figure~\ref{fig:example-script} contains several examples.  Each parameter of
-the function should be given a type.  
-
-A return type must be given for a recursive function, or if a forward
-reference is made to the function: this is because the type checker considers
-declarations in the order they appear, but can use claimed types of later
-functions.  For example, the return type for |f| is necessary in the
-following, since the use of~|f| precedes its definition:
-%
-\begin{scala}
-val y = f(3); def f(x: Int): Int = x+1
-\end{scala}
-%
-However, no return type is necessary in the following, since the use of~|f| is
-after its definition:
-%
-\begin{scala}
-def f(x: Int) = x+1; val y = f(3) 
-\end{scala}
-
-A function can be defined that takes several vectors of parameters.  For
-example: 
-%
-\begin{scala}
-def add(x: Int, y: Int)(z: Int) = x+y+z
-val a = add(4,5) 6; val f = add(6,7); val b = f 8
-\end{scala}
-%
-Here |f| is a function of type |Int => Int|.
-
-Parametric polymorphism is supported in a style similar to as in Scala.  Type
-parameters are introduced by enclosing them in square brackets after the name
-of a function, for example:
-%
-\begin{scala}
-def apply[A,B](f: A => B, x: A): B = f(x)
-\end{scala}
-%
-This defines such a function for all types~|A| and~|B|.  For example
-\begin{scala}
-def double(x: Float) = 2*x
-val a = apply(head, [1,2,3]); val b = apply(double, 3.4)
-\end{scala}
-
-Higher-order functions are supported in a style similar to Scala and Haskell. 
-For example, we can define a function~|map| such that |map f| applies~|f| to
-each member of a list (of the approriate type):
-%
-\begin{scala}
-def map[A,B](f: A => B)(xs: List[A]): List[B] = 
-  if(isEmpty xs) [] else f(head xs) :: map f (tail xs)
-\end{scala}
-
-Types that allow equality tests, using |==| and |!=|, are called
-\emph{equality types}; examples include the atomic types, |List[A]| if |A| is
-itself an equality type, but not function types.  Some polymorphic functions
-can only be applied to equality types.  This is denoted by including a type
-assumption such as \SCALA{A <: Eq} to specify that |A| must be an instance of
-the equality type class~|Eq|.  For example, the following function removes the
-first occurrence (if any) of a value~|x| from a list; but it uses an equality
-test involving~|x|, so the type of~|x| must be an equality type.
-%
-\begin{scala}
-def remove[A <: Eq](x: A)(xs: List[A]): List[A] =
-  if(isEmpty xs) [] else if(head xs == x) tail xs else x :: remove x (tail xs)
-\end{scala}
-
-The language allows overloading of names of functions declared using |def|s
-(but not |val|s).  For example,
-\begin{scala}
-def double(n: Int) = 2*n
-def double(x: Float): 2*x
-\end{scala}
-%
-When an overloaded function is applied, the type checker needs to be able to
-determine which instance is intended, for example,
-\begin{scala}
-val m = double(3) // Int => Int instance.
-\end{scala}
-%
-In some cases, it is necessary to give an explicit type to the argument,
-particularly in the case of a cell read; for example,
-\begin{scala}
-val y = double(#A4: Float) // Float => Float instance.
-\end{scala}
-%
-To allow type deductions to be made, overloaded functions must have disjoint
-types for their first vectors of parameters, and may not be polymorphic. 
-
-\subsection{Assertions}
-
-The basic form for an assertion is |assert(|\syntax{expression}|)|, where
-the expression should evaluate to a boolean.  When the script is executed, if
-that boolean is|false|, an error is generated.
-
-A generalisation is |assert(|\syntax{expression}|, |\syntax{expression}|)|,
-where the second expression should evaluate to a string.  If the assertion
-fails, that string is included in the error message. 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{Cell writes}
-\label{ssec:cell-writes}
-
-The syntax for a cell write is \syntax{cell-expression} = \syntax{expression}.
-Figure~\ref{fig:example-script} contains examples where the cell expression on
-the left-hand side uses the |Cell| construction.  The \SCALA{\#} construction
-can also be used on the left-hand side; for example,
-\begin{scala}
-#A4 = #A3:Int + 2
-\end{scala}
-
-In most simple applications, cell writes occur only at the top level of a
-script.  However, they may also appear within a function definition or a
-block expression.  For example, the following code is equivalent to the |for|
-loop at line~\ref{line:write-facts} of Figure~\ref{fig:example-script}.
-%
-\begin{scala}
-def writeFacts(r: Row): Unit = 
-  if(r == firstEmpty) ()
-  else{ Cell(out, r) = fact(Cell(In,r)); writeFacts(r+1) }
-
-writeFacts(#0)
-\end{scala}
-%
-The function |writeFacts(r)| writes the factorials into rows \SCALA{r until
-  firstEmpty}.  This is invoked via a function call; see
-Section~\ref{sec:function-calls}. 
-
-Being able to preform cell writes within a function is useful in applications
-where the number of cells written depends upon earlier calculations.  It
-allows a recursive function that keeps calculating and writing cells until a
-suitable end state is reached.
-
-Recall that the application treats any attempt to write to a non-empty cell as
-an error. 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{{\scalashape for} loops}
-\label{ssec:for-loops}
-
-The basic form of a |for| loop is
-\begin{scala}
-for (£\syntax{name}£ <- £\syntax{list}£) £\syntax{statements}£
-\end{scala}
-where \syntax{statements} is either a single statement (a declaration, cell
-write, or |for| loop), or several statements enclosed in braces.  For example,
-%
-\begin{scala}
-for(r <- #0 to #5){ 
-  val x = Cell(#A, r): Int; Cell(#B, r) = 2+x; Cell(#C, r) = 2*x
-}
-\end{scala}
-
-A |for| loop may have multiple generators, or boolean filters; for example,
-%
-\begin{scala}
-for(r <- #0 to #5; c <- [#A, #C]; if r != #3) 
-  Cell(c+1,r) = Cell(c,r):Int + 3
-\end{scala}
-
-Like cell writes, a |for| loop normally occurs just at the top level of a
-script, but may also occur within a function definition or a block expression.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{Function calls}
-\label{sec:function-calls}
-
-If a function returns the |Unit| type, a function call can be used as a
-statement.  Section~\ref{ssec:cell-writes} contained an example. 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{{\scalashape \#include} statements}
-
-A script may import the contents of another script via an \SCALA{#include}
-statement, for example
-\begin{scala}
-#include "other-file.dir"
-\end{scala}
-The name of the other file should be enclosed in quotation marks.  There
-should be nothing following on the same line.

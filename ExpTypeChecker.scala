@@ -215,6 +215,7 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
     case NamePattern(name) => Ok(typeEnv + (name, t))
     case TuplePattern(pats) => t match{
       case TupleType(ts) if pats.length == ts.length => 
+        // Note: necessarily ts.length <= Tuple.MaxArity here.
         // Recurse on corresponding patterns and types
         def f(te: TypeEnv, pair: (Pattern, TypeT)): Reply[TypeEnv] = 
           bindNames(te, pair._1, pair._2)

@@ -96,15 +96,22 @@ in def foldr1(f: A => A => A)(xs: List[A]): A = { ... "
 
 * println
 
-
----
-
 3. Allow function that expects a tuple to be applied to a vector of
 values; and vice versa, e.g. get1(x,y).
 
 * Another example: admissions spreadsheet
 
 * Tidy up FunctionAppTypeChecker.scala
+
+* Extend arithmetic operators to, e.g. (Int,Float) => Float
+
+* More general expressions on LHS of cell write directives.
+
+* Expressions like Cells(#A, #0 to #5): List[Int]
+
+
+Low Priority
+============
 
 * Improve type error in Unification.unify.  Example: bas(foo) in
   TypeCheckerTest3.scala.  Gives error "Expected Int, found ((Int) => Int) =>
@@ -114,18 +121,7 @@ values; and vice versa, e.g. get1(x,y).
 * Allow typing on LHS of val declarations, e.g. "val x: Int = 3", "val x: Int
   = #A3".
 
-* Extend arithmetic operators to, e.g. (Int,Float) => Float
-
-* More general expressions on LHS of cell write directives.
-
-* Expressions like Cells(#A, #0 to #5): List[Int]
-
-* "println" statements.
-
 * Improve error messages in Unification.unify, the case of FunctionTypes.
-
-Low Priority
-============
 
 *Re-merge DeclarationTypeChecker and TypeChecker
 
