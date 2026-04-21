@@ -47,6 +47,8 @@ say that in the type system.
 Priorities
 ==========
 
+- Use SplitPane in Frame.scala
+
 - Refactor Execution.scala -- DONE
 
 -- More testing on haskell.dir, especially "val" definitions, via EvaluationTest.scala

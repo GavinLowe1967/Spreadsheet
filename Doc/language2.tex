@@ -196,6 +196,20 @@ statement.  Section~\ref{ssec:cell-writes} contained an example.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\subsection{Conditional statements}
+
+Statements can be executed conditionally, using an |IF| statement such as
+\begin{scala}
+IF(#A3:Int > 3){ #B3 = 4; #B4 = true } ELSE #B5 = false
+\end{scala}
+The |ELSE| part is optional.  
+Note that the keywords |IF| and |ELSE| are capitalised, to distinguish this
+statement from a conditional expression.  Each branch may be a single
+statement or several statements enclosed in braces.  Note that any declaration
+in a branch is local to that branch. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{{\scalashape \#include} statements}
 
 A script may import the contents of another script via an \SCALA{#include}

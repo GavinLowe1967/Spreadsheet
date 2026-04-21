@@ -91,7 +91,7 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
         }
       case e => println(e)
     }
-  }
+  } // end of table
 
   /** The headers for the rows. */
   val rowHeader = new ListView((0 until height) map(_.toString)){
