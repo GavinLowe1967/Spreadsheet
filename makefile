@@ -39,13 +39,13 @@ $(DIR)/Reply.class: $(DIR)/HasExtent.class
 $(DIR)/EvaluationTypeChecker.class: $(DIR)/EvaluationTypeEnv.class	\
   $(DIR)/Reply.class
 
-
 $(DIR)/Environment.class: $(DIR)/CellWriteSource.class $(DIR)/BuiltInFunctions.class $(DIR)/EvaluationTypeEnv.class
-# $(DIR)/EvaluationTypeChecker.class	\
 
 $(DIR)/BinOpApply.class: $(DIR)/Value.class
 
-$(DIR)/Execution.class: $(DIR)/BinOpApply.class $(DIR)/Statement.class $(DIR)/Environment.class
+$(DIR)/Evaluation.class: $(DIR)/BinOpApply.class $(DIR)/Statement.class $(DIR)/Environment.class
+
+$(DIR)/Execution.class: $(DIR)/Evaluation.class
 
 $(DIR)/EvaluationTest.class: $(DIR)/Execution.class	\
   $(DIR)/StatementParser.class $(DIR)/TypeChecker.class
@@ -60,7 +60,6 @@ $(DIR)/TypeEnv.class: $(DIR)/Exp.class $(DIR)/BuiltInFunctions.class	\
 $(DIR)/TypeParamSubstitution.class: $(DIR)/Substitution.class $(DIR)/TypeEnv.class
 
 $(DIR)/Unification.class: $(DIR)/TypeEnv.class	$(DIR)/TypeParamSubstitution.class
-#  $(DIR)/EvaluationTypeChecker.class
 
 $(DIR)/TypeChecker0.class: $(DIR)/Reply.class $(DIR)/TypeEnv.class	\
   $(DIR)/Exp.class $(DIR)/Unification.class
@@ -69,10 +68,7 @@ $(DIR)/FunctionAppTypeChecker.class: $(DIR)/TypeChecker0.class
 
 $(DIR)/ExpTypeChecker.class: $(DIR)/FunctionAppTypeChecker.class $(DIR)/Statement.class
 
-#$(DIR)/DeclarationTypeChecker.class: $(DIR)/ExpTypeChecker.class
-
 $(DIR)/TypeChecker.class:  $(DIR)/ExpTypeChecker.class 
-#$(DIR)/DeclarationTypeChecker.class
 
 # Parsing and tests
 
@@ -83,10 +79,7 @@ $(DIR)/Parser0.class: $(DIR)/Parser.class $(DIR)/Exp.class $(DIR)/Value.class
 $(DIR)/ExpParser.class:  $(DIR)/Parser0.class $(DIR)/Statement.class	\
   $(DIR)/TypeConstraint.class $(DIR)/FunctionValue.class
 
-#$(DIR)/DeclarationParser.class: $(DIR)/ExpParser.class
-
 $(DIR)/StatementParser.class: $(DIR)/ExpParser.class
-#$(DIR)/DeclarationParser.class
 
 $(DIR)/ParserTest0.class:  $(DIR)/StatementParser.class $(DIR)/Execution.class
 
