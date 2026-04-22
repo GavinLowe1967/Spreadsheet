@@ -47,13 +47,15 @@ say that in the type system.
 Priorities
 ==========
 
-- Use SplitPane in Frame.scala
+- Use SplitPane in Frame.scala -- DONE
 
 - Refactor Execution.scala -- DONE
 
 -- More testing on haskell.dir, especially "val" definitions, via EvaluationTest.scala
 
 - Improve AV script
+
+- Allow sorting-like operations
 
 - Allow pattern matching on ::
 

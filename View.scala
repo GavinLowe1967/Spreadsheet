@@ -43,19 +43,44 @@ class View(model: Model) extends MainFrame with ViewT{
 
   private val spreadsheet = new Spreadsheet(model, this)
 
-  contents = new BoxPanel(Orientation.Vertical) {
+  contents = new SplitPane(Orientation.Horizontal){ 
     border = Swing.EmptyBorder(10)
-    contents += new ScrollPane(selectionBox){    
-      preferredSize = new Dimension(600,100) 
+    // Panel containing spreadsheet and buttons
+    topComponent = new BoxPanel(Orientation.Vertical) {
+      contents += spreadsheet
+      contents += Swing.VStrut(5)
+      contents += buttonPanel
+      contents += Swing.VStrut(5)
     }
-    contents += spreadsheet
-    contents += Swing.VStrut(5)
-    contents += buttonPanel
-    contents += Swing.VStrut(5)
-    contents += new ScrollPane(infoBox){
-      preferredSize = new Dimension(600,140) 
+    // Panel containing two text boxes.
+    bottomComponent = new SplitPane(Orientation.Horizontal){ 
+      topComponent = new ScrollPane(selectionBox)
+      bottomComponent = new ScrollPane(infoBox)
+      preferredSize = new Dimension(800,240); resizeWeight = 0.4 
     }
   }
+
+  // contents = new BoxPanel(Orientation.Vertical) {
+  //   border = Swing.EmptyBorder(10)
+  //   // contents += new ScrollPane(selectionBox){    
+  //   //   preferredSize = new Dimension(600,100) 
+  //   // }
+  //   // contents += spreadsheet
+  //   // contents += Swing.VStrut(5)
+  //   // contents += buttonPanel
+  //   contents += splitPane
+  //   // contents += mainPanel
+  //   // contents += Swing.VStrut(5)
+  //   // contents += new BoxPanel(Orientation.Horizontal){ 
+  //   //   contents += textSplitPane 
+  //   // }
+  //   // contents += Swing.VStrut(5)
+  //   // contents += new ScrollPane(infoBox){
+  //   //   preferredSize = new Dimension(600,140) 
+  //   // }
+  // }
+
+  // ========= Operations on the View =========
 
   def redisplay() = spreadsheet.repaint()
 

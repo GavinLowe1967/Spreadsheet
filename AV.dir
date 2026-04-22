@@ -109,6 +109,7 @@ val winnerRow = summaryHead+numCandidates+2
 Cell(#A, winnerRow) = "Winner:"; Cell(#B, winnerRow) = winner
 
 
+
   // def findLoser1(m: Int)(ss: List[Int])(c: List[Boolean]): Int =
   //   if(isEmpty ss){ assert(isEmpty c); m }
   //   else findLoser1 (if(head c) min (head ss) m else m) (tail ss) (tail c) 

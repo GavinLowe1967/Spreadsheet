@@ -12,7 +12,7 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
 
   val height = model.height; val width = model.width 
 
-  preferredSize = new Dimension(800,500)
+  preferredSize = new Dimension(800,550)
 
   private val spreadsheetModel = model // Avoid aliasing by Table!
 
