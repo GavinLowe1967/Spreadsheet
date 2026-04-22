@@ -4,6 +4,10 @@ Current
 =======
 
 
+- toString functions -- DONE
+-  + on strings -- DONE on two Strings; extend to (String, Any) => String.
+- TODO: add tests
+- Add to manual
 
 - Add "if" directives.
 
@@ -47,7 +51,7 @@ say that in the type system.
 Priorities
 ==========
 
-- Use SplitPane in Frame.scala -- DONE
+- Use SplitPane in Frame.scala -- DONE; TODO: add to manual
 
 - Refactor Execution.scala -- DONE
 
@@ -65,7 +69,6 @@ Priorities
 
 ---
 
-- toString functions.  + on strings.
 
 
 X. Manual -- keep updated.

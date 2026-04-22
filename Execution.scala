@@ -89,7 +89,7 @@ object Execution extends ExecutionT{
       case BoolValue(true) => true
       case BoolValue(false) => eval(env, msg) match{
         case StringValue(st) => 
-          val err = liftError(s, EvalError(s"Assertion error: $st"), true)
+          val err = liftError(s, EvalError(s"Assertion error: $st\n"), true)
           handleError(err); false
         case ev: ErrorValue => handleError(liftError(s, ev)); false
       }

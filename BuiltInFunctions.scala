@@ -26,15 +26,12 @@ object BuiltInFunctions{
     FunctionType(List(), List(FloatType), FloatType)
   )
 
+  /** The type of toString.  We treat is as polymorphic. */
+  private val toStringT = FunctionType(
+    List(("A", AnyTypeConstraint)), List(TypeParam("A")), StringType
+  )
+
   import TupleType.MaxArity
-  /** The selector functions, e.g. get1From2. */
-  // private val selectorTypes1: List[(String, List[FunctionType])] = 
-  //   for(i <- (1 to MaxArity).toList; a <- 2 to MaxArity)
-  //   yield s"get${i}From$a" -> // (T1,...,Ta) => Ti
-  //     List(FunctionType(
-  //       for(j <- (1 to a).toList) yield (s"A$j", AnyTypeConstraint),
-  //       List(TupleType(for(j <- (1 to a).toList) yield TypeParam(s"A$j"))),
-  //       TypeParam(s"A$i") ))
 
   /** The selector functions, e.g. get2. */
   private val selectorTypes = 
@@ -46,17 +43,13 @@ object BuiltInFunctions{
         List(TupleType(for(j <- (1 to a).toList) yield TypeParam(s"A$j"))),
         TypeParam(s"A$i") ))
 
-  //private val negTypes = List(
-
-
-  //  println(selectorTypes)
-
   /** The types of built-in functions. */
   val builtInTypes = 
     List("head" -> headT, "tail" -> tailT, "isEmpty" -> isEmptyT, "not" -> notT,
-      "toInt" -> toIntT, "toFloat" -> toFloatT, "!" -> notT
+      "toInt" -> toIntT, "toFloat" -> toFloatT, "!" -> notT,
+      "toString" -> toStringT
     ).map{ case (n,t) => (n,List(t)) }  ++
-    List("-" -> negTs) ++
+    List("-" -> negTs) ++ 
     selectorTypes
 
   /* Definitions. */
@@ -72,14 +65,8 @@ object BuiltInFunctions{
     FunctionValue{ case List(FloatValue(x)) => IntValue(x.toInt) }
   private val toFloatFn = 
     FunctionValue{ case List(IntValue(n)) => FloatValue(n.toFloat) }
-
-  // /** The selector functions. */
-  // private val selectorFns1: List[(String,FunctionValue)] =
-  //   for(i <- (1 to MaxArity).toList; a <- (2 max i) to MaxArity)
-  //   yield s"get${i}From$a" -> FunctionValue{ 
-  //     case List(tv @ TupleValue(elems)) if tv.arity == a => elems(i-1)
-  //       // Note: tuples use 1-based indexing, but lists use 0-based indexing.
-  //   }
+  private val toStringFn = 
+    FunctionValue{ case List(v) => StringValue(v.forError) }
 
   import NameExp.getName
 
@@ -107,7 +94,8 @@ object BuiltInFunctions{
   val builtIns =
     List(
       "head" -> headFn, "tail" -> tailFn, "isEmpty" -> isEmptyFn, "not" -> notFn,
-      "toInt" -> toIntFn, "toFloat" -> toFloatFn, "!" -> notFn
+      "toInt" -> toIntFn, "toFloat" -> toFloatFn, "!" -> notFn,
+      "toString" -> toStringFn
     ) ++ 
       selectorFns ++ negFns
 

@@ -72,8 +72,9 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
     val intOps = List((IntType, IntType, IntType)) // % only
     val numeric = // numeric operators
       List((IntType,IntType,IntType), (FloatType,FloatType,FloatType))
-    val arith =  // + 
+    val arith =  // common types for +, -
       numeric ++ List((RowType,IntType,RowType), (ColumnType,IntType,ColumnType))
+    val plus = arith ++ List((StringType,StringType,StringType))
     val sub =  //  -
       arith ++ List((RowType,RowType,IntType), (ColumnType,ColumnType,IntType))
     val order = // order relations; TODO: add Row, Column
@@ -82,7 +83,7 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
     val enumT = // enumerable types
       for(t <- List(IntType,RowType,ColumnType)) yield (t,t,ListType(t))
     Map(
-      "%" -> intOps, "+" -> arith, "-" -> sub, "*" -> numeric, "/" -> numeric,
+      "%" -> intOps, "+" -> plus, "-" -> sub, "*" -> numeric, "/" -> numeric,
       "<" -> order, "<=" -> order, ">" -> order, ">=" -> order,
       "&&" -> bool, "||" -> bool, "to" -> enumT, "until" -> enumT
     )

@@ -134,6 +134,8 @@ case class StringValue(value: String) extends Cell{
 
   override def asCell = value
 
+  def + (other: StringValue) = StringValue(value+other.value)
+
   override def asCSV = 
     "\""+value.flatMap{ _ match{
       case '\"' => "\"\""; case c => s"$c"
@@ -275,7 +277,7 @@ case class FunctionValue(f: PartialFunction[List[Value], Value]) extends Value{
     assert(f.isDefinedAt(args)); f(args)
   }
 
-  def forError = toString // IMPROVE?
+  def forError = "<function>" // toString // IMPROVE?
 }
 
 // ===========================================================  Errors
