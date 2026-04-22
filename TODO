@@ -6,7 +6,7 @@ Current
 
 - toString functions -- DONE
 -  + on strings -- DONE on two Strings; extend to (String, Any) => String.
-- TODO: add tests
+- TODO: add tests -- DONE
 - Add to manual
 
 - Add "if" directives.

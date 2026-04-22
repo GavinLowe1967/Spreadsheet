@@ -115,6 +115,12 @@ object TypeCheckerTestExpr{
     assertEq(tcp("#D-#A"), IntType); assertEq(tcp("#6 - #4"), IntType)
     // "Expected Int or Column, found Float in 3.4 in ..."
     assertFail(tcp("#D-3.4")); assertFail(tcp("#99-true"))
+
+    // toString and +
+    assertEq(tcp("\"Hello\"+toString(3)+toString([2])+toString((1,2))"), 
+      StringType)
+    assertEq(tcp("\"Hello\"+3"), StringType)
+    assertEq(tcp("\"Hello\"+(1.2,true)+[3,4]"), StringType)
   }
 
   /** Tests involving lists. */

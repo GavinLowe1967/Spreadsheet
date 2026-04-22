@@ -26,8 +26,7 @@ val FirstVoteCol = #B // Column for the first vote by each voter.
 def getNumCandidates(): Int = {
   def iter(c: Column, n: Int): Int = Cell(c, HeaderRow) match{
     case m: Int => {
-      assert(m == n+1, "Expected "+toString(n+1)+", found "+toString(m)+
-        " in "+toString(c)+toString(HeaderRow-#0))
+      assert(m == n+1, "Expected "+(n+1)+", found "+m+" in "+c+(HeaderRow-#0))
       iter(c+1, m)
     }
     case Empty => n

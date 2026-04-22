@@ -11,6 +11,8 @@ trait Value{
   /** How this is presented in an error message, and when in a cell that is
     * selected. */
   def forError: String // = toString
+
+  def asString = forError
 }
 
 // ==================================================================
@@ -131,10 +133,12 @@ case class StringValue(value: String) extends Cell{
   def getType = StringType
 
   override def forError = s"\"$value\""
+  override def asString = value
 
   override def asCell = value
 
   def + (other: StringValue) = StringValue(value+other.value)
+  def + (other: String) = StringValue(value+other)
 
   override def asCSV = 
     "\""+value.flatMap{ _ match{

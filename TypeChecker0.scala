@@ -107,6 +107,10 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
           }
         case "::" =>
           typeCheckUnify(te1, right, ListType(tl))
+        case "+" if tl == StringType => 
+          typeCheck(te1, right).map{ case (te2, tr) => 
+            Ok((te2,StringType)) 
+          }.lift(right)
         case _ => // Overloaded operator
           val ts = binopTypes(op)
           if(ts.length == 1){ // Unify tl with expected type

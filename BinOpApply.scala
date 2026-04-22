@@ -88,7 +88,7 @@ object BinOpApply{
   /** The + operator over Arith and Strings. */
   private def mkPlus: BinOpRep = {
     case a1: Arith => { case a2: Arith => a1+a2 }
-    case st1: StringValue => { case st2: StringValue => st1+st2 }
+    case st1: StringValue => { case v2: Value => st1+StringValue(v2.asString) }
   }
 
   /** (Num, Num) -> Bool functions. */

@@ -66,7 +66,7 @@ object BuiltInFunctions{
   private val toFloatFn = 
     FunctionValue{ case List(IntValue(n)) => FloatValue(n.toFloat) }
   private val toStringFn = 
-    FunctionValue{ case List(v) => StringValue(v.forError) }
+    FunctionValue{ case List(v) => StringValue(v.asString) }
 
   import NameExp.getName
 

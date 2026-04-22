@@ -187,17 +187,28 @@ object EvaluationTest{
       IntValue(16))
   }
 
+  /** Tests on toString and + over Strings. */
+  def tests6() = {
+    //println(eval("\"Hello\"+toString(3)"))
+    assert(eval("\"Hello\"+toString(3)") == StringValue("Hello3"))
+    assert(eval("toString([1,2,3])") == StringValue("[1, 2, 3]"))
+    assert(eval("toString((2.5,true,#A,#4))") == 
+      StringValue("(2.5, true, #A, #4)"))
+    assert(eval("\"Hello\"+\"world\"+3") == StringValue("Helloworld3"))
+    assert(eval("toString(3.5)+(true,[1,2])") == 
+      StringValue("3.5(true, [1, 2])"))
+
+  }
 
   def main(args: Array[String]) = {
     println("===EvaluationTest===")
     tests1() // basic expressions
     tests2() // blocks, if statements, list expressions
     tests3() // functions
-    tests4()
+    tests4() 
     scriptTests()
-    tests5() 
+    tests5() // val declarations with tuples
+    tests6() // toString, + over Strings
   }
-
-
 
 }

@@ -94,6 +94,18 @@ String literals are written inside double quotation marks, as in most other
 languages, e.g.~|"Hello"|.  Special characters can be written using
 \SCALA{\\}, for example, \SCALA{"He said \\"Hello\\".\\n"}.
 
+A value of any type can be converted to a string using the |toString|
+function.  Two strings can be concatenated using |+|.  Further, a string can
+be concatenated with a non-string value using |+| (with the string on the
+left), whee the non-string value is implicitly converted to a string.  For
+example
+\begin{scala}
+  "Expected "+m+", found "+n+" in "+column+(row-#0)
+\end{scala}
+produces a string such as ``|Expected 5, found 3 in #B4|'' (the subtraction of
+|#0| converts the |Row| |row| into an |Int|, to avoid producing an extra
+``\SCALA{#}''; see Section~\ref{sec:row-col-cell}).
+
 As noted in Section~\ref{ssec:types}, the unit value is denoted |()|. 
 
 Tuple expressions are written inside parentheses, using commas, for example
@@ -166,7 +178,7 @@ A generator may perform pattern matching over tuples.  A generator of the form
 names~|x| and~|y| to the two components of each pair in turn.  For example,
 %
 \begin{eqnarray*}
-\mbox{\SCALA{[x*y | (x,y) <- [(2,4), (3,5)]]}} & = & \sm{[8,15]}.
+  \mbox{\SCALA{[x*y | (x,y) <- [(2,4), (3,5)]]}} & = & \sm{[8,15]}.
 \end{eqnarray*}
 %
 This extends to tuples with more than two elements, and to nested tuples, in
@@ -175,6 +187,7 @@ the obvious way.
 %%%%%
 
 \subsubsection{Row, column, and cell expressions}
+\label{sec:row-col-cell}
 
 Row and column literals are written using |#|, e.g.~|#A|, |#B|, etc., and
 |#0|, |#1|, etc.  A row or column value can have an |Int| added to it or
