@@ -12,7 +12,7 @@ EvaluationTypeEnv.scala: a type environment used during evaluation.
 Values
 ======
 
-Input.scala: input to the parser, either from the script or a cell.
+Input.scala: input to the parser, either from the script or a cell.  Also includes the type ParseRsult.
 
 Value.scala: values of expressions.
 
@@ -33,14 +33,17 @@ Parsing
 
 Parser.scala: general parsing combinators.
 
-Parser0.scala: base class of various parsers.  Includes TypeParser, CellParser
-and CSVParser, parsers for types, cells and CSV files, respectively.
+Parser0.scala: base class of various parsers.  Includes TypeParser, parser for
+types.
 
 ExpParser.scala: Parsing of expressions.
 
 DeclarationParser.scala: parsing of declarations. REMOVED
 
 StatementParser.scala: parsing of statements. 
+
+CellParser.scala: CellParser and CSVParser, parsers for cells and CSV files,
+respectively.
 
 ExpParserTest.scala: test of parsing expressions.
  

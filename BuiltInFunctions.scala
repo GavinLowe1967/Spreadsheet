@@ -30,6 +30,9 @@ object BuiltInFunctions{
   private val toStringT = FunctionType(
     List(("A", AnyTypeConstraint)), List(TypeParam("A")), StringType
   )
+  /** sortBlockByColumn: (List[Column], List[Row], Column) => Unit. */
+  private val sortBlockByColumnT = FunctionType(
+    List(), List(ListType(ColumnType), ListType(RowType), ColumnType), UnitType)
 
   import TupleType.MaxArity
 
@@ -47,7 +50,7 @@ object BuiltInFunctions{
   val builtInTypes = 
     List("head" -> headT, "tail" -> tailT, "isEmpty" -> isEmptyT, "not" -> notT,
       "toInt" -> toIntT, "toFloat" -> toFloatT, "!" -> notT,
-      "toString" -> toStringT
+      "toString" -> toStringT, "sortBlockByColumn" -> sortBlockByColumnT
     ).map{ case (n,t) => (n,List(t)) }  ++
     List("-" -> negTs) ++ 
     selectorTypes
@@ -90,12 +93,23 @@ object BuiltInFunctions{
     getName("-",1) -> FunctionValue{ case List(FloatValue(x)) => FloatValue(-x) }
   )
 
+  /** sortBlockByColumn. */
+  private val sortBlockByColumnFn = FunctionValue{
+    case List(ListValue(cols), ListValue(rows), ColumnValue(col)) =>
+      println(s"sortBlockByColumn($cols, $rows, $col")
+      assert(cols.forall(_.isInstanceOf[ColumnValue]))
+      assert(rows.forall(_.isInstanceOf[RowValue]))
+      // TODO: complete!
+      UnitValue
+  }
+
+
   /** The built-in functions. */
   val builtIns =
     List(
       "head" -> headFn, "tail" -> tailFn, "isEmpty" -> isEmptyFn, "not" -> notFn,
       "toInt" -> toIntFn, "toFloat" -> toFloatFn, "!" -> notFn,
-      "toString" -> toStringFn
+      "toString" -> toStringFn, "sortBlockByColumn" -> sortBlockByColumnFn
     ) ++ 
       selectorFns ++ negFns
 

@@ -12,6 +12,7 @@ trait Value{
     * selected. */
   def forError: String // = toString
 
+  /** How this is converted to a String.  Overwritten in StringValue. */
   def asString = forError
 }
 
@@ -133,7 +134,7 @@ case class StringValue(value: String) extends Cell{
   def getType = StringType
 
   override def forError = s"\"$value\""
-  override def asString = value
+  override def asString = value // omit quotation marks.
 
   override def asCell = value
 

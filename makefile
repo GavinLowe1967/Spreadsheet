@@ -14,13 +14,15 @@ $(DIR)/FunctionType.class: $(DIR)/TypeConstraint.class
 
 # Values
 
-$(DIR)/Value.class: $(DIR)/Input.class $(DIR)/FunctionType.class
+$(DIR)/Value.class: $(DIR)/Source.class $(DIR)/FunctionType.class
 
 $(DIR)/BuiltInFunctions.class: $(DIR)/Value.class $(DIR)/TypeConstraint.class
 
 # Syntax
 
-$(DIR)/HasExtent.class: $(DIR)/Input.class
+# $(DIR)/Input.class: $(DIR)/ParseResult.class
+
+$(DIR)/HasExtent.class: $(DIR)/Source.class
 # $(DIR)/Value.class
 
 $(DIR)/Exp.class:  $(DIR)/HasExtent.class $(DIR)/FunctionType.class
@@ -74,7 +76,7 @@ $(DIR)/TypeChecker.class:  $(DIR)/ExpTypeChecker.class
 
 $(DIR)/Parser.class: $(DIR)/Input.class
 
-$(DIR)/Parser0.class: $(DIR)/Parser.class $(DIR)/Exp.class $(DIR)/Value.class
+$(DIR)/Parser0.class: $(DIR)/Parser.class $(DIR)/Exp.class # $(DIR)/Value.class
 
 $(DIR)/ExpParser.class:  $(DIR)/Parser0.class $(DIR)/Statement.class	\
   $(DIR)/TypeConstraint.class $(DIR)/FunctionValue.class
@@ -87,7 +89,9 @@ $(DIR)/ExpParserTest.class: $(DIR)/ParserTest0.class $(DIR)/Model.class
 
 $(DIR)/StatementParserTest.class: $(DIR)/ExpParserTest.class
 
-$(DIR)/ParserTest.class: $(DIR)/StatementParserTest.class 
+$(DIR)/CellParser.class: $(DIR)/Parser0.class $(DIR)/Value.class
+
+$(DIR)/ParserTest.class: $(DIR)/CellParser.class $(DIR)/StatementParserTest.class 
 
 $(DIR)/TypeCheckerTest0.class: $(DIR)/TypeChecker.class	\
   $(DIR)/StatementParser.class
@@ -99,7 +103,7 @@ $(DIR)/TypeCheckerTest.class: $(DIR)/TypeCheckerTest1.class $(DIR)/TypeCheckerTe
 # ===== Model
 
 $(DIR)/Model.class: $(DIR)/ViewT.class $(DIR)/StatementParser.class	\
-  $(DIR)/TypeChecker.class $(DIR)/Execution.class
+  $(DIR)/TypeChecker.class $(DIR)/Execution.class $(DIR)/CellParser.class
 
 # ===== View
 

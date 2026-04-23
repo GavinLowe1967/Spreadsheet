@@ -1,6 +1,46 @@
 package spreadsheet
 import scala.collection.mutable.ArrayBuffer
-// import scala.io.Source
+
+// Note: ParseResult is here because it uses Input, but Input uses
+// Failure.reset.
+
+/** The result of a Parser. */
+sealed abstract class ParseResult[+T]{
+  /** Can this be backtracked? */
+  var backtrackable = true
+
+  /** This parser with backtrackable information conjuncted with that of p. */
+  def withBacktrack[A](p: ParseResult[A]) = { 
+    backtrackable &&= p.backtrackable; this 
+  }
+}
+
+/** A successful parse, giving `result`, with remaining input `rest`. */
+case class Success[T](result: T, rest: Input) extends ParseResult[T]{
+  def get = result
+}
+
+/** An unsuccessful parse on `in`, explained by `msg`. */ 
+case class Failure(msg: String, in: Input) extends ParseResult[Nothing]{
+  import Failure.lastFailure
+
+  lastFailure match{
+    case Some(f) => if(in >= f.in) lastFailure = Some(this)
+    case None => lastFailure = Some(this)
+  }
+
+  /** Whichever of this and other that is most advanced. */
+  def max(other: Failure) = 
+    if(this.in >= other.in) this else other
+}
+
+object Failure{
+  var lastFailure: Option[Failure] = None
+
+  def reset = lastFailure = None
+}
+
+// =======================================================
 
 /** An input corresponding to `text` from `pos` onwards.
   * @param lineEnds an array giving the indices of ends of lines (including -1
@@ -189,6 +229,7 @@ object Input{
         // Find filename
         getFilename(text,i+8) match{
           case Left((incFilename,j)) =>
+// FIXME: deal with non-existent file
             i = j; val included = scala.io.Source.fromFile(incFilename).toArray
             preprocess(included, incFilename) match{
               case Left((text1, lineEnds1, linenumbers1, filenames1)) =>
@@ -242,53 +283,3 @@ object Input{
 }
 
 // =======================================================
-
-/** The source of an Exp or Value. */
-trait Source{
-  /** The way this is displayed. */
-  def asString: String
-}
-
-// =======================================================
-
-/** The source of a parsed expression.  This represents the string
-  * text[start..end). */
-class Extent(
-  private val text: Array[Char],
-  private val start: Int, private val end: Int, val lineNumber: String)
-    extends Source{
-
-  def asString = text.slice(start, end).mkString
-
-  /** The extension of this until e. */
-  def until(e: Extent): Extent = {
-    assert(e.text eq text); new Extent(text, start, e.end, lineNumber)
-  }
-
-  override def toString = s"Extent($asString)"
-
-  override def equals(other: Any) = other match{
-    case e: Extent => text == e.text && start == e.start && end == e.end
-  }
-}
-
-// =======================================================
-
-/** A source corresponding to cell(column, row). */
-case class CellSource(column: Int, row: Int) extends Source{
-  def asString = { val cName = CellSource.colName(column); s"#$cName$row" }
-}
-
-object CellSource{
-  /** String name for column c. */
-  def colName(c: Int): String = {
-    def toChar(n: Int) = (n+'A').toChar
-    if(c < 26) toChar(c).toString else List(toChar(c/26),toChar(c%26)).mkString
-    //require(0 <= c && c < 26); (c+'A').toChar.toString
-  }
-}
-
-// =======================================================
-// Note: subclass CellWriteSource is in its own file.
-// =======================================================
-

@@ -3,23 +3,63 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
+- Remove reliance of Parser0 on Value -- split off CellParser and Parser0 --
+  DONE
 
-- toString functions -- DONE
--  + on strings -- DONE on two Strings; extend to (String, Any) => String.
-- TODO: add tests -- DONE
-- Add to manual
+- Try to remove ParseResult from Input.scala.  Input uses Failure.reset, so
+  this might not be possible.
 
-- Add "if" directives.
+??? Why does Value depend on Input?  Source.  Move Source to new file; leads to Value and HasExtent
 
-1. Add to Statement -- DONE
+===== Allow sorting-like operations
 
-2. Parser -- DONE
+Add built-in sortBlockByColumn function.  But execution requires an Environment.
 
-3. Type checker -- DONE
+1. Define type
+case class OperationValue(f: Environment => PartialFunction[List[Value], Value]) extends Value
+It needs to be in a separate file, dependent on Environment.scala, but before
+Evaluation.scala.  That means that Environment.initNameMap needs moving.  
 
-4. Execution. -- DONE
+2. Define sortBlockByColumn function in OperationVale (companion object).
 
-5. Manual, TODO.  Note declarations are local. 
+3. Parsing and type checking is just as for standard function applications.
+
+4. Evaluation is as for FunctionApp of a FunctionValue, but supplying the environment. 
+
+-- Part 2
+
+1. Introduce "Operation" type of values, representing ops that take parameters,
+  access the environment, and don't return a value.
+
+2. Add built in-Operation sortBlockByColumn
+
+3. Add OperationCall Statement
+
+4. Add parser
+
+5. Type check OperationCalls like function calls
+
+6. Execute by adding binding in initial environment, and implement 
+sortBlockByColumn 
+
+---- Part 2
+
+Add user operation declarations to syntax.  These take parameters, access the
+environment, and don't return a value.
+
+Parsing.
+
+Type checking like function declarations
+
+Add Operation type of values, representing ops
+
+Execute by adding to environment and to menu
+
+Execute via menu, like function calls
+
+---- Part 3
+
+* Undoing of operations
 
 Type checking
 =============
@@ -51,24 +91,26 @@ say that in the type system.
 Priorities
 ==========
 
-- Use SplitPane in Frame.scala -- DONE; TODO: add to manual
 
-- Refactor Execution.scala -- DONE
+- Make sure #include-d files exist, or give error
+
+- Use SplitPane in Frame.scala -- DONE; TODO: add to manual
 
 -- More testing on haskell.dir, especially "val" definitions, via EvaluationTest.scala
 
 - Improve AV script
+* Change current to be list of candidate numbers. 
 
-- Allow sorting-like operations
 
 - Allow pattern matching on ::
+
+- Allow "error" expression, with arbitrary type. 
 
 - Allow more general function applications. 
 
 - Anonymous functions.
 
 ---
-
 
 
 X. Manual -- keep updated.
@@ -125,603 +167,3 @@ Low Priority
 
 ======================================================================
 ======================================================================
-
-===================================== DONE
-
-
-**** pattern matching on tuples, e.g. val (x,y) = f(3)
-
-- Introduce syntactic category of Patterns, including tuples, and allow a
-  ValueDeclaration to use a Pattern. -- DONE
-
-- Parsing.  StatementParser.valPattern. -- DONE
-
-- Type checking -- unifying pattern against a value.  Also check bound names
-  disjoint.
-* TypeChecker.checkOverloading
-* Test (a) name bound twice in a single val; (b) name shared between val and def;
--- DONE
-
-- Evaluation -- binding based on a pattern.  Execution.scala, line 315 -- DONE
-
-- Extend to list comprehensions and for loops
-
-1. Rename Pattern to MatchPattern -- DONE
-
-2. Rename ValPattern to Pattern, and move to Exp.scala -- DONE
-
-3. Change Generator to use a Pattern -- DONE.  
-
-4. Parser for patterns ExpParser.generator -- DONE
-
-5. In ExpTypeChecker.checkQualifier use TypeChecker.bindNames (more to ETC),
-line 219 -- DONE
-
-6. In Execution.processListComp, use bindValDec (rename), line 233 -- DONE
-
-7. In Execution.performFor, use bindValDec. line 409 -- DONE
-
-*** Add to manual -- DONE
-
----
-- Make &&, || lazy, e.g. -- DONE
-
-- Haskell standard prelude
-** Test evaluation -- EvaluationTest.scriptTests() -- DONE
-
-Allow "include" statements
-
-- Call sequence: Model.reloadScript -> Model.parseContents ->
-  StatementParser.parseStatements -> Parser.parseWith -> Parser.apply(st:
-  String) -> Parser.apply(in: Input).  Change these to use Input. -- DONE
-
-- Produce factory method for Input -- DONE
-
-- Merge Model.removeComments with Input.getLine ends,. -- DONE
-
-- Change Input to use parallel array of (lineEnds,filename,linenumber)
-  corresponding to line ends. -- DONE
----- Including other file, but need to store line numbers.  
-
-- Extend this to also do includes of other files.  -- DONE
-
-- Do initial insertion of included files, similar to getLineEnds. -- DONE
-
-- Change use of getCurrentLine in Parser.parseWith to also give file name --
-  just return a String. -- DONE
-
-- Include filename in Extents.  In fact, replace lineNumber by a String
-  "<linenumber> of <filename>". -- DONE
-
-- Also handle incorrect #include lines and unclosed block comments.  Change
-  preprocess to return Either[(_,_,_,_), String] value.  Have Input.apply
-  assume correct result.  Have fromFile return Either[Input,String], and for
-  Model.reloadScript to act appropriately. -- DONE
-
-1. Don't lift TypeErrors resulting from function calls -- they're confusing.
-But do include linenumbers on other function calls. -- DONE
-
-2. Allow function calls with result ignored.
-- Add Unit type and value, plus parsers -- DONE
-- Type checker and evaluation for unit value -- DONE
-- Allow block with no final expression, captured by null -- done
-- Parser for above -- DONE
--  type checker gives UnitType; evaluation gives UnitValue. -- done
-- Statements corresponding to call of function: done parser and typechecker, but not fully tested.  -- DONE, maybe test more
-- Execution -- DONE
-
-Note:
-
-Parsing is a bit difficult.  If we don't use the "call" keyword, then in
-{ val x = 3; x+17 }, the final x+17 gets parsed as a statement.
-Change block parser to expect a sequence of Statements; then test whether the
-last is a CallStmt and if so set it as the expression field in the
-BlockExpression. -- DONE
-
-
-* Allow cell writes in functions/blocks:
-
-1. Merge DeclarationTypeChecker and TypeChecker with TypeCheckerT trait.  Pass
-to ExpTypeChecker.  (b). Replace typeCheckDeclList by typeCheckStmtList
-(ExpTypeChecker.scala).  Replace Declaration by Statement in
-DeclarationTypeChecker. -- DONE
-
-2. Merge DeclarationParser and StatementParser.  Replace DeclarationParserT by
-  StatementParserT (ExpParser.scala) with "statement" command; Replace
-  Declaration in DeclarationParser.scala. -- DONE
-
-3. Allow Statements within BlockExp (Statement.scala). -- DONE
-
-4. Remove Declaration trait (Statement.scala) -- DONE
-
-5. Tidy up TypeChecker.scala, StatementParser.scala -- DONE
-
-6. Tidy up Execution.scala, the result of performAll -- I don't think we ned it.
-But we do use the result of perform. -- DONE
-
-7. Add to manual -- DONE
-
-
-Not binding correclt in match expressions.  Fix then test. -- DONE
-
-1. Row/column subtraction -- DONE
-
-2. Unary - and ! on expressions -- DONE
-
-5. Block comments. -- DONE
-
-Tuples
-------
-
-1. Define type of expressions. -- done
-
-2. Define parser. -- done
-
-3. Define TupleType.  Define type checker over tuples. -- done
-
-3a. Parser for tuple type. -- done
-
-4. Define TupleValue -- done
-
-5. Define built-in functions _1, etc.  But they are overloaded and
-polymorphic. -- done
-
-TODO: 
-
-In findFunctionApp, iterate through the list of instances; filter out those
-with the wrong number of parameters; for others, try unifyList on each until
-successful.
-
-Basically done, but needs more testing, particularly with selector functions. 
-
-** DeclarationTypeChecker to allow overloading -- TIDY UP
-- Move calculation of typeCheckList(... args) into checkFunctionApp, and pass resulting types to checkFunctionApp(1,2).
-
-TypeCheckerTest3, l 41 -- done
-
---> Reconsider sum[], (TypeCheckerTest3.scala:69).  I think the result is correct (i.e. giving Int).  -- done
-
-TypeCheckerTest4, l 195 -- done
-
--- Allow overloaded functions to be polymorphic when they have disjoint types? -- done
-
-
-** Need to include tuples in unification. 
-
-** Some missing cases in Substitution.scala (se "FIXME"s)
-
-6. Evaluation. -- done
-
-7a. Increase MaxArity, but include test in test.dir for the non-overloaded get
-function.
-
-7. Add to manual.
-
-LATER: Allow 
-
-
-------------
-
-Separate evaluation tester. - done
-Mod (%). -- done
-toInt, toFloat. -- done
-
----
-
-* Make return type of functions optional in most cases.
-
-1. Change FunctionDeclaration (Statement.scala) so return type is of type
-Option[TypeT].  Initially make all code assume Some(rt). -- done
-
-2. Change parser. (DeclarationParser.scala, line 50). Test in
-StatementParserTest -- done.
-
-3. In DeclarationTypeChecker.updateEnv, add FunctionTypes only for those with
-a given return type. -- done
-
-4. In DeclarationTypeChecker, in the case of return type of None, type check
-body; close and end scope; store FunctionType with type of body. -- done
-
-** This doesn't work correctly with overloading.  We want to avoid overwriting
-   other instances of the same name defined in the same scope; but do want to
-   overwrite other instances.
-
-- Add FunctionType value for all declarations, but with null for return type
-  when not given. -- done
-
-- Add function to TypeEnv to replace with new FunctionType -- done
-
-- Test with bad overloadings -- same types of args.  Also higher-order functions 
-
-- Test with polymorphic functions.
-
-- Check mutual recursions.
-
-5. Check all functions that need a return type declaration have one. 
-  - For each function,  
-    - Enumerate names of later functions without return types
-    - Check the function doesn't use any such.
-
-
-=====
-
-* Improve syntax for function declarations and applications -- currying.
-
-1. Parsing of curried function applications -- done.
-
-2. Test type checking of above, e.g. cases like const.  With
-def const[A,B](x: A): B => A = { def constX(y: B): A = x; constX }
-val const3 = const(3)         -- done
-
-3. Change FunctionDeclaration (Statement.scala) to take List of parameter
-lists.  Initially, adapt other code to assume singleton list. -- done
-
-4. Parsing of curried function declarations -- done
-
-4a. Check names are distinct in typeCheckDecl -- done. TEST
-
-5. Adapt FunctionDeclaration.mkFunctionType appropriately.  (Called from
-DeclarationtypeChecker.updateEnv.) -- done TEST
-
-6. Type checking of declarations.  In typeCheckDecl
-(DeclarationTypeChecker.scala), flatten the parameters, and continue as
-before.  Also in checkOverloadingAllowed -- needs TESTING
-
-7. In Execution.perform, build nested FunctionValue. 
-
-??  Translate into uncurried form,
-e.g. def f[A,B](x: A)(y: B): C = e --> 
-def f[A,B](x: A): B => C = { def f'(y: B) = e; f' }.
-
-I think we should have cont3: [B] B => Int; at present, it's t => Int for t a
-TypeVar.  I think in FunctionAppTypeChecker.subTypeParams, we should not
-include type parameters that don't appear in domain. -- done
-
-3. A. Consider
-
-"def const[A,B](x: A): B => A = { def constX[C](y: C): A = x; constX }\n"
-
-This comes down to unifying
-FunctionType(List((C,AnyTypeConstraint)),List(TypeParam(C)),TypeParam(A)) and
-FunctionType(List(),List(TypeParam(B)),TypeParam(A)).  I think we need to
-replace C by a TypeVar here.  -- DONE
-
-B. Consider val c = apply(const).  Ths gives
-FunctionType(List(), List(TypeVar(ta)), 
-     FunctionType(List(), List(TypeVar(tb)), TypeVar(ta)) )
-But I think those TypeVars should be TypeParams, [A,B] A => (B => A).  The
-TypeParams in the type of apply are replaced by TypeVars by
-replaceTypeParamsByTypeVars in FunctionAppTypeChecker.checkFunctionApp1.
-The TypeParams in the type of const are replaced by TypeVars by mkInstance in
-typeCheckListUnify. 
-
-
-
-*** Possible way forward.  Do the point in A.  This needs more thought.  What
-happens if we then remove the use of mkInstance?  
-
-In the apply(const) example
-FunctionAppTypeChecker.checkFunctionApp(...) -> 
-FunctionAppTypeChecker.checkFunctionApp1(...) -> 
-FunctionAppTypeChecker.typeCheckListUnify(..., List(const), 
- List( tf = FunctionType(List(), List(TypeVar(271)), TypeVar(272)) ) )
-const: FunctionType(
-  List((A,AnyTypeConstraint), (B,AnyTypeConstraint)),
-  List(TypeParam(A)), FunctionType(List(),List(TypeParam(B)),TypeParam(A))
-) -> ta = FunctionType(
-  List(), List(TypeVar(273)), 
-  FunctionType(List(),List(TypeVar(274)),TypeVar(273))
-)
-unify(ta, tf) gives (in constraints)
-{ 271 -> 273, 272 -> FunctionType(List(),List(TypeVar(274)),TypeVar(273)) }
-but we'd like those to be A and B.
-The type of apply(const) is given as FunctionType(
-  List(),List(TypeVar(273)),FunctionType(List(),List(TypeVar(274)),TypeVar(273)))
-but we'd like FunctionType(
-  List((A,AnyTypeConstraint), (B,AnyTypeConstraint)),
-  List(TypeParam(A)), FunctionType(List(),List(TypeParam(B)),TypeParam(A))
-)
-If we remove the use of mkInstance, we get
-FunctionType(
-  List(), List(TypeVar(269)), 
-  FunctionType(List(),List(TypeParam(B)),TypeVar(269))
-)
-Why?  Because unify replaces those parameters. 
-1. Try getting rid of that latter.
-
-Log of changes:
-- FATC.typecheckListUnify -- use of mkInstance
-- Unification.unify -- ise of replaceTypeParamsByTypeVars -- undone
-- Substitution.remapTypeVarsBackToTypeParams in Unification.unify
-
-*** Try re-instating mkInstance, and then rename back. 
-
-If we don't do this, we hit problems with,
-e.g., applyToThree(id), which comes down to unifying
-FunctionType(List((A,AnyTypeConstraint)),List(TypeParam(A)),TypeParam(A)) 
-and FunctionType(List(),List(IntType),TypeVar(215)).  This should give FunctionType(List(),List(IntType),TypeVar(IntType)). 
-** Think about unification of function arguments.
-
-2. If that doesn't work, what happens if we reverse the use of mkInstance
-after unification?
-
-
-=======================================================
-
-* List comprehensions.
-- Parsing -- done
-- Typechecking -- done
-- Evaluation -- done
-  + Evaluate a Qualifier to Either[List[TypeEnv], ErrorValue]
-  + Evaluate a List[Qualifier] to the same result.
-- Add to TopLevelTest (examples in test1.dir) -- done
-
-Note: I don't think we can share code with the execution of for loops.  In a
-  list comprension, an error gives an error overall; but that's not true in a
-  for loop.
-
-*** Check that "Cell" can't be parsed as a function application. -- done
-========
-
-* Split FunctionAppTypeChecker into separate file. -- done
-
-* Overloading.
-
-- Use the following rule: an overloaded function may not have a polymorphic
-  instance.  This avoids a lot of difficulties, and doesn't seem to lose much
-  -- only distasteful overloadings.
-
-?? And allow overloading only via defs -- not vals.  This seems consistent with
-  the rule that forward-references to vals are not allowed, and we calculate
-  the types of vals in order of declaration: we don't want to add a type for
-  an overloaded def/val part way through.
-
-- Require all uses of an overloaded function to either be an application of
-  that function, (e.g. "double(3.4)") or explicitly typed (e.g. "map(double:
-  Int => Int, List(3))").  [Aside: in the latter cases, if not explicitly
-  typed, e.g. map(double, List(3)), Scala picks the instance by a mechanism
-  that seems arbitrary.]
-
-Plan:
-
-1. Extend environment to map each name to a list of values.  Arrange for get
-to return Option[List[TypeT]].  **temporarily** keep sigs of + and ++, but
-store singleton list. -- done
-
-2. Update the NameExp case to treat None as at present, Some(List()) as a
-forward-reference failure, Some(List(t)) as present, and Some(ts) as an
-overloading failure. -- done
-
-2a. Change block code to map new names to List(), so attempts to access them
-before the definition will generate "forward reference" errors. -- done
-
-<testing here unchanged>  -- done
-
-3a. Add version of TypeEnv.++ to take a list of types, and to overwrite
-previous types. -- done
-
-3b. At start of new scope (DeclarationTypeChecker.typeCheckDeclList):
-a. Check that overloaded functions are not polymorphic (no polymorphic types
-for arguments). -- done; 
-b. Check that argument types of overloaded functions are
-disjoint (easy because of lack of polymorphism).  -- done
-c. Map names of functions to the relevant list of types. -- done
-
-<testing here unchanged, but can't deal with application of overloaded function>
-
-4. Add a case FunctionApp(NameExp(fn), args) to typeCheck.  Identify the
-  instance that applies.  This should be unique.  Typecheck based on this. -- done
-
-<add tests of typechecker with overloading>
-
-5. Record the instance of the function in the FunctionApp object. 
-a. For each overloaded name, store in each FunctionDeclaration object its
-index in the corresponding list of types.  -- done
-b. Store that index in the FunctionApp object at step 4. -- done
-
-<testing here unchanged>
-
-6. At the point of execution of a FunctionDeclaration, store the corresponding
-FunctionValue against a string formed from `name` and the index. -- done
-
-7. At the point of evaluation of a function app, obtain the relevant instance
-by using the name stored in the FunctionApp object. -- done
-
-8.  Deal with explicitly typed overloaded functions.
-
-a. Add case TypedExp(NameExp(n), t) to ExpTypeChecker 
-b. Store index in NameExp object -- done
-c. Use appropriate name Execution, line 62 (eval0 for NameExp) -- done;
-d. add to TopLevelTest -- done
-
-9. In (5), would it be better to store the index in the NameExp instead?  Some
-repeated code between NameExp and FunctionApp.
-a) In FunctionTypeChecker.findFunctionApp, sore in the NameExp.  
-b) In Execution, case FuncionApp, remove the NameExp case
-c) Remove FunctionApp.setIndex
-
------ Previous musings
-
-? Add function that, given list of types, finds the instance (if any) that
-  matches a given type.
-
-? Add function that, given list of function types, finds the instance (if any)
-  that matches a given argument type.
-
- Note:
-  declarations from outer scopes are removed.  This means nameMap needs to
-  record the level of scope nesting.  Or store function bindings in a separate
-  component -- updated only in DeclarationTypeChecker.checkDisjointNames.
-
-- Add new case in ExpTypeChecker.apply TypedExp(NameExp(n), t) that allows n
-  to be overloaded.  Don't allow overloading in the simple NameExp(n) case.
-
-- At point of declaration, check argument types are distinct: this is easy
-  given the above rule.  (TypeCheker.typeCheckStmtList.)
-
-- Allow overloading only in the case of FunctionApp(NameExp(fn), args).  In
-  more general case, require the function to evaluate to a FunctionType.
-
-- At point of typechecking a function application, identify the instance that
-  applies.  This should be unique.  Record the type of the arguments for this
-  unique instance in the FunctionApp object.  Consider cases like def
-  f(x:Int,y:Int) = ...; def f(x:Float,y:Float) = ...; f(3,#A1).
-
-----------
-
-** I think at present, the typechecker will pass a val declaration that makes
-   a forward reference to a function def, but execution will fail.  e.g.
-
-     val x = f(3); def f(y: Int): Int = y+4
-
-   Type checking succeeds because it is done starting from an environment that
-   includes all the claimed types for defs.  Execution fails, because it
-   processes the declarations in order, and so the evaluation of x doesn't
-   have access to the value of f.  Execution of recursive functions works
-   (assuming no forward references) because the body of the function is
-   evaluated in an environment that includes both functions. 
-
-   Scala effectively initialises vals to default values of the type (null for
-   functions), evaluates declarations in order, but allows forward reference
-   to defs based upon the possibly default values.  I don't like that.
-
-Rule 1: no forward references to vals
-
-Rule 2: no forward calls to defs from within val declarations.  This includes
-indirect calls, e.g.
-
-  def f(x: Int): Int = g(x); val y = f(3); def g(x: Int): Int = x+4
-
-Algorithm:
-
-a. Identify references to local names (i.e. names declared in this block) used
-  in each declaration (both references to vals and defs, separately)
-
-b. Find fixed points of function names used in functions, i.e. including via
-  indirect calls.
-
-c. Iterate through declarations, and check no forward refs to vals (using (a)),
-  and no forward calls to functions from vals (using (b)).
-
-ALTERNATIVE: Evaluate defs before anything else in the block.  This is roughly
-the same as Scala, but doesn't allow a val or cell write to depend upon a
-later val.  Also, purge new names at the start of the block.  -- done
-  
-
-1. Add double-write error, giving all places where written.
-
-(a) Set CellSource when value entered, or CSV read in.  Stop
-  Environment.getCell from adding source. -- done
-
-(b) When writing to cell, add source; so there are potentially two types of
-  sources, the cell the value was read from, and the script code that produced
-  that value.  Set combinatiopn in Execution.perform, case Directive. -- done
-
-(c) show in selection -- done
-
-(d) Add double-write error -- done, needs improving
-
-(e) Can a write overwrite user data?  -- error detected
-
-(f) Can a user input overwrite written data? -- yes
-** In these cases, keep the user data, store an error elsewhere. 
-
-(g) Change MultipleWriteError to store list of Values.
-
-(h) Change user feedback, e.g. "Value 5 from cell write at line 53: #D3 = 5",
-"User data 5".
--- Mostly done.  Check results again.  Tidy up Execution.writeCell.  Consider 
-   the case where the cell already holds a MultipleWriteError. -- done
-
-(i)  Colour all errors red. -- done
-
-
-1. Split cells into user cells and calculated cells.  Needs change in Model.cells.  
-
-* Changes in Environment: userCells and calculatedCells initialised with Empty()
-
-* Change cells in Model to getCell.
-
-* In TopLevelTest, re-add tests for errors
-
-* Use null to represent empty cells, and adapt getCell
-
-*** For loops with repeated names. - test; add to TopLevelTest -- done
-
-*** Explicit type for function. - test -- done 
-
-*** Should typechecking of for statement start new scope for each generator?
-    I don't think so, because it doesn't backtrack into the earlier scope.
-
-2. Add more patterns for cell match expressions, e.g. "_" or "_: Int" as
-   wildcard?  -- DONE
-a) Syntax: done
-b) Parsing: done
-c) Typechecking: done
-d) Evaluation: done
-
-*** does parser work on, e.g. truely + 3?  It does now.
-
-* Tidy up parsing files.  
-  - Split expressions and declarations into separate file -- done
-  - Split parsers for types into separate class. -- done
-
-* Allow typed expressions, e.g. "[]: List[Int]".  ":" should bind more tightly
-  than infix operators.  Have new syntactic term TypedExp(e: Exp, t: TypeT).
-  - New syntactic term -- done
-  - Parsing, excluding typed cell reads -- done
-  - Type checking -- done
-  - Execution. -- done
-
-1. Tidy up this file!
-
-- Seems to need newline at end 
-
-- EqTypeConstraint.intersection -- test **
-
-- Parser for strings in script.  
-
-- Improve error messages concerning polymorphic types: "val xs = head(3)" ->
-  Expected List[TypeVar(133)], found Int at line 1.  Also 1:: [true]; 
-  tail([1]) == tail([false])
-
-2. Allow empty blocks, "for(x <- [2]){ }"; "def f[A,B](x: A, y: B): A = x; for(if f(true, #A1)){ }" (TypeCheckerTest1, l. 218) -- done 
-
-3. Add untyped cell reads in TopLevelTest -- done
-
-4. Check Frames in typechecker -- store untypedCell no. -- done
-
-5. Consider the case of "[] == [3]" and "[] = [f]" for f a function.  cf TypeEnv.isEqType, case TypeVar -- done
--- Change isEqType to return Reply[TypeEnv], in the case of TypeVar(tv),
-   updating to map tv to EqTypeConstraint.  Handle in TypeChecker.typeCheckBinOp
-
-1. Tidy up typechecking of cell expressions -- common code -- done
--- Tidy up ExpParser. -- done
-
--- Deal with missing newline at end of file. -- done
-
-1. Remove typing of cells in some places, where the typechecker can deduce the
-type.
-- Initially allocate type variable to the type. -- done
-- Potentially unify that type subsequently. -- done
-- At the end of evaluation of the enclosing expression (the call to typeCheck 
-  from typeCheckStmt), check that the type has  been decided.
-- Augment type environment with list of those cell reads awaiting types. -- done
-- Update Execution to handle this construct
-
-2. Improve parser errors, e.g. when types omitted on cells.  Implement ~! -- done
-- Add backtrackable field to ParseResult
-- Take conjunction in ~, etc.
-- Implement in |
-- Implement ~!
-
-2. Parse error with
-def sumCol(c: Column, r: Row, end: Row): Int = 
-  if(r == end) 0 else sumCol(c, r+1, end) + Cell(c,r) -- ok with parentheses.
-1. Add cell type matching, e.g. 
- #B3 match{ case x: Int => ...; case st: String => ...; case Blank => ... }
-This is a new syntactic category. 
-- Define syntax -- done
-- Parsing -- done
-- Typechecking -- done
-- Evaluation -- done

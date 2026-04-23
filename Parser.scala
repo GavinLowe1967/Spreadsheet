@@ -1,42 +1,5 @@
 package spreadsheet
 
-/** The result of a Parser. */
-sealed abstract class ParseResult[+T]{
-  /** Can this be backtracked? */
-  var backtrackable = true
-
-  /** This parser with backtrackable information conjuncted with that of p. */
-  def withBacktrack[A](p: ParseResult[A]) = { 
-    backtrackable &&= p.backtrackable; this 
-  }
-}
-
-/** A successful parse, giving `result`, with remaining input `rest`. */
-case class Success[T](result: T, rest: Input) extends ParseResult[T]{
-  def get = result
-}
-
-/** An unsuccessful parse on `in`, explained by `msg`. */ 
-case class Failure(msg: String, in: Input) extends ParseResult[Nothing]{
-  import Failure.lastFailure
-
-  lastFailure match{
-    case Some(f) => if(in >= f.in) lastFailure = Some(this)
-    case None => lastFailure = Some(this)
-  }
-
-  /** Whichever of this and other that is most advanced. */
-  def max(other: Failure) = 
-    if(this.in >= other.in) this else other
-}
-
-object Failure{
-  var lastFailure: Option[Failure] = None
-
-  def reset = lastFailure = None
-}
-
-// ==================================================================
 
 /** Combinatorial parsers.  Loosely based on Chapter 31 of Odersky et al. */
 abstract class Parser[+A] extends (Input => ParseResult[A]){

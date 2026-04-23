@@ -11,9 +11,13 @@
 // ========= Standard functions
 
 #include "haskell.dir"
+#include "spreadsheet.dir"
 
 /** The nth element of xs, counting from 1. */
 def nth[A](n: Int)(xs: List[A]): A = index (n-1) xs
+
+/** A String representing the coordinates of a cell, e.g. #D5. */
+def showCell(c: Column)(r: Row): String = toString(c)+(r-#0)
 
 // =========
 
@@ -26,24 +30,26 @@ val FirstVoteCol = #B // Column for the first vote by each voter.
 def getNumCandidates(): Int = {
   def iter(c: Column, n: Int): Int = Cell(c, HeaderRow) match{
     case m: Int => {
-      assert(m == n+1, "Expected "+(n+1)+", found "+m+" in "+c+(HeaderRow-#0))
+      assert(m == n+1, 
+        "Expected "+(n+1)+", found "+m+" in "+showCell c HeaderRow)
       iter(c+1, m)
     }
     case Empty => n
+    case _ => { 
+      assert(false, "Expected "+(n+1)+" in "+showCell c HeaderRow); -1 
+    }
   }
-  assert(Cell(VoteIDCol, HeaderRow): String == "Vote ID"); iter(VoteIDCol+1,0)
+  assert(Cell(VoteIDCol, HeaderRow): String == "Vote ID", 
+    "Expected \"Vote ID\" in "+showCell VoteIDCol HeaderRow)
+  iter(VoteIDCol+1,0)
 }
 
 // Number of candidates; and the list of candidates
 val numCandidates = getNumCandidates()
 val candidates = 1 to numCandidates
 
-/** Find first empty in VoteIDCol. */
-def findFirstEmpty(r: Row): Row = Cell(VoteIDCol, r) match{
-  case Empty => r; case _ => findFirstEmpty(r+1)
-}
-
-val firstEmpty = findFirstEmpty(HeaderRow+1)
+// The first empty row.
+val firstEmpty = firstEmptyInColumn(VoteIDCol)
 val numVoters = firstEmpty-HeaderRow-1
 
 // Header for the summary table.
@@ -67,8 +73,7 @@ def voteFromRow(current: List[Boolean])(row: Row): Int = {
   iter FirstVoteCol
 }
 
-// /** Find the loser out of those current, given scores. */
-
+/** Find the loser out of those given by current, given scores. */
 def findLoser(scores: List[Int])(current: List[Boolean]): Int = {
   // Current candidate numbers paired with their scores. 
   val pairs = [(i,s) | (i,s,b) <- zip3 candidates scores current, b]
@@ -79,8 +84,7 @@ def findLoser(scores: List[Int])(current: List[Boolean]): Int = {
 }
 
 /** Process the votes.  `current` denotes which candidates are currently not
-  * eliminated.  `row` is the row in which to write the next round's
-  * results. */
+  * eliminated.  `round` is the round number. */
 def process(current: List[Boolean], round: Int): Int = {
   def nonNeg(n: Int) = n >= 0
   def equal(i: Int)(j: Int) = i == j
@@ -88,7 +92,7 @@ def process(current: List[Boolean], round: Int): Int = {
   val votes = map (voteFromRow current) ((HeaderRow+1) until firstEmpty)
   // Votes for each candidate
   val tallies = [length (filter (equal i) votes) | i <- candidates]
-  // Write tallies
+  // Write tallies into row `row`.
   val row = summaryHead+round
   Cell(RoundCol, row) = round
   for(i <- 1 to numCandidates) 
@@ -107,7 +111,7 @@ def process(current: List[Boolean], round: Int): Int = {
 }
 
 // Calculate and print results.
-val winner = process([true | i <- candidates], 1)
+val winner = process(replicate numCandidates true, 1)
 val winnerRow = summaryHead+numCandidates+2
 Cell(#A, winnerRow) = "Winner:"; Cell(#B, winnerRow) = winner
 

@@ -74,7 +74,8 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
       List((IntType,IntType,IntType), (FloatType,FloatType,FloatType))
     val arith =  // common types for +, -
       numeric ++ List((RowType,IntType,RowType), (ColumnType,IntType,ColumnType))
-    val plus = arith ++ List((StringType,StringType,StringType))
+    // Note: + over String treated as aspecial case below. 
+    // val plus = arith ++ List((StringType,StringType,StringType))
     val sub =  //  -
       arith ++ List((RowType,RowType,IntType), (ColumnType,ColumnType,IntType))
     val order = // order relations; TODO: add Row, Column
@@ -83,7 +84,7 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
     val enumT = // enumerable types
       for(t <- List(IntType,RowType,ColumnType)) yield (t,t,ListType(t))
     Map(
-      "%" -> intOps, "+" -> plus, "-" -> sub, "*" -> numeric, "/" -> numeric,
+      "%" -> intOps, "+" -> arith, "-" -> sub, "*" -> numeric, "/" -> numeric,
       "<" -> order, "<=" -> order, ">" -> order, ">=" -> order,
       "&&" -> bool, "||" -> bool, "to" -> enumT, "until" -> enumT
     )
@@ -108,6 +109,7 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
         case "::" =>
           typeCheckUnify(te1, right, ListType(tl))
         case "+" if tl == StringType => 
+          // + with String on left, anything on right.
           typeCheck(te1, right).map{ case (te2, tr) => 
             Ok((te2,StringType)) 
           }.lift(right)
