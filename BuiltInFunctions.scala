@@ -57,19 +57,22 @@ object BuiltInFunctions{
 
   /* Definitions. */
 
+  private def mkFunctionValue(f: PartialFunction[List[Value], Value]) = 
+    FunctionValue((env: Environment) => f)
+
   private val headFn = 
-    FunctionValue{ case List(l:ListValue) => l.head }
+    mkFunctionValue{ case List(l:ListValue) => l.head }
   private val tailFn = 
-    FunctionValue{ case List(l:ListValue) => l.tail }
+    mkFunctionValue{ case List(l:ListValue) => l.tail }
   private val isEmptyFn = 
-    FunctionValue{ case List(l:ListValue) => l.isEmpty }
-  private val notFn = FunctionValue{ case List(BoolValue(b)) => BoolValue(!b) }
+    mkFunctionValue{ case List(l:ListValue) => l.isEmpty }
+  private val notFn = mkFunctionValue{ case List(BoolValue(b)) => BoolValue(!b) }
   private val toIntFn = 
-    FunctionValue{ case List(FloatValue(x)) => IntValue(x.toInt) }
+    mkFunctionValue{ case List(FloatValue(x)) => IntValue(x.toInt) }
   private val toFloatFn = 
-    FunctionValue{ case List(IntValue(n)) => FloatValue(n.toFloat) }
+    mkFunctionValue{ case List(IntValue(n)) => FloatValue(n.toFloat) }
   private val toStringFn = 
-    FunctionValue{ case List(v) => StringValue(v.asString) }
+    mkFunctionValue{ case List(v) => StringValue(v.asString) }
 
   import NameExp.getName
 
@@ -81,7 +84,7 @@ object BuiltInFunctions{
       // except for the maximum arity.  This is a bit of a hack.
       val name = 
         if(i == MaxArity) s"get$i" else getName(s"get$i", a-(2 max i))
-      name -> FunctionValue{
+      name -> mkFunctionValue{
         case List(tv @ TupleValue(elems)) if tv.arity == a => elems(i-1)
           // Note: tuples use 1-based indexing, but lists use 0-based indexing.
       }
@@ -89,20 +92,68 @@ object BuiltInFunctions{
 
   /** The negation functions. */
   private val negFns = List(
-    getName("-",0) -> FunctionValue{ case List(IntValue(n)) => IntValue(-n) },
-    getName("-",1) -> FunctionValue{ case List(FloatValue(x)) => FloatValue(-x) }
+    getName("-",0) -> mkFunctionValue{ case List(IntValue(n)) => IntValue(-n) },
+    getName("-",1) -> 
+      mkFunctionValue{ case List(FloatValue(x)) => FloatValue(-x) }
   )
 
-  /** sortBlockByColumn. */
-  private val sortBlockByColumnFn = FunctionValue{
-    case List(ListValue(cols), ListValue(rows), ColumnValue(col)) =>
-      println(s"sortBlockByColumn($cols, $rows, $col")
+  /** sortBlockByColumn.  Sorts the block defined by `cols` and `rows` according
+    * to column `cv`.  Note that `rows` is expected to be ordered without; but
+    * if not, subsequently the block will be ordered in the order given by
+    * `rows`. */
+  private val sortBlockByColumnFn = FunctionValue((env: Environment) => {
+    case List(ListValue(cols), ListValue(rows), cv) =>
       assert(cols.forall(_.isInstanceOf[ColumnValue]))
       assert(rows.forall(_.isInstanceOf[RowValue]))
-      // TODO: complete!
-      UnitValue
-  }
 
+      val rowNums = rows.map{ case RowValue(r) => r }.toArray
+      val colNums = cols.map{ case ColumnValue(c) => c }.toArray
+      // Check no repetitions in `rows`
+      var i = 0; val numRows = rowNums.length; var result: Value = null
+      while(i < numRows && result == null){
+        var j = i+1; val r = rowNums(i)
+        while(j < numRows && rowNums(j) != r) j += 1
+        if(j < numRows) result = EvalError(s"Row $r repeated in sort function")
+        else i += 1
+      }
+      if(result != null) result
+      else if(rows.isEmpty) UnitValue
+      else{
+        val ColumnValue(col) = cv
+        // Check appropriate value in first cell in col
+        val row0 = rowNums(0)
+        val theType = env.getCell(col, row0).getType
+        if(theType == EmptyType) 
+            result = TypeError(s"Expected non-empty cell in ${cv.forError}$row0")
+        else if(theType == ErrorType)
+          result = UnitValue // do nothing in this case
+        // Check remaining cells in col have type `theType`. 
+        var i = 1
+        while(i < rowNums.length && result == null){
+          val row = rowNums(i); val cell = env.getCell(col,row)
+          if(cell.getType == ErrorType) result = UnitValue
+          else if(cell.getType != theType)
+            result = TypeError(s"Expected $theType, found ${cell.forError}, "+
+              s"in ${cv.forError}$row")
+          else i += 1
+        } // end of while loop
+        if(result != null) result 
+        else{
+          // Order to sort rows into. 
+          val sortedRows = rowNums.sortWith{ case (r1,r2) =>
+            (env.getCell(col,r1) <= env.getCell(col,r2)) }
+          // Copy cells in sorted order.  The entry in position (i,j) is what
+          // should end up in position (i,j) of the original block.
+          val copy = Array.tabulate(cols.length, rows.length){ case (i,j) =>
+            env.getCellInfo(colNums(i), sortedRows(j)) }
+          // println(copy.map(_.mkString(",")).mkString("\n"))
+          // Copy back into env.
+          for(i <- 0 until colNums.length; j <- 0 until rowNums.length)
+            env.setCellInfo(colNums(i), rowNums(j), copy(i)(j))
+          UnitValue
+        }
+      } // end of else
+  })
 
   /** The built-in functions. */
   val builtIns =

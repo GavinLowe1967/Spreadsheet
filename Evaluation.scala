@@ -206,7 +206,7 @@ class Evaluation(executor: ExecutionT){
     case fa @ FunctionApp(f, args) => eval(env, f) match{
       case fv : FunctionValue =>
         evalList(env, args) match{
-          case Left(vs) => fv(vs) match{
+          case Left(vs) => fv(env,vs) match{
             case err: ErrorValue => maybeLiftError(e, err, true)
               // Don't lift TypeErrors here, as that's confusing.  But include
               // line number for function call.

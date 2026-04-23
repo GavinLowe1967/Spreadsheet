@@ -7,24 +7,33 @@ Current
   DONE
 
 - Try to remove ParseResult from Input.scala.  Input uses Failure.reset, so
-  this might not be possible.
+  this might not be possible.  Need to provide Input with a parameter with a
+  reset operation. **TO DO**
 
-??? Why does Value depend on Input?  Source.  Move Source to new file; leads to Value and HasExtent
+-  Move Source to new file; leads to Value and HasExtent. Done
 
 ===== Allow sorting-like operations
 
 Add built-in sortBlockByColumn function.  But execution requires an Environment.
+
+
 
 1. Define type
 case class OperationValue(f: Environment => PartialFunction[List[Value], Value]) extends Value
 It needs to be in a separate file, dependent on Environment.scala, but before
 Evaluation.scala.  That means that Environment.initNameMap needs moving.  
 
-2. Define sortBlockByColumn function in OperationVale (companion object).
 
-3. Parsing and type checking is just as for standard function applications.
+Or just change FunctionValue to have the above signature.  In
+Execution.evalFn, include another formal parameter to f.  In Execution, pass
+the environment to fv, via its apply function.  In BuitinFunctions, replace
+FunctionValue by mkFunctionValue, which lifts the function.
 
-4. Evaluation is as for FunctionApp of a FunctionValue, but supplying the environment. 
+
+2. Define built-in sortBlockByColumn function in OperationVale (companion
+object).  Add to initial environment.
+
+3. Evaluation is as for FunctionApp of a FunctionValue, but supplying the environment. 
 
 -- Part 2
 
@@ -44,18 +53,17 @@ sortBlockByColumn
 
 ---- Part 2
 
-Add user operation declarations to syntax.  These take parameters, access the
+1. Add user operation declarations to syntax.  These take parameters, access the
 environment, and don't return a value.
 
-Parsing.
+2. Parsing.
 
-Type checking like function declarations
+3. Type checking like function declarations
 
-Add Operation type of values, representing ops
+4. Execute declaration by adding FunctionValue to environment, and item to
+menu.
 
-Execute by adding to environment and to menu
-
-Execute via menu, like function calls
+5. Execute via menu, like function calls
 
 ---- Part 3
 

@@ -16,8 +16,9 @@ $(DIR)/FunctionType.class: $(DIR)/TypeConstraint.class
 
 $(DIR)/Value.class: $(DIR)/Source.class $(DIR)/FunctionType.class
 
-$(DIR)/BuiltInFunctions.class: $(DIR)/Value.class $(DIR)/TypeConstraint.class
+$(DIR)/BuiltInFunctions.class: $(DIR)/Value.class $(DIR)/FunctionValue.class $(DIR)/TypeConstraint.class
 
+$(DIR)/FunctionValue.class: $(DIR)/Environment.class
 # Syntax
 
 # $(DIR)/Input.class: $(DIR)/ParseResult.class
@@ -41,16 +42,17 @@ $(DIR)/Reply.class: $(DIR)/HasExtent.class
 $(DIR)/EvaluationTypeChecker.class: $(DIR)/EvaluationTypeEnv.class	\
   $(DIR)/Reply.class
 
-$(DIR)/Environment.class: $(DIR)/CellWriteSource.class $(DIR)/BuiltInFunctions.class $(DIR)/EvaluationTypeEnv.class
+$(DIR)/Environment.class: $(DIR)/CellWriteSource.class  $(DIR)/EvaluationTypeEnv.class 
+# $(DIR)/BuiltInFunctions.class
 
 $(DIR)/BinOpApply.class: $(DIR)/Value.class
 
-$(DIR)/Evaluation.class: $(DIR)/BinOpApply.class $(DIR)/Statement.class $(DIR)/Environment.class
+$(DIR)/Evaluation.class: $(DIR)/BinOpApply.class $(DIR)/Statement.class $(DIR)/Environment.class $(DIR)/FunctionValue.class
 
 $(DIR)/Execution.class: $(DIR)/Evaluation.class
 
-$(DIR)/EvaluationTest.class: $(DIR)/Execution.class	\
-  $(DIR)/StatementParser.class $(DIR)/TypeChecker.class
+$(DIR)/EvaluationTest.class: $(DIR)/Model.class	\
+  $(DIR)/StatementParser.class $(DIR)/TypeChecker.class 
 
 # Type checking
 
@@ -83,7 +85,7 @@ $(DIR)/ExpParser.class:  $(DIR)/Parser0.class $(DIR)/Statement.class	\
 
 $(DIR)/StatementParser.class: $(DIR)/ExpParser.class
 
-$(DIR)/ParserTest0.class:  $(DIR)/StatementParser.class $(DIR)/Execution.class
+$(DIR)/ParserTest0.class:  $(DIR)/Model.class
 
 $(DIR)/ExpParserTest.class: $(DIR)/ParserTest0.class $(DIR)/Model.class
 

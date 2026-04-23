@@ -1,5 +1,7 @@
 package spreadsheet
 
+import scala.collection.mutable.HashMap
+
 /** The model. */
 class Model(val height: Int, val width: Int){
   /** The View, as seen from the Model. */ 
@@ -9,7 +11,7 @@ class Model(val height: Int, val width: Int){
   def setView(v: ViewT) = view = v
 
   /** The environment in which the script is executed. */
-  private val env = Environment(height, width)
+  private val env = Environment(height, width, Model.initNameMap)
 
   /** Get the environment. */
   def getEnv = env
@@ -89,11 +91,11 @@ class Model(val height: Int, val width: Int){
     }
     else println(s"File not found: $sheetName")
   }
-
-
 }
 
 
 object Model{
-
+  /** Get the initial nameMap to use in an Environment. */ 
+  def initNameMap = 
+    new HashMap[String, Value] ++ (BuiltInFunctions.builtIns)
 }

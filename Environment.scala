@@ -2,7 +2,6 @@ package spreadsheet
 
 import scala.collection.mutable.HashMap
 
-
 /** An environment, for evaluating the spreadsheet.  This principally stores
   * the values of names.
   * @param userCells Array holding the values entered in cells by the user.
@@ -62,10 +61,16 @@ class Environment(
     if(uc.nonEmpty){
       if(cc.isEmpty) uc else{ assert(cc.isInstanceOf[MultipleWriteError]); cc } 
     }
-    else{
-//println(s"getForSelection $c $r $cc ${cc.source}")
-      cc
-    }
+    else cc
+  }
+
+  /** Get both the user value and calculated value from (c,r). */
+  def getCellInfo(c: Int, r: Int): (Cell, Cell) = 
+    (userCells(c)(r), calculatedCells(c)(r))
+
+  /** Set the user value and calculated value of (c,r) based on pair. */
+  def setCellInfo(c: Int, r: Int, pair: (Cell,Cell)) = {
+    userCells(c)(r) = pair._1; calculatedCells(c)(r) = pair._2
   }
 
   /** Reset, corresponding to starting to rerun the script. */
@@ -95,13 +100,18 @@ class Environment(
 object Environment{
 
   /** Get the initial nameMap to use in an Environment. */ 
-  private def initNameMap = 
-    new HashMap[String, Value] ++ BuiltInFunctions.builtIns
+  // private def initNameMap = 
+  //   new HashMap[String, Value] ++ BuiltInFunctions.builtIns
 
+  /** The initial nameMap.  Set bt apply). */
+  private var initNameMap: HashMap[String, Value] = null
 
-  def apply(height: Int, width: Int) = new Environment(
-    Array.fill[Cell](width, height)(Empty()),
-    Array.fill[Cell](width, height)(Empty()),
-    height, width, initNameMap
-  )
+  def apply(height: Int, width: Int, initNameMap: HashMap[String, Value]) = {
+    this.initNameMap = initNameMap
+    new Environment(
+      Array.fill[Cell](width, height)(Empty()),
+      Array.fill[Cell](width, height)(Empty()),
+      height, width, initNameMap
+    )
+  }
 }

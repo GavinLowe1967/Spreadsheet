@@ -1,0 +1,13 @@
+#include "spreadsheet.dir"
+
+// Find end of inputs
+val firstEmpty = firstEmptyInColumn(#A)
+
+// Calculate totals
+for(r <- #1 until firstEmpty) 
+  Cell(#E,r) = Cell(#B,r):Int + Cell(#C,r) + Cell(#D,r)
+
+// Sort
+// sortBlockByColumn([#C,#B,#A,#D,#E,#A], [#4,#2,#5,#1,#5,#3], #E)
+
+sortBlockByColumn(#A to #E, #1 until firstEmpty, #E)

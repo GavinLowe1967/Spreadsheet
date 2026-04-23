@@ -12,7 +12,8 @@ object EvaluationTest{
     val e = Parser.parseAll(expr, st); val env = TypeEnv()
     typeCheckAndClose(env, e) match{
       case Ok((te,t)) => 
-        val env = Environment(100,26); Execution.TestHooks.eval(env,e)
+        val env = Environment(100,26,Model.initNameMap); 
+        Execution.TestHooks.eval(env,e)
       case FailureR(err) => println(err); null
     }
   }

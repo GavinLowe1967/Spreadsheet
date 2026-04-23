@@ -103,7 +103,7 @@ object Execution extends ExecutionT{
 
     case CallStatement(e) => eval(env, e) match{
       case UnitValue => true
-      case ev: ErrorValue => handleError(liftError(s, ev)); false
+      case ev: ErrorValue => handleError(ev); false // Don't lift here
     }
 
     case IfStatement(condition, ifCase, elseCase) => eval(env, condition) match{
@@ -122,8 +122,10 @@ object Execution extends ExecutionT{
     if(paramss.isEmpty) eval(env, body)
     else{
       val params0 = paramss.head
-      // Build a Scala function to capture the function of params0.
-      def f(args: List[Value]): Value = {
+      // Build a Scala function to capture the function of params0.  Note:
+      // env1 won't be used here.  Any names are interpreted in
+      // env2, i.e. static binding.
+      def f(env1: Environment)(args: List[Value]): Value = {
         require(args.length == params0.length)
         // Bind params to values of args in env
         val env2 = env.clone

@@ -50,6 +50,9 @@ trait Cell extends Value{
 
   /** Is this a non-empty Cell? */
   def nonEmpty = !isEmpty
+
+  /** Is this <= other.  Pre: other is of the same subtype. */
+  def <= (other: Cell): Boolean
 }
 
 
@@ -82,6 +85,8 @@ case class Empty() extends Cell{
   override def forError = "empty cell"
 
   override def asCSV = ""
+
+  def <= (other: Cell) = other match{ case Empty() => true }
 }
 // Note: we can't use a case object here, because different Emptys will have
 // different sources.
@@ -108,6 +113,8 @@ case class IntValue(value: Int) extends Cell with Rangeable{
     case IntValue(v1) => IntValue(value-v1)
   }
 
+  def <= (other: Cell) = other match{ case IntValue(v) => value <= v }
+
   override def forError = value.toString
 }
 
@@ -122,6 +129,8 @@ case class FloatValue(value: Float) extends Cell with Arith{
   def -(other: Arith) = other match{
     case FloatValue(v1) => FloatValue(value-v1)
   }
+
+  def <= (other: Cell) = other match{ case FloatValue(v) => value <= v }
 
   def getType = FloatType
 
@@ -141,6 +150,8 @@ case class StringValue(value: String) extends Cell{
   def + (other: StringValue) = StringValue(value+other.value)
   def + (other: String) = StringValue(value+other)
 
+  def <= (other: Cell) = other match{ case StringValue(v) => value <= v }
+
   override def asCSV = 
     "\""+value.flatMap{ _ match{
       case '\"' => "\"\""; case c => s"$c"
@@ -151,6 +162,8 @@ case class StringValue(value: String) extends Cell{
 
 case class BoolValue(value: Boolean) extends Cell{
   def getType = BoolType
+
+  def <= (other: Cell) = other match{ case BoolValue(v) => value <= v }
 
   override def forError = value.toString
 }
@@ -275,15 +288,15 @@ object TupleValue{
 
 // ==================================================================
 
-/** A function defined by `f`. */
-case class FunctionValue(f: PartialFunction[List[Value], Value]) extends Value{
-  /** Apply this to `args`. */
-  def apply(args: List[Value]): Value = {
-    assert(f.isDefinedAt(args)); f(args)
-  }
+// /** A function defined by `f`. */
+// case class FunctionValue(f: PartialFunction[List[Value], Value]) extends Value{
+//   /** Apply this to `args`. */
+//   def apply(args: List[Value]): Value = {
+//     assert(f.isDefinedAt(args)); f(args)
+//   }
 
-  def forError = "<function>" // toString // IMPROVE?
-}
+//   def forError = "<function>" // toString // IMPROVE?
+// }
 
 // ===========================================================  Errors
 
@@ -294,6 +307,7 @@ trait ErrorValue extends Cell{
   /** The message that is written in the view InfoBox. */
   def msg: String
 
+  def <= (other: Cell) = sys.error(s"<= applied to $this")
   // Note: forError is the value that appears in the cell itself, and the
   // selection box.
 }

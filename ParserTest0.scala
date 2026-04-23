@@ -43,7 +43,7 @@ trait ParserTest0{
     println("\""+e.getExtent.asString+"\""); checkExtent(e.getExtent, st)
   }
 
-  def env = Environment(0,0) 
+  def env = Environment(0,0,Model.initNameMap) 
 
   // Parse and evaluate st, and check the extent
   def pe(st: String) = {
