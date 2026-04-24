@@ -1,7 +1,8 @@
 package spreadsheet
 
 import TypeT._
-import TypeCheckerTest2._, TypeCheckerTest3._, TypeCheckerTest4._
+import TypeCheckerTest2._, TypeCheckerTest3._, TypeCheckerTest4._, 
+  TypeCheckerTest5._
 //import TypeChecker.TestHooks._
 
 /** Tests on the type checker. */
@@ -49,9 +50,11 @@ object TypeCheckerTest{
       preludeTests()
       rtTests()
       haskellTests()
+      // -----                      TypeCheckerTest5.scala
       tupleTests()
       callTests()
       ifStmtTests()
+      operationTests()
     }
     println("Done")
   }

@@ -8,19 +8,49 @@ class View(model: Model) extends MainFrame with ViewT{
 
   title = "Spreadsheet"
 
-  // ========= Buttons
+  // ========= Buttons and menus
 
   private val reloadButton = Button("Reload"){
     model.reloadScript(); redisplay()
   }
 
-  private val saveButton = Button("Save"){
-    model.saveSheet()
+  private val menuFont =  new Font(Font.MONOSPACED, Font.PLAIN, 16) 
+
+  /** Make a MenuItem for Action, using font menuFont. */
+  private def mkMenuItem(action: Action): MenuItem = {
+    val item = new MenuItem(action); item.font = menuFont; item
   }
 
-  private val buttonPanel = new BoxPanel(Orientation.Horizontal){
-    contents += reloadButton; contents += saveButton
+  /** Menu for operations. */
+  private val operationsMenu = new Menu("Operations"){
+    font = menuFont
   }
+
+  /** Add an item labelled with name to the operations menu. */
+  def addOperation(name: String) = {
+    val mi = mkMenuItem(Action(name){ model.executeOperation(name) })
+    operationsMenu.contents += mi
+  }
+
+  menuBar = new MenuBar{
+    contents += new Menu("File"){
+      // contents += new MenuItem("XXX"){ println("XXX") }
+      // contents += new Separator
+      font = menuFont
+      contents += mkMenuItem(Action("Save"){ model.saveSheet() })
+    }
+    contents += operationsMenu
+    contents += Swing.HStrut(20)
+    contents += reloadButton 
+  }
+
+  // private val saveButton = Button("Save"){
+  //   model.saveSheet()
+  // }
+
+  // private val buttonPanel = new BoxPanel(Orientation.Horizontal){
+  //   contents += reloadButton // ; contents += saveButton
+  // }
 
   // ========= Text boxes
 
@@ -47,10 +77,11 @@ class View(model: Model) extends MainFrame with ViewT{
     border = Swing.EmptyBorder(10)
     // Panel containing spreadsheet and buttons
     topComponent = new BoxPanel(Orientation.Vertical) {
+      contents += Swing.VStrut(5)
       contents += spreadsheet
       contents += Swing.VStrut(5)
-      contents += buttonPanel
-      contents += Swing.VStrut(5)
+      // contents += buttonPanel
+      // contents += Swing.VStrut(5)
     }
     // Panel containing two text boxes.
     bottomComponent = new SplitPane(Orientation.Horizontal){ 
@@ -97,4 +128,7 @@ class View(model: Model) extends MainFrame with ViewT{
   }
 
   def clearInfo() = infoBox.text = ""
+
+  /** Clear the operations menu. */
+  def clearOperations() = operationsMenu.contents.clear()
 }

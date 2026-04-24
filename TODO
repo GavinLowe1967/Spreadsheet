@@ -17,51 +17,37 @@ Current
 Add built-in sortBlockByColumn function.  But execution requires an Environment.
 
 
-
 1. Define type
 case class OperationValue(f: Environment => PartialFunction[List[Value], Value]) extends Value
 It needs to be in a separate file, dependent on Environment.scala, but before
 Evaluation.scala.  That means that Environment.initNameMap needs moving.  
 
-
 Or just change FunctionValue to have the above signature.  In
 Execution.evalFn, include another formal parameter to f.  In Execution, pass
 the environment to fv, via its apply function.  In BuitinFunctions, replace
-FunctionValue by mkFunctionValue, which lifts the function.
+FunctionValue by mkFunctionValue, which lifts the function. -- DONE
 
 
 2. Define built-in sortBlockByColumn function in OperationVale (companion
-object).  Add to initial environment.
+object).  Add to initial environment. -- DONE
 
-3. Evaluation is as for FunctionApp of a FunctionValue, but supplying the environment. 
-
--- Part 2
-
-1. Introduce "Operation" type of values, representing ops that take parameters,
-  access the environment, and don't return a value.
-
-2. Add built in-Operation sortBlockByColumn
-
-3. Add OperationCall Statement
-
-4. Add parser
-
-5. Type check OperationCalls like function calls
-
-6. Execute by adding binding in initial environment, and implement 
-sortBlockByColumn 
+3. Evaluation is as for FunctionApp of a FunctionValue, but supplying the
+environment. -- DONE
 
 ---- Part 2
 
 1. Add user operation declarations to syntax.  These take parameters, access the
 environment, and don't return a value.
 
-2. Parsing.
+operation sortByName = { ... } -- DONE
 
-3. Type checking like function declarations
+2. Parsing. -- DONE
 
-4. Execute declaration by adding FunctionValue to environment, and item to
-menu.
+3. Type checking like function declarations -- TEST with repeated names
+
+4. Execute declaration by adding name -> FunctionValue mapping to environment,
+and item to menu.  The Execution needs to have a reference to the View (type
+ViewT, with "addItem" operation).
 
 5. Execute via menu, like function calls
 

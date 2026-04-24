@@ -220,6 +220,15 @@ object StatementParserTest extends ParserTest0{
       IfStatement(BoolExp(true), List(a1, a2), List(a1, a2)))
   }
 
+  private def opDeclarations() = {
+    assert(ps("operation op() = f(#A)") == OperationDeclaration("op", 
+      List(CallStatement(FunctionApp(NameExp("f"), List(ColumnExp("A"))))) ))
+    assert(ps("operation op() = { f(1); g(2) }") == OperationDeclaration("op", 
+      List(CallStatement(FunctionApp(NameExp("f"), List(IntExp(1)))),
+        CallStatement(FunctionApp(NameExp("g"), List(IntExp(2))))
+      )))
+  }
+
   /** Tests on parsing of statements. */
   def apply() = {
     statements1() // value declarations and cell writes.
@@ -228,6 +237,7 @@ object StatementParserTest extends ParserTest0{
     forStatements() // for statements 
     assertions() // assertions
     ifStatements() // "if" statements
+    opDeclarations() // operation declarations
     println("Statement tests done")
   }
 

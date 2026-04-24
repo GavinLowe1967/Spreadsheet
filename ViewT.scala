@@ -12,7 +12,13 @@ trait ViewT{
   def addInfo(text: String): Unit
 
   /** Clear the information box. */
-  def clearInfo(): Unit
+  def clearInfo(): Unit  
+
+  /** Clear the list of operations. */
+  def clearOperations(): Unit
+
+  /** Add an operation with name `name`. */
+  def addOperation(name: String): Unit
 }
 
 /** A dummy view, for use in testing. */
@@ -24,6 +30,10 @@ object DummyView extends ViewT{
   def addInfo(text: String) = {}
 
   def clearInfo() = {}
+
+  def clearOperations() = {}
+
+  def addOperation(name: String) = {}
 }
 
 /** A dummy view, for use in testing.  Errors are printed in the terminal. */
@@ -35,4 +45,8 @@ object TestingView extends ViewT{
   def addInfo(text: String) = println(text)
 
   def clearInfo() = {}
+
+  def clearOperations() = {}
+
+  def addOperation(name: String) = {}
 }

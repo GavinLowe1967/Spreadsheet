@@ -79,6 +79,11 @@ case class FunctionDeclaration(
 
 // =======================================================
 
+/** An operation statement "operation <name> = <body>". */
+case class OperationDeclaration(name: String, body: List[Statement]) 
+    extends Statement
+
+// =======================================================
 
 /** A "for" statement, for(binders){ stmts }. */
 case class ForStatement(qualfiers: List[Qualifier], stmts: List[Statement]) 

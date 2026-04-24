@@ -18,8 +18,8 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
   // ===== Some basic parsers
 
   private val ReservedNames =
-    List("Cell", "if", "else", "def", "val", "for", "match", "case", "assert",
-      "IF", "ELSE",
+    List("Cell", "if", "else", "def", "val", "operation", "for", 
+      "match", "case", "assert", "IF", "ELSE",
       "true", "false", "Empty", "to", "until",
       "Int", "Float", "Boolean", "String", "Row", "Column", "List", "Eq")
 

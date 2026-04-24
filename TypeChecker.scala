@@ -212,6 +212,12 @@ object TypeChecker extends TypeCheckerT{
 
       case fd: FunctionDeclaration =>  typeCheckDecl(typeEnv, fd).lift(fd)
 
+      case OperationDeclaration(name, body) => 
+        typeCheckStmtList(typeEnv.newScope, body).map{ te1 => 
+          val ft = FunctionType(List(), List(), UnitType)
+          Ok(te1.endScope + (name, List(ft)))
+        }
+
       case Assertion(condition) => 
         typeCheckUnifyAndClose(typeEnv, condition, BoolType).
           mapOrLift(stmt, { case (te, _) => Ok(te) })

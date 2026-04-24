@@ -1,4 +1,9 @@
 #include "spreadsheet.dir"
+#include "haskell.dir"
+
+// This script expects to find names in column #A from row #1, with
+// corresponding Int scores in columns #B to #D.  It calculates the total for
+// each row, and sorts according to the totals.
 
 // Find end of inputs
 val firstEmpty = firstEmptyInColumn(#A)
@@ -8,6 +13,13 @@ for(r <- #1 until firstEmpty)
   Cell(#E,r) = Cell(#B,r):Int + Cell(#C,r) + Cell(#D,r)
 
 // Sort
+// sortBlockByColumn(#A to #E, #1 until firstEmpty, #E)
 // sortBlockByColumn([#C,#B,#A,#D,#E,#A], [#4,#2,#5,#1,#5,#3], #E)
+// sortBlockByColumn(#A to #E, reverse(#1 until firstEmpty), #E)
 
-sortBlockByColumn(#A to #E, #1 until firstEmpty, #E)
+operation sortByTotal() = sortBlockByColumn(#A to #E, #1 until firstEmpty, #E)
+
+operation sortByName() = sortBlockByColumn(#A to #E, #1 until firstEmpty, #A)
+
+//sortByTotal()
+//sortByName()

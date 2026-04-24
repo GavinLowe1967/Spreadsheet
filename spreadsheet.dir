@@ -1,0 +1,13 @@
+// ===== Utilities that are specifically oriented towards a spreadsheet. =====
+
+/** Is `Cell(c)(r)` empty? */
+def isEmptyCell(c: Column)(r: Row): Boolean = Cell(c,r) match{
+  case Empty => true; case _ => false
+}
+
+/** Find the first empty cell in column `c` from row `r` onwards. */
+def firstEmptyInColumn(c: Column, r: Row): Row = 
+  if(isEmptyCell c r) r else firstEmptyInColumn(c, r+1)
+
+/** Find the first empty cell in column `c`. */
+def firstEmptyInColumn(c: Column): Row = firstEmptyInColumn(c, #0)

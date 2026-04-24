@@ -105,7 +105,6 @@ object BuiltInFunctions{
     case List(ListValue(cols), ListValue(rows), cv) =>
       assert(cols.forall(_.isInstanceOf[ColumnValue]))
       assert(rows.forall(_.isInstanceOf[RowValue]))
-
       val rowNums = rows.map{ case RowValue(r) => r }.toArray
       val colNums = cols.map{ case ColumnValue(c) => c }.toArray
       // Check no repetitions in `rows`

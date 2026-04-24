@@ -10,6 +10,10 @@ object Execution extends ExecutionT{
   private val eval = evaluation.eval _
   //private val bind = evaluation.bind _ 
 
+  private var view: ViewT = null
+
+  def setView(v: ViewT) = view = v
+
   // ==================================================================
 
   /** Make an error message. */
@@ -42,7 +46,7 @@ object Execution extends ExecutionT{
  
   /** Perform `s` in `env`, handling errors with `handleError`. 
     * @return false if an error occurred in a declaration. */
-  private def perform(
+  def perform(
     env: Environment, handleError: ErrorValue => Unit, s: Statement)
       : Boolean = s match{
     case d @ Directive(ce, re, expr) => 
@@ -76,6 +80,14 @@ object Execution extends ExecutionT{
     case fd @ FunctionDeclaration(name, tParams, paramss, rt, body) => 
       assert(paramss.nonEmpty)
       env.update(fd.getName, evalFn(env, paramss, body)); true
+
+    case OperationDeclaration(name, body) =>
+      view.addOperation(name) // Add to the "operations" menu
+      def f(env1: Environment)(args: List[Value]): Value = {
+        assert(args.isEmpty); val env2 = env1.clone
+        performAll(body, env2, handleError); UnitValue
+      }
+      env.update(name, FunctionValue(f)); true
 
     case Assertion(condition) => eval(env, condition) match{
       case BoolValue(true) => true

@@ -8,7 +8,7 @@ class Model(val height: Int, val width: Int){
   private var view: ViewT = null
 
   /** Set the view to be `v`.  */
-  def setView(v: ViewT) = view = v
+  def setView(v: ViewT) = {view = v; Execution.setView(v) }
 
   /** The environment in which the script is executed. */
   private val env = Environment(height, width, Model.initNameMap)
@@ -58,9 +58,18 @@ class Model(val height: Int, val width: Int){
 
   /** Update cells based on statements.  Called internally. */
   private def update1() = {
+    view.clearOperations()
     // Iterate over statements, unless an error is found.
     def handleError(err: ErrorValue) = view.addInfo(err.msg)
     Execution.performAll(statements, env, handleError)
+    view.redisplay()
+  }
+
+  /** Perform the operation `name()`. */
+  def executeOperation(name: String) = {
+    def handleError(err: ErrorValue) = view.addInfo(err.msg)
+    val call = CallStatement(FunctionApp(NameExp(name), List()))
+    Execution.perform(env, handleError, call)
     view.redisplay()
   }
 
@@ -82,7 +91,9 @@ class Model(val height: Int, val width: Int){
   private def loadSheet() = {
     val file = new java.io.File(sheetName)
     if(file.exists){
-      val lines = scala.io.Source.fromFile(file).getLines().toArray
+      val source = scala.io.Source.fromFile(file)
+      val lines = source.getLines().toArray
+      source.close()
       for(r <- 0 until lines.length){
         val fields = CSVParser(lines(r)).toArray 
         for(c <- 0 until fields.length) 

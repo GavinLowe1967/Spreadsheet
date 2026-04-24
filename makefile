@@ -49,7 +49,7 @@ $(DIR)/BinOpApply.class: $(DIR)/Value.class
 
 $(DIR)/Evaluation.class: $(DIR)/BinOpApply.class $(DIR)/Statement.class $(DIR)/Environment.class $(DIR)/FunctionValue.class
 
-$(DIR)/Execution.class: $(DIR)/Evaluation.class
+$(DIR)/Execution.class: $(DIR)/Evaluation.class $(DIR)/ViewT.class
 
 $(DIR)/EvaluationTest.class: $(DIR)/Model.class	\
   $(DIR)/StatementParser.class $(DIR)/TypeChecker.class 
@@ -100,7 +100,9 @@ $(DIR)/TypeCheckerTest0.class: $(DIR)/TypeChecker.class	\
 
 $(DIR)/TypeCheckerTest1.class $(DIR)/TypeCheckerTest2.class $(DIR)/TypeCheckerTest3.class: $(DIR)/TypeCheckerTest0.class
 
-$(DIR)/TypeCheckerTest.class: $(DIR)/TypeCheckerTest1.class $(DIR)/TypeCheckerTest2.class $(DIR)/TypeCheckerTest3.class $(DIR)/TypeCheckerTest4.class
+$(DIR)/TypeCheckerTest.class: $(DIR)/TypeCheckerTest1.class	\
+  $(DIR)/TypeCheckerTest2.class $(DIR)/TypeCheckerTest3.class	\
+  $(DIR)/TypeCheckerTest4.class $(DIR)/TypeCheckerTest5.class
 
 # ===== Model
 

@@ -50,6 +50,12 @@ object StatementParser extends Parser0 with StatementParserT{
       (opt(ofType) ~ (lit("=") ~> expr)) >
     { case (((n,tps),ps), (ort,e)) => FunctionDeclaration(n, tps, ps, ort, e) }
 
+  // ===== Operation declarations
+
+  private def opDec: Parser[OperationDeclaration] = 
+    keyword("operation") ~> name ~ (lit("(") ~> lit(")") ~> lit("=") ~> block) > 
+      toPair(OperationDeclaration)
+
   // ===== Assertions
 
   /** A parser for an assertion. */
@@ -112,7 +118,7 @@ object StatementParser extends Parser0 with StatementParserT{
 
   /** A parser for a statement. */
   def statement: Parser[Statement] = withExtent(
-    valDec | funDec | assertion | directive | forLoop | ifStmt | callStmt
+    valDec | funDec | opDec | assertion | directive | forLoop | ifStmt | callStmt
   )
 
   /** A parser for multiple statements. */
