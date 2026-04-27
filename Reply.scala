@@ -44,8 +44,10 @@ case class FailureR(err: String) extends Reply[Nothing]{
   }
 
   /** Add the line numbers from e1 and e2. */
-  def addLines(e1: HasExtent, e2: HasExtent) = 
-    FailureR(s"$err at lines ${e1.lineNumber} and ${e2.lineNumber}.")
+  def addLines(e1: HasExtent, e2: HasExtent) = {
+    val l1 = e1.lineNumber; val l2 = e2.lineNumber
+    FailureR(s"$err at lines ${l1} and ${l2}.")
+  }
 }
 
 object Reply{

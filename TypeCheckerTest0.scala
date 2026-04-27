@@ -43,7 +43,8 @@ object TypeCheckerTest0{
     
   /* Parse and typecheck list of statements given by st. */
   def tcpss(st: String, env: TypeEnv = newEnv) = {
-    val stmt = parseAll(statements, st); val res = typeCheckStmtList(env, stmt)
+    val stmt = parseAll(statements, st)
+    val res = typeCheckStmtList(env, stmt, true)
     maybePrintError(res); res
   }
 

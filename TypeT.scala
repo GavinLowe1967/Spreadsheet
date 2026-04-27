@@ -28,7 +28,8 @@ object TypeT{
   val NumTypes = List(IntType, FloatType) 
 
   /** String representing ts. */
-  def showList(ts: List[TypeT]) = ts.map(_.asString).mkString(", ")
+  def showList(ts: List[TypeT]) =
+    if(ts.isEmpty) "()" else ts.map(_.asString).mkString(", ")
 }
 
 // ==================================================================

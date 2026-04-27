@@ -22,10 +22,43 @@ case class Directive(col: Exp, row: Exp, expr: Exp) extends Statement{
 
 // =======================================================
 
-/** A declaration of the form `val name = exp`. */
+/** A declaration of the form `val pattern = exp`. */
 case class ValueDeclaration(pattern: Pattern, exp: Exp) extends Statement{
   /** Names bound by this declaration. */
   def boundNames: List[String] = pattern.names
+}
+
+// =======================================================
+
+/** The superclass of FunctionDeclaration and OperationDeclaration. */
+trait FunctionDeclarationT extends Statement{
+  val name: String
+
+  private var index = -1
+
+  def setIndex(ix: Int) = index = ix
+
+  /** The name against which the name of this function is stored in the
+    * evaluation environment. */
+  def getName = NameExp.getName(name, index)
+
+  /** The types of the parameters of this. */
+  def paramTs: List[List[TypeT]]
+
+  /** A FunctionType object representing the type of this function.  If the
+    * return type is undefined, uses null. */
+  def mkFunctionType: FunctionType
+}
+
+object FunctionDeclarationT{
+  /** The FunctionDeclarationT membres of stmts. */
+  def filter(stmts: List[Statement]): List[FunctionDeclarationT] = {
+    var result = List[FunctionDeclarationT]()
+    for(dec <- stmts) dec match{
+      case fd: FunctionDeclarationT => result ::= fd; case _ => {}
+    }
+    result.reverse
+  }
 }
 
 // =======================================================
@@ -38,20 +71,12 @@ object FunctionDeclaration{
 
 import FunctionDeclaration.ParameterList
 
-
 /** The declaration of a function "def name[tparams](args) = exp".  ort =
   * Some(rt) if an explicit return type rt is given.*/
 case class FunctionDeclaration(
   name: String, tParams: List[FunctionType.TypeParameter], 
   params: List[ParameterList], ort: Option[TypeT], body: Exp)
-    extends Statement{
-  private var index = -1
-
-  def setIndex(ix: Int) = index = ix
-
-  /** The name against which the name of this function is stored in the
-    * evaluation environment. */
-  def getName = NameExp.getName(name, index)
+    extends FunctionDeclarationT{
 
   /** The types of the parameters of this. */
   def paramTs: List[List[TypeT]] = params.map(_.map(_._2))
@@ -81,7 +106,12 @@ case class FunctionDeclaration(
 
 /** An operation statement "operation <name> = <body>". */
 case class OperationDeclaration(name: String, body: List[Statement]) 
-    extends Statement
+    extends FunctionDeclarationT{
+  /** An operation declaration takes a single empty parameter list. */
+  def paramTs = List(List())
+
+  def mkFunctionType =  FunctionType(List(), List(), UnitType)
+}
 
 // =======================================================
 

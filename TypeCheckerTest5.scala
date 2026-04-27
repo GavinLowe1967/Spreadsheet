@@ -57,9 +57,19 @@ object TypeCheckerTest5{
 
   /** Tests on operation declarations. */
   def operationTests() = {
+// printErrors = true
     assertOk(tcpss("operation f() = #A3 = 3"))
     assertOk(tcpss("operation f() = #A3 = 3 \n f()"))
     assertFail(tcpss("operation f() = #A3 = 2+true")) 
+    // "Function/operation f has multiple definitions with 
+    // parameters of type () at ..."
+    assertFail(tcpss("operation f() = #A3 = 3; operation f() = #A4 = 4")) 
+    assertFail(tcpss("operation f() = #A3 = 3\n def f() = ()")) 
+    // "f has both val and def/operation definitions at lines 1, 2."
+    assertFail(tcpss("operation f() = #A3 = 3\n val f = 3"))
+    // "Operation declaration(s) not at top level at line(s) 1."
+    assertFail(tcpss("def f(x: Int) = { operation g() = #A3 = 3; 5 }"))
+// printErrors = false
   }
 
 

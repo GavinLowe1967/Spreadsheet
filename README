@@ -92,6 +92,8 @@ TypeCheckerTest3.scala: tests on for loops, overloading, and currying.
 
 TypeCheckerTest4.scala: tests on a Haskell-style prelude.
 
+TypeCheckerTest5.scala: tests on tuples, calls, IF statements, operations.
+
 Evaluation and execution
 ========================
 

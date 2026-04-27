@@ -21,7 +21,7 @@ $(DIR)/BuiltInFunctions.class: $(DIR)/Value.class $(DIR)/FunctionValue.class $(D
 $(DIR)/FunctionValue.class: $(DIR)/Environment.class
 # Syntax
 
-# $(DIR)/Input.class: $(DIR)/ParseResult.class
+$(DIR)/Input.class: $(DIR)/Source.class
 
 $(DIR)/HasExtent.class: $(DIR)/Source.class
 # $(DIR)/Value.class

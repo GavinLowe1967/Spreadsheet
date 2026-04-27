@@ -13,8 +13,11 @@ trait TypeCheckerT{
   //     : Reply[TypeEnv]
  
   /** Type check stmts, returning the resulting type environment if
-    * successful. */
-  def typeCheckStmtList(typeEnv: TypeEnv, stmts: List[Statement])
+    * successful. 
+    * @param topLevel is this at the top level, where operation declarations are 
+    * allowed?  */
+  def typeCheckStmtList(
+    typeEnv: TypeEnv, stmts: List[Statement], topLevel: Boolean = false)
       : Reply[TypeEnv] 
 }
  

@@ -43,17 +43,27 @@ operation sortByName = { ... } -- DONE
 
 2. Parsing. -- DONE
 
-3. Type checking like function declarations -- TEST with repeated names
+3. Type checking like function declarations 
 
 4. Execute declaration by adding name -> FunctionValue mapping to environment,
 and item to menu.  The Execution needs to have a reference to the View (type
-ViewT, with "addItem" operation).
+ViewT, with "addItem" operation). -- DONE
 
-5. Execute via menu, like function calls
+5. Execute via menu, like function calls -- DONE
+
+6. Catch repetitions of operation names. -- DONE
+
+6a. Allow operation declarations only at top level. -- DONE
+
+7. Manual
 
 ---- Part 3
 
+*  def sortBlockBy(cols: List[Column], rows: List[Row], above: (Row, Row) => Boolean)
+
 * Undoing of operations
+
+*** Source and Extent seem to be mutually recusive -- DONE
 
 Type checking
 =============
@@ -103,6 +113,8 @@ Priorities
 - Allow more general function applications. 
 
 - Anonymous functions.
+
+- Export sheet and load sheet operations.
 
 ---
 

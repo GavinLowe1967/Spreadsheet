@@ -75,7 +75,7 @@ class Model(val height: Int, val width: Int){
 
   /** Save the current sheet.  This writes just user input values. */
   def saveSheet() = {
-// FIXME: check sheetName != null ... java.awt.FileDialog
+// FIXME: check sheetName != null ... java.awt.FileDialog -- or FileChooser
     import java.io._
     val file = new File(sheetName)
     if (!file.exists()) file.createNewFile()

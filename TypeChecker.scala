@@ -27,7 +27,7 @@ object TypeChecker extends TypeCheckerT{
   }
 
   /** Type check fd, returning the resulting type envionment if successful. */
-  private def typeCheckDecl(typeEnv: TypeEnv, fd: FunctionDeclaration)
+  private def typeCheckFnDecl(typeEnv: TypeEnv, fd: FunctionDeclaration)
       : Reply[TypeEnv] = {
     val FunctionDeclaration(name, tparams, paramss, ort, body) = fd
     val params = paramss.flatten
@@ -75,7 +75,7 @@ object TypeChecker extends TypeCheckerT{
     * them to differ in the first list of parameters.  If not, return
     * appropriate FailureR; return null if ok. */
   private 
-  def checkOverloadingAllowed(name: String, defs: List[FunctionDeclaration])
+  def checkOverloadingAllowed(name: String, defs: List[FunctionDeclarationT])
       : Reply[TypeEnv] = {
     val len = defs.length
     if(len > 1){
@@ -86,7 +86,7 @@ object TypeChecker extends TypeCheckerT{
         while(j < len && result == null){
           if(defs(j).paramTs.head == paramTs)
             result = FailureR(
-              s"Function $name has multiple definitions with\n"+
+              s"Function/operation $name has multiple definitions with\n"+
                 "parameters of type "+TypeT.showList(paramTs)
             ).addLines(defs(i),defs(j))
           j += 1
@@ -98,18 +98,28 @@ object TypeChecker extends TypeCheckerT{
     else null
   }
 
-  /** Function declarations grouped together by name. */
-  private type GroupedFunctions = Map[String, List[FunctionDeclaration]] 
+  /** Function and operation declarations grouped together by name. */
+  private type GroupedFunctions = Map[String, List[FunctionDeclarationT]] 
 
   /** Check that any overloading of names is done correctly.  If so, return the
     * type environment formed by binding the function names to their claimed
     * types, and removing val-names that duplicate names in an outer block.
     * Also label overloaded function declarations with their index.  */
-  def checkOverloading(typeEnv: TypeEnv, stmts: List[Statement])
+  def checkOverloading(
+    typeEnv: TypeEnv, stmts: List[Statement], topLevel: Boolean)
       : Reply[TypeEnv] = {
+    if(!topLevel){
+      // Check no operation declarations.
+      val opDecs = for(od @ OperationDeclaration(_,_) <- stmts) yield od
+      if(opDecs.nonEmpty) return FailureR(
+        s"Operation declaration(s) not at top level at line(s) "+
+          opDecs.map(_.lineNumber).mkString(", ")+".")
+    }
     val valDecs = (for(vd @ ValueDeclaration(_,_) <- stmts) yield vd).toArray
-    val fnDecs = for(fd @ FunctionDeclaration(_,_,_,_,_) <- stmts) yield fd
-    val grouped: GroupedFunctions = fnDecs.groupBy(_.name)
+    val fnDecs = FunctionDeclarationT.filter(stmts)
+    // for(vd @ FunctionDeclaration(_,_,_,_,_) <- stmts) yield vd
+    // val opDecs = for(od @ OperationDeclaration(_,_) <- stmts) yield od
+    val grouped: GroupedFunctions = (fnDecs).groupBy(_.name)
     val fnNames = grouped.keys
     // Search for repeated name declarations.
     for(i <- 0 until valDecs.length){
@@ -124,7 +134,8 @@ object TypeChecker extends TypeCheckerT{
       val repeats = names.filter(n => grouped.contains(n))
       if(repeats.nonEmpty){
         val name = repeats.head
-        return FailureR(s"$name has both val and def definitions at lines "+
+        return FailureR(
+          s"$name has both val and def/operation definitions at lines "+
           (vd::grouped(name)).map(_.lineNumber).mkString(", ")+".")
       }
       // Is a name bound in vd and another val-dec?
@@ -137,6 +148,7 @@ object TypeChecker extends TypeCheckerT{
         }
       }
     } // end of for loop
+// TODO: check that do operation name is repeated
     // Iterate over grouped, and check each
     var result: Reply[TypeEnv] = null; val iter = grouped.iterator
     while(iter.hasNext && result == null){
@@ -210,12 +222,14 @@ object TypeChecker extends TypeCheckerT{
           etc.bindNames(te1, pat, t)
         }.lift(stmt)
 
-      case fd: FunctionDeclaration =>  typeCheckDecl(typeEnv, fd).lift(fd)
+      case fd: FunctionDeclaration =>  typeCheckFnDecl(typeEnv, fd).lift(fd)
 
-      case OperationDeclaration(name, body) => 
+      case od @ OperationDeclaration(name, body) => 
+        val Some(ts) = typeEnv.get(name); require(ts.contains(od.mkFunctionType))
         typeCheckStmtList(typeEnv.newScope, body).map{ te1 => 
-          val ft = FunctionType(List(), List(), UnitType)
-          Ok(te1.endScope + (name, List(ft)))
+          // val ft = FunctionType(List(), List(), UnitType)
+// FIXME: should already be there
+          Ok(te1.endScope) // + (name, List(ft)))
         }
 
       case Assertion(condition) => 
@@ -241,10 +255,13 @@ object TypeChecker extends TypeCheckerT{
         }.lift(stmt)
     } // end of "stmt match", typeCheckStmt
 
-  /** Typecheck stmts in environment typeEnv. */
-  def typeCheckStmtList(typeEnv: TypeEnv, stmts: List[Statement])
+  /** Typecheck stmts in environment typeEnv. 
+    * @param topLevel is this at the top level, where operation declarations are 
+    * allowed? */
+  def typeCheckStmtList(
+    typeEnv: TypeEnv, stmts: List[Statement], topLevel: Boolean = false)
       : Reply[TypeEnv] =
-    checkOverloading(typeEnv, stmts).map{ te1 => // Iterate along stmts
+    checkOverloading(typeEnv, stmts, topLevel).map{ te1 => // Iterate along stmts
       Reply.fold(typeCheckStmt, te1, stmts)
     }
 
@@ -252,5 +269,5 @@ object TypeChecker extends TypeCheckerT{
 
   /** Typecheck stmts. */
   def apply(stmts: List[Statement]): Reply[TypeEnv] =
-    typeCheckStmtList(TypeEnv(), stmts)
+    typeCheckStmtList(TypeEnv(), stmts, true)
 }

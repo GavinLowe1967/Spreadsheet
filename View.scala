@@ -10,15 +10,15 @@ class View(model: Model) extends MainFrame with ViewT{
 
   // ========= Buttons and menus
 
-  private val reloadButton = Button("Reload"){
+  private val reloadButton = Button("Reload script"){
     model.reloadScript(); redisplay()
   }
 
-  private val menuFont =  new Font(Font.MONOSPACED, Font.PLAIN, 16) 
+  private val menuFont =  new Font(Font.SANS_SERIF, Font.PLAIN, 16) //MONOSPACED
 
   /** Make a MenuItem for Action, using font menuFont. */
-  private def mkMenuItem(action: Action): MenuItem = {
-    val item = new MenuItem(action); item.font = menuFont; item
+  private def mkMenuItem(name: String)(effect: => Unit): MenuItem = {
+    val item = new MenuItem(Action(name)(effect)); item.font = menuFont; item
   }
 
   /** Menu for operations. */
@@ -28,20 +28,22 @@ class View(model: Model) extends MainFrame with ViewT{
 
   /** Add an item labelled with name to the operations menu. */
   def addOperation(name: String) = {
-    val mi = mkMenuItem(Action(name){ model.executeOperation(name) })
+    val mi = mkMenuItem(name){ model.executeOperation(name) }
     operationsMenu.contents += mi
   }
 
   menuBar = new MenuBar{
+    contents += Swing.HStrut(5)
     contents += new Menu("File"){
-      // contents += new MenuItem("XXX"){ println("XXX") }
-      // contents += new Separator
       font = menuFont
-      contents += mkMenuItem(Action("Save"){ model.saveSheet() })
+      contents += mkMenuItem("Save sheet"){ model.saveSheet() }
+      contents += new Separator
+      contents += mkMenuItem("Exit"){ sys.exit() }
     }
     contents += operationsMenu
-    contents += Swing.HStrut(20)
-    contents += reloadButton 
+    contents += Swing.HGlue 
+    contents += reloadButton
+    contents += Swing.HStrut(5)
   }
 
   // private val saveButton = Button("Save"){
