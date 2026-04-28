@@ -67,7 +67,7 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
   }
 
   /** Map giving all types for infix operators, except for equality,
-    * inequality and (::). */
+    * inequality, order relations, and (::). */
   private val binopTypes: Map[String, List[(TypeT,TypeT,TypeT)]] = {
     val intOps = List((IntType, IntType, IntType)) // % only
     val numeric = // numeric operators
@@ -78,14 +78,15 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
     // val plus = arith ++ List((StringType,StringType,StringType))
     val sub =  //  -
       arith ++ List((RowType,RowType,IntType), (ColumnType,ColumnType,IntType))
-    val order = // order relations; TODO: add Row, Column
-      List((IntType,IntType,BoolType), (FloatType,FloatType,BoolType))
+    // val order = // order relations; TODO: add Row, Column
+    //   List((IntType,IntType,BoolType), (FloatType,FloatType,BoolType), 
+    //     (StringType,StringType,BoolType))
     val bool = List((BoolType,BoolType,BoolType))
     val enumT = // enumerable types
       for(t <- List(IntType,RowType,ColumnType)) yield (t,t,ListType(t))
     Map(
       "%" -> intOps, "+" -> arith, "-" -> sub, "*" -> numeric, "/" -> numeric,
-      "<" -> order, "<=" -> order, ">" -> order, ">=" -> order,
+//      "<" -> order, "<=" -> order, ">" -> order, ">=" -> order,
       "&&" -> bool, "||" -> bool, "to" -> enumT, "until" -> enumT
     )
   }
@@ -105,6 +106,17 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
                 Ok((te4,BoolType))
               }.lift(right,true)
             }
+          }
+        case "<=" | ">=" | "<" | ">" => 
+          // Note: at present this assumes concrete types from OrdType.  This
+          // could be extended to, e.g., TypeVar as for "==".
+          close(te1,tl).map{ case (te2,`tl`) => tl match{
+            case _: OrdType => 
+              typeCheckUnify(te2, right, tl).map{ case (te3, tr) =>
+                Ok((te3,BoolType))
+              }.lift(right,true)
+            case _ =>  FailureR(s"Expected equality type, found ${tl.asString}")
+          }
           }
         case "::" =>
           typeCheckUnify(te1, right, ListType(tl))

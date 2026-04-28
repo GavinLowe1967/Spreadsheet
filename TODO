@@ -95,7 +95,9 @@ say that in the type system.
 Priorities
 ==========
 
-- Add comparison over Strings.
+- Add comparison over Strings. -- DONE, needs formal tests
+
+- Extend OrdType (TypeT.scala) and Ord (Value.scala) to other types.
 
 - Make sure #include-d files exist, or give error
 

@@ -105,6 +105,11 @@ object TypeParam{
 /** A marker trait for atomic equality types. */
 trait EqType extends TypeT
 
+/** A marker trait for types with order relations. */
+trait OrdType extends EqType 
+// Note: at present, only implementing types are CellType.  This should be
+// extended.
+
 /** Marker trait for base types, i.e. atomic. */
 trait BaseType extends TypeT{
   def typeParams = List()
@@ -113,7 +118,7 @@ trait BaseType extends TypeT{
 }
 
 /** A marker trait for types that can appear in cells of the spreadsheet. */
-trait CellType extends EqType with BaseType
+trait CellType extends OrdType with BaseType
 
 /* Now all the base types. */
 

@@ -18,8 +18,21 @@ trait Value{
 
 // ==================================================================
 
+/** Values that can be compared. */
+trait Ord extends Value{
+  def <= (other: Ord): Boolean
+
+  def >= (other: Ord) = other <= this
+
+  def < (other: Ord) = !(this >= other)
+
+  def > (other: Ord) = !(this <= other)
+}
+// Note: at present, only implementing types are Cells.  This should be
+// extended.
+
 /** Values that can be in a cell. */
-trait Cell extends Value{
+trait Cell extends Ord{
   /** How this is presented in a cell.  Overwritten for StringValues. */
   def asCell: String = forError
 
@@ -52,7 +65,7 @@ trait Cell extends Value{
   def nonEmpty = !isEmpty
 
   /** Is this <= other.  Pre: other is of the same subtype. */
-  def <= (other: Cell): Boolean
+//  def <= (other: Cell): Boolean
 }
 
 
@@ -74,6 +87,7 @@ trait Rangeable extends Arith{
   def until(other: Rangeable): ListValue
 }
 
+
 // ==================================================================
 
 /** An empty cell. */
@@ -86,7 +100,7 @@ case class Empty() extends Cell{
 
   override def asCSV = ""
 
-  def <= (other: Cell) = other match{ case Empty() => true }
+  def <= (other: Ord) = other match{ case Empty() => true }
 }
 // Note: we can't use a case object here, because different Emptys will have
 // different sources.
@@ -113,7 +127,7 @@ case class IntValue(value: Int) extends Cell with Rangeable{
     case IntValue(v1) => IntValue(value-v1)
   }
 
-  def <= (other: Cell) = other match{ case IntValue(v) => value <= v }
+  def <= (other: Ord) = other match{ case IntValue(v) => value <= v }
 
   override def forError = value.toString
 }
@@ -130,7 +144,7 @@ case class FloatValue(value: Float) extends Cell with Arith{
     case FloatValue(v1) => FloatValue(value-v1)
   }
 
-  def <= (other: Cell) = other match{ case FloatValue(v) => value <= v }
+  def <= (other: Ord) = other match{ case FloatValue(v) => value <= v }
 
   def getType = FloatType
 
@@ -150,7 +164,7 @@ case class StringValue(value: String) extends Cell{
   def + (other: StringValue) = StringValue(value+other.value)
   def + (other: String) = StringValue(value+other)
 
-  def <= (other: Cell) = other match{ case StringValue(v) => value <= v }
+  def <= (other: Ord) = other match{ case StringValue(v) => value <= v }
 
   override def asCSV = 
     "\""+value.flatMap{ _ match{
@@ -163,7 +177,7 @@ case class StringValue(value: String) extends Cell{
 case class BoolValue(value: Boolean) extends Cell{
   def getType = BoolType
 
-  def <= (other: Cell) = other match{ case BoolValue(v) => value <= v }
+  def <= (other: Ord) = other match{ case BoolValue(v) => value <= v }
 
   override def forError = value.toString
 }
@@ -307,7 +321,7 @@ trait ErrorValue extends Cell{
   /** The message that is written in the view InfoBox. */
   def msg: String
 
-  def <= (other: Cell) = sys.error(s"<= applied to $this")
+  def <= (other: Ord) = sys.error(s"<= applied to $this")
   // Note: forError is the value that appears in the cell itself, and the
   // selection box.
 }

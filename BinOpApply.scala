@@ -16,10 +16,10 @@ object BinOpApply{
       case "%" => 
         def err = EvalError("Division by zero")
         mkIntOp({case (n1,n2) => if(n2 != 0) IntValue(n1%n2) else err})
-      case "<=" => mkBinRelOp((_<=_), (_<=_))
-      case "<" => mkBinRelOp((_<_), (_<_))
-      case ">=" => mkBinRelOp((_>=_), (_>=_))
-      case ">" => mkBinRelOp((_>_), (_>_))
+      case "<=" => mkOrd((_ <= _)) // mkBinRelOp((_<=_), (_<=_))
+      case "<" => mkOrd((_ < _)) 
+      case ">=" => mkOrd((_ >= _))
+      case ">" => mkOrd((_ > _))
       // case "&&" => andOp /*mkBoolOp((_&&_))*/; case "||" => mkBoolOp((_||_))
       case "==" => equalOp(true); case "!=" => equalOp(false)
       case "::" => consOp
@@ -92,10 +92,15 @@ object BinOpApply{
   }
 
   /** (Num, Num) -> Bool functions. */
-  private def mkBinRelOp(fi: (Int,Int) => Boolean, ff: (Float,Float) => Boolean)
-      : BinOpRep =
-    mkBinOp({case (n1,n2) => BoolValue(fi(n1,n2))}, 
-            {case (x1,x2) => BoolValue(ff(x1,x2))} )
+  // private def mkBinRelOp(fi: (Int,Int) => Boolean, ff: (Float,Float) => Boolean)
+  //     : BinOpRep =
+  //   mkBinOp({case (n1,n2) => BoolValue(fi(n1,n2))}, 
+  //           {case (x1,x2) => BoolValue(ff(x1,x2))} )
+
+  /** Make an order relation. */
+  private def mkOrd(f: (Ord,Ord) => Boolean): BinOpRep = {
+    case v1: Ord => { case v2: Ord => BoolValue(f(v1,v2)) }
+  }
 
   /** Equality operators.
     * @param eq Is this representing the equality operator (==), as opposed to
