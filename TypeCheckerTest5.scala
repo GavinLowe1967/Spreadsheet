@@ -65,6 +65,7 @@ object TypeCheckerTest5{
     // parameters of type () at ..."
     assertFail(tcpss("operation f() = #A3 = 3; operation f() = #A4 = 4")) 
     assertFail(tcpss("operation f() = #A3 = 3\n def f() = ()")) 
+    assertOk(tcpss("operation f() = #A3 = 3\n def f(x: Int) = x+1"))
     // "f has both val and def/operation definitions at lines 1, 2."
     assertFail(tcpss("operation f() = #A3 = 3\n val f = 3"))
     // "Operation declaration(s) not at top level at line(s) 1."

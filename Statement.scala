@@ -50,8 +50,9 @@ trait FunctionDeclarationT extends Statement{
   def mkFunctionType: FunctionType
 }
 
+/** Companion object. */
 object FunctionDeclarationT{
-  /** The FunctionDeclarationT membres of stmts. */
+  /** The FunctionDeclarationT members of stmts. */
   def filter(stmts: List[Statement]): List[FunctionDeclarationT] = {
     var result = List[FunctionDeclarationT]()
     for(dec <- stmts) dec match{

@@ -11,3 +11,12 @@ def firstEmptyInColumn(c: Column, r: Row): Row =
 
 /** Find the first empty cell in column `c`. */
 def firstEmptyInColumn(c: Column): Row = firstEmptyInColumn(c, #0)
+
+
+// ========= Sorting functions
+
+// This assumes a particular type for the cells
+// def sortBlockByColumn(cols: List[Column], rows: List[Row], c: Column) = {
+//   def before(r1: Row, r2: Row) = Cell(c,r1): Int <= Cell(c, r2)
+//   sortBlockBy(cols, rows, before)
+// }

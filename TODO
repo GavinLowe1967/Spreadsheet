@@ -95,6 +95,7 @@ say that in the type system.
 Priorities
 ==========
 
+- Add comparison over Strings.
 
 - Make sure #include-d files exist, or give error
 

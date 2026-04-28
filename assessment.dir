@@ -19,9 +19,20 @@ for(r <- candidateRows)
 // sortBlockByColumn([#C,#B,#A,#D,#E], [#4,#2,#5,#1,#3], #E)
 // sortBlockByColumn(#A to #E, reverse(#1 until firstEmpty), #E)
 
-operation sortByTotal() = sortBlockByColumn(columns, candidateRows, #E)
+//operation sortByTotal() = sortBlockByColumn(columns, candidateRows, #E)
+
+operation sortByTotal() = {
+  def before(r1: Row, r2: Row) = Cell(#E,r1): Int >= Cell(#E, r2)
+  sortBlockBy(columns, candidateRows, before)
+}
 
 operation sortByName() = sortBlockByColumn(columns, candidateRows, #A)
+
+// This needs comparison over Strings.
+// operation sortByNameX() = {
+//   def before(r1: Row, r2: Row) = Cell(#A,r1): String <= Cell(#A, r2)
+//   sortBlockBy(columns, candidateRows, before)
+// }
 
 //sortByTotal()
 //sortByName()

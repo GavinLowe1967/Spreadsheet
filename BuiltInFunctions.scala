@@ -33,6 +33,14 @@ object BuiltInFunctions{
   /** sortBlockByColumn: (List[Column], List[Row], Column) => Unit. */
   private val sortBlockByColumnT = FunctionType(
     List(), List(ListType(ColumnType), ListType(RowType), ColumnType), UnitType)
+  /** The type (Row, Row) => Boolean.*/
+  private val rrbT = FunctionType( List(), List(RowType, RowType), BoolType )
+
+  /** def sortBlockBy(cols: List[Column], rows: List[Row], 
+    * before: Row => Row => Boolean): Unit */
+  private val sortBlockByT = FunctionType(
+    List(), List(ListType(ColumnType), ListType(RowType), rrbT), UnitType )
+
 
   import TupleType.MaxArity
 
@@ -50,7 +58,8 @@ object BuiltInFunctions{
   val builtInTypes = 
     List("head" -> headT, "tail" -> tailT, "isEmpty" -> isEmptyT, "not" -> notT,
       "toInt" -> toIntT, "toFloat" -> toFloatT, "!" -> notT,
-      "toString" -> toStringT, "sortBlockByColumn" -> sortBlockByColumnT
+      "toString" -> toStringT, "sortBlockByColumn" -> sortBlockByColumnT,
+      "sortBlockBy" -> sortBlockByT
     ).map{ case (n,t) => (n,List(t)) }  ++
     List("-" -> negTs) ++ 
     selectorTypes
@@ -97,10 +106,39 @@ object BuiltInFunctions{
       mkFunctionValue{ case List(FloatValue(x)) => FloatValue(-x) }
   )
 
-  /** sortBlockByColumn.  Sorts the block defined by `cols` and `rows` according
-    * to column `cv`.  Note that `rows` is expected to be ordered without; but
-    * if not, subsequently the block will be ordered in the order given by
-    * `rows`. */
+  // ========= Sorting functions
+
+  /** Test whether there is any repeated row in rowNums, returning an error if
+    * so; otherwise return null. */
+  private def checkForRowRepetition(rowNums: Array[Int]): EvalError = {
+    var i = 0; val numRows = rowNums.length; var result: EvalError = null
+    while(i < numRows && result == null){
+      var j = i+1; val r = rowNums(i)
+      while(j < numRows && rowNums(j) != r) j += 1
+      if(j < numRows) result = EvalError(s"Row #$r repeated in sort function")
+      else i += 1
+    }
+    result
+  }
+
+  /** Reorder the block defined by cols and rows, into the order defined by
+    * sortedRows. */
+  private def copyCells(env: Environment, cols: Array[Int], rows: Array[Int],
+    sortedRows: Array[Int]) 
+  = {
+    // Copy cells in sorted order.  The entry in position (i,j) is what should
+    // end up in position (i,j) of the original block.
+    val copy = Array.tabulate(cols.length, rows.length){ case (i,j) =>
+      env.getCellInfo(cols(i), sortedRows(j)) }
+    // Copy back into env.
+    for(i <- 0 until cols.length; j <- 0 until rows.length)
+      env.setCellInfo(cols(i), rows(j), copy(i)(j))
+  }
+
+  /** The sortBlockByColumn function.  Sorts the block defined by `cols` and
+    * `rows` according to column `cv`.  Note that `rows` is expected to be
+    * ordered without; but if not, subsequently the block will be ordered in
+    * the order given by `rows`. */
   private val sortBlockByColumnFn = FunctionValue((env: Environment) => {
     case List(ListValue(cols), ListValue(rows), cv) =>
       assert(cols.forall(_.isInstanceOf[ColumnValue]))
@@ -108,13 +146,7 @@ object BuiltInFunctions{
       val rowNums = rows.map{ case RowValue(r) => r }.toArray
       val colNums = cols.map{ case ColumnValue(c) => c }.toArray
       // Check no repetitions in `rows`
-      var i = 0; val numRows = rowNums.length; var result: Value = null
-      while(i < numRows && result == null){
-        var j = i+1; val r = rowNums(i)
-        while(j < numRows && rowNums(j) != r) j += 1
-        if(j < numRows) result = EvalError(s"Row $r repeated in sort function")
-        else i += 1
-      }
+      var result: Value = checkForRowRepetition(rowNums)
       if(result != null) result
       else if(rows.isEmpty) UnitValue
       else{
@@ -141,17 +173,45 @@ object BuiltInFunctions{
           // Order to sort rows into. 
           val sortedRows = rowNums.sortWith{ case (r1,r2) =>
             (env.getCell(col,r1) <= env.getCell(col,r2)) }
-          // Copy cells in sorted order.  The entry in position (i,j) is what
-          // should end up in position (i,j) of the original block.
-          val copy = Array.tabulate(cols.length, rows.length){ case (i,j) =>
-            env.getCellInfo(colNums(i), sortedRows(j)) }
-          // println(copy.map(_.mkString(",")).mkString("\n"))
-          // Copy back into env.
-          for(i <- 0 until colNums.length; j <- 0 until rowNums.length)
-            env.setCellInfo(colNums(i), rowNums(j), copy(i)(j))
+          copyCells(env, colNums, rowNums, sortedRows)
           UnitValue
         }
       } // end of else
+  })
+
+  /** Exception corresponding to the function fv, below, giving an error. */ 
+  private case class ErrorException(err: ErrorValue) extends Exception
+
+  /** The sortBlockBy function.  Sorts the block defined by `cols` and `rows`,
+    * according to the criterion defined by `f: (Row, Row) => Boolean`. */
+  private def sortBlockByFn = FunctionValue((env: Environment) => {
+    case List(ListValue(cols), ListValue(rows: List[RowValue] @unchecked),
+      fv: FunctionValue
+    ) =>
+      assert(cols.forall(_.isInstanceOf[ColumnValue]))
+      assert(rows.forall(_.isInstanceOf[RowValue]))
+      val rowNums = rows.map{ case RowValue(r) => r }.toArray
+      val colNums = cols.map{ case ColumnValue(c) => c }.toArray
+      // Check no repetitions in `rows`
+      var result: Value = checkForRowRepetition(rowNums.toArray)
+      if(result != null) result
+      else if(rows.isEmpty) UnitValue
+      else{
+        val FunctionValue(f) = fv
+        // Note: if f returns an error, sortWith below throws an
+        // ErrorException, which gets caught.
+        def compare(r1: Int, r2: Int) = 
+          f(env)(List(RowValue(r1), RowValue(r2))) match{
+            case BoolValue(b) => b
+            case err: ErrorValue => throw ErrorException(err)
+          }
+        try{
+          val sortedRows = rowNums.sortWith(compare _)
+          copyCells(env, colNums, rowNums, sortedRows)
+          UnitValue
+        }
+        catch{ case ErrorException(err) => err }
+      }
   })
 
   /** The built-in functions. */
@@ -159,7 +219,8 @@ object BuiltInFunctions{
     List(
       "head" -> headFn, "tail" -> tailFn, "isEmpty" -> isEmptyFn, "not" -> notFn,
       "toInt" -> toIntFn, "toFloat" -> toFloatFn, "!" -> notFn,
-      "toString" -> toStringFn, "sortBlockByColumn" -> sortBlockByColumnFn
+      "toString" -> toStringFn, "sortBlockByColumn" -> sortBlockByColumnFn, 
+      "sortBlockBy" -> sortBlockByFn
     ) ++ 
       selectorFns ++ negFns
 
