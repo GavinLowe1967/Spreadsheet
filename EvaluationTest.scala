@@ -188,7 +188,7 @@ object EvaluationTest{
       IntValue(16))
   }
 
-  /** Tests on toString and + over Strings. */
+  /** Tests on String operations. */
   def tests6() = {
     //println(eval("\"Hello\"+toString(3)"))
     assert(eval("\"Hello\"+toString(3)") == StringValue("Hello3"))
@@ -198,6 +198,9 @@ object EvaluationTest{
     assert(eval("\"Hello\"+\"world\"+3") == StringValue("Helloworld3"))
     assert(eval("toString(3.5)+(true,[1,2])") == 
       StringValue("3.5(true, [1, 2])"))
+    assert(eval("\"Hello\" <= \"World\"") == BoolValue(true))
+    assert(eval("\"Hello\" >= \"World\"") == BoolValue(false))
+    assert(eval("\"Hello\" >= \"Hello\"") == BoolValue(true))
 
   }
 

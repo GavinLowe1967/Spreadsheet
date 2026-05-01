@@ -3,67 +3,7 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
-- Remove reliance of Parser0 on Value -- split off CellParser and Parser0 --
-  DONE
-
-- Try to remove ParseResult from Input.scala.  Input uses Failure.reset, so
-  this might not be possible.  Need to provide Input with a parameter with a
-  reset operation. **TO DO**
-
--  Move Source to new file; leads to Value and HasExtent. Done
-
-===== Allow sorting-like operations
-
-Add built-in sortBlockByColumn function.  But execution requires an Environment.
-
-
-1. Define type
-case class OperationValue(f: Environment => PartialFunction[List[Value], Value]) extends Value
-It needs to be in a separate file, dependent on Environment.scala, but before
-Evaluation.scala.  That means that Environment.initNameMap needs moving.  
-
-Or just change FunctionValue to have the above signature.  In
-Execution.evalFn, include another formal parameter to f.  In Execution, pass
-the environment to fv, via its apply function.  In BuitinFunctions, replace
-FunctionValue by mkFunctionValue, which lifts the function. -- DONE
-
-
-2. Define built-in sortBlockByColumn function in OperationVale (companion
-object).  Add to initial environment. -- DONE
-
-3. Evaluation is as for FunctionApp of a FunctionValue, but supplying the
-environment. -- DONE
-
----- Part 2
-
-1. Add user operation declarations to syntax.  These take parameters, access the
-environment, and don't return a value.
-
-operation sortByName = { ... } -- DONE
-
-2. Parsing. -- DONE
-
-3. Type checking like function declarations 
-
-4. Execute declaration by adding name -> FunctionValue mapping to environment,
-and item to menu.  The Execution needs to have a reference to the View (type
-ViewT, with "addItem" operation). -- DONE
-
-5. Execute via menu, like function calls -- DONE
-
-6. Catch repetitions of operation names. -- DONE
-
-6a. Allow operation declarations only at top level. -- DONE
-
-7. Manual
-
----- Part 3
-
-*  def sortBlockBy(cols: List[Column], rows: List[Row], above: (Row, Row) => Boolean)
-
-* Undoing of operations
-
-*** Source and Extent seem to be mutually recusive -- DONE
+*** Add comparison over Strings. -- DONE, needs formal tests
 
 Type checking
 =============
@@ -91,15 +31,36 @@ loses the Eq constraint in the latter case.  I think we'd like the latter to
 have type [A <: Eq] ListType(TypeParam("A")), but there's currently no way to
 say that in the type system.
 
+Alternatively, require calls to mkEmpty to provide the type parameter,
+e.g. val xs = mkEmpty[String].
+
 
 Priorities
 ==========
 
-- Add comparison over Strings. -- DONE, needs formal tests
 
-- Extend OrdType (TypeT.scala) and Ord (Value.scala) to other types.
+1. Add Ord type class.   Extend OrdType (TypeT.scala) and Ord (Value.scala) to 
+other types.  Want to allow typing of
+def min[A <: Ord](x: A)(y: A): A = if(x <= y) x else y
+def minimum[A <: Ord](xs: List[A]): A = ...
+
+2. Add CellType type class.  Want to allow typing of
+def cells[A <: CellType](cols: List[Column])(row: Row): List[A] =
+  [Cell(c,r): A | c <- cols]
+def sortBlockByColumn[A <: CellType](
+    cols: List[Column], rows: List[Row], c: Column) = {
+  def before(r1: Row, r2: Row) = Cell(c,r1): A <= Cell(c,r2)
+  sortBlockBy(cols, rows, before)
+}
+operation sortByName() = sortBlockByColumn[String](columns, rows, #A)
 
 - Make sure #include-d files exist, or give error
+
+- Try to remove ParseResult from Input.scala.  Input uses Failure.reset, so
+  this might not be possible.  Need to provide Input with a parameter with a
+  reset operation. 
+
+- Undoing of operations.
 
 - Use SplitPane in Frame.scala -- DONE; TODO: add to manual
 
@@ -107,7 +68,6 @@ Priorities
 
 - Improve AV script
 * Change current to be list of candidate numbers. 
-
 
 - Allow pattern matching on ::
 

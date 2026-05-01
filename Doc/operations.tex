@@ -1,0 +1,66 @@
+\section{Multi-cell operations}
+
+The statements described in the previous section update at most one cell at a
+time, and did not allow writing to a cell that already holds a value.
+However, sometimes we need to go beyond this.  The most common case is an
+operation to sort a block of cells, according to some criterion.  
+
+The language contains a built in function with signature
+\begin{scala}
+def sortBlockBy(columns: List[Column], rows: List[Row], 
+                before: (Row,Row) => Boolean): Unit
+\end{scala}
+%
+This sorts the block defined by |columns| and |rows|, according to the
+criterion defined by |before|: if |before(r1,r2)| gives true, then row~|r1|
+will be put before~|r2| in the sorted version (so |before| should correspond
+to an order relation). 
+
+Figure~\ref{fig:sortByTotal} illustrates this function.  The script expects to
+find names in column |#A| from row |#1|, with corresponding |Int| scores in
+columns |#B| to |#D|.  It calculates the total for each row, putting the
+results in column |#E|.  However, we want ways to sort the data according to
+the total or by the name. 
+
+
+% #include "haskell.dir"
+\begin{figure}
+\begin{scala}
+#include "spreadsheet.dir"
+val firstEmpty = firstEmptyInColumn(#A)  // Find end of inputs.
+val candidateRows = #1 until firstEmpty // Rows for candidates.
+val columns = #A to #E  // Columns in the table.
+// Calculate totals.
+for(r <- candidateRows) Cell(#E,r) = Cell(#B,r):Int + Cell(#C,r) + Cell(#D,r)
+// Sorting operations.
+operation sortByTotal() = {
+  def before(r1: Row, r2: Row) = Cell(#E,r1): Int >= Cell(#E, r2)
+  sortBlockBy(columns, candidateRows, before)
+}
+operation sortByName() = {
+  def before(r1: Row, r2: Row) = Cell(#A,r1): String <= Cell(#A, r2)
+  sortBlockBy(columns, candidateRows, before)
+}
+\end{scala}
+\caption{A script illustrating the {\scalashape sortByTotal} function.}
+\label{fig:sortByTotal}
+\end{figure}
+
+The operation |sortByTotal()| provides a way to sort the data into decreasing
+order of total score (column~|#E|): the |before| function defines that
+row~|r1| will be placed before row~|r2| if it has a higher total score.  
+
+If we had placed the body of this operation at the top level of the script,
+i.e.~not in any function or operation, then it would have been executed
+\emph{every} time that the user entered a value in a cell.  This would have
+been distracting for the user, because the row they were currently typing into
+could be moved.
+
+Instead, the keyword |operation| means that an item labelled ``|sortByTotal|''
+is added to the ``Operations'' menu in the application.  Selecting this item
+invokes the operation, and so sorts the data.
+
+\framebox{screenshot}
+
+The operation |sortByName| is similar, but sorts the data into decreasing
+order by the name field.

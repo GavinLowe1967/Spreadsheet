@@ -1,6 +1,64 @@
 ===================================== DONE
 
+===== Allow sorting-like operations
 
+Add built-in sortBlockByColumn function.  But execution requires an Environment.
+
+
+1. Define type
+case class OperationValue(f: Environment => PartialFunction[List[Value], Value]) extends Value
+It needs to be in a separate file, dependent on Environment.scala, but before
+Evaluation.scala.  That means that Environment.initNameMap needs moving.  
+
+Or just change FunctionValue to have the above signature.  In
+Execution.evalFn, include another formal parameter to f.  In Execution, pass
+the environment to fv, via its apply function.  In BuitinFunctions, replace
+FunctionValue by mkFunctionValue, which lifts the function. -- DONE
+
+
+2. Define built-in sortBlockByColumn function in OperationVale (companion
+object).  Add to initial environment. -- DONE
+
+3. Evaluation is as for FunctionApp of a FunctionValue, but supplying the
+environment. -- DONE
+
+---- Part 2
+
+1. Add user operation declarations to syntax.  These take parameters, access the
+environment, and don't return a value.
+
+operation sortByName = { ... } -- DONE
+
+2. Parsing. -- DONE
+
+3. Type checking like function declarations -- DONE
+
+4. Execute declaration by adding name -> FunctionValue mapping to environment,
+and item to menu.  The Execution needs to have a reference to the View (type
+ViewT, with "addItem" operation). -- DONE
+
+5. Execute via menu, like function calls -- DONE
+
+6. Catch repetitions of operation names. -- DONE
+
+6a. Allow operation declarations only at top level. -- DONE
+
+7. Manual -- DONE
+
+---- Part 3
+
+*  def sortBlockBy(cols: List[Column], rows: List[Row], above: (Row, Row) => Boolean) -- DONE
+
+*** Source and Extent seem to be mutually recusive -- DONE
+
+
+=====
+
+- Remove reliance of Parser0 on Value -- split off CellParser and Parser0 --
+  DONE
+
+
+-  Move Source to new file; leads to Value and HasExtent. Done
 
 - Refactor Execution.scala -- DONE
 

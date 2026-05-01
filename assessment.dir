@@ -28,11 +28,10 @@ operation sortByTotal() = {
 
 operation sortByName() = sortBlockByColumn(columns, candidateRows, #A)
 
-// This needs comparison over Strings.
-// operation sortByNameX() = {
-//   def before(r1: Row, r2: Row) = Cell(#A,r1): String <= Cell(#A, r2)
-//   sortBlockBy(columns, candidateRows, before)
-// }
+operation sortByName2() = {
+  def before(r1: Row, r2: Row) = Cell(#A,r1): String <= Cell(#A, r2)
+  sortBlockBy(columns, candidateRows, before)
+}
 
 //sortByTotal()
 //sortByName()
