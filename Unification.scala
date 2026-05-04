@@ -30,6 +30,7 @@ object Unification{
   }
  */
 
+/*
   /** Test whether t can satisfy the constraint c.  If needs be, add constraints
     * to TypeVars within t.  Return the resulting environment if successful;
     * otherwise return fail.  Pre: c is not a SingletonTypeConstraint. */
@@ -60,6 +61,7 @@ object Unification{
         if(c.satisfiedBy(typeEnv, t)) Ok(typeEnv) else fail
     }
   }
+ */
 
   /** Identity on types. */
   private val idT = (t: TypeT) => t 
@@ -94,7 +96,7 @@ object Unification{
         typeEnv(tId1) match{
           case SingletonTypeConstraint(t11) => unify(typeEnv, t11, t2)
           case c => 
-            updateEnvToSatisfy(typeEnv, t2, c, fail).map{ te =>
+            typeEnv.updateEnvToSatisfy(t2, c, fail).map{ te =>
               Ok(te.replace(tId1, t2), t2)
             }
         }
@@ -105,7 +107,7 @@ object Unification{
         typeEnv(tId2) match{
           case SingletonTypeConstraint(t22) => unify(typeEnv, t1, t22)
           case c => 
-            updateEnvToSatisfy(typeEnv, t1, c, fail).map{ te =>
+            typeEnv.updateEnvToSatisfy(t1, c, fail).map{ te =>
               Ok(te.replace(tId2, t1), t1)
             }
         }

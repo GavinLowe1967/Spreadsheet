@@ -115,9 +115,11 @@ class TypeEnv(
   /** Get the constraint associated with tid. */
   def getConstraint(tid: TypeID): TypeConstraint = constraints(tid)
 
-  /** Try to extend this so that t is an equality type. */
-  def mkEqType(t: TypeT): Reply[TypeEnv] = {
-    def fail = FailureR(s"Expected equality type, found ${t.asString}")
+  // /** Try to extend this so that t is an equality type. */
+  // def mkEqType(t: TypeT): Reply[TypeEnv] = {
+  //   def fail = FailureR(s"Expected equality type, found ${t.asString}")
+  //   updateEnvToSatisfy(t, EqTypeConstraint, fail)
+/*
     t match{
       case TypeVar(tv) => 
         apply(tv) match{
@@ -134,7 +136,41 @@ class TypeEnv(
       case ListType(underlying) => mkEqType(underlying)
       case ft: FunctionType => fail
     }
+ */
+//  }
+
+  // var verbose = false
+
+  /** Test whether t can satisfy the constraint c.  If needs be, add constraints
+    * to TypeVars within t.  Return the resulting environment if successful;
+    * otherwise return fail.  Pre: c is not a SingletonTypeConstraint. */
+  def updateEnvToSatisfy(t: TypeT, c: TypeConstraint, fail: => FailureR)
+      : Reply[TypeEnv] = {
+    // if(verbose) println(s"updateEnvToSatisfy($t, $c)")
+    t match{
+      case ListType(underlying) => c match{
+        case EqTypeConstraint => updateEnvToSatisfy(underlying, c, fail)
+        case AnyTypeConstraint => Ok(this)
+      }
+      case _ : FunctionType => c match{
+        case AnyTypeConstraint => Ok(this)
+        case EqTypeConstraint => fail
+        // case SingletonTypeConstraint(t1) => println(s"t = $t\nt1 = $t1"); ???
+      }
+      case TypeVar(tId) => 
+        // This can happen by recursing via ListType(TypeVar(_)), e.g. the
+        // test "equals([],[[]])" in polyListTests.
+        val c1 = apply(tId); val cc = c.intersection(this, c1)
+        //println(s"c1 = $c1 cc = $cc")
+        if(cc == c1) Ok(this) else Ok(this + (tId,cc))
+      // case TypeParam(tp) => 
+      //   if(c.satisfiedBy(typeEnv, t)) updateEnvToSatisfy(typeEnv,  Ok(typeEnv) 
+      //   else fail
+      case _ => // BaseTypes, TypeParams
+        if(c.satisfiedBy(this, t)) Ok(this) else fail
+    }
   }
+
 
   // ========= TypeParamMap functions
 

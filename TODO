@@ -3,7 +3,28 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
-*** Add comparison over Strings. -- DONE, needs formal tests
+
+Add Ord type class.   Ord <: Eq (but currently equal). 
+
+1. Rationalise TypeEnv.mkEqType  and Unification.updateEnvToSatisfy.
+(a) Move latter to within TypeEnv;
+(b) Update former to use latter.
+
+2. Add OrdTypeConstraint in TypeConstraint.scala.
+
+3. Parser (StatementParser.scala)
+
+
+3. Generalise TypeEnv.mkEqType to a function that extends the TypeEnv so that
+a type t is in a particular type class.  This needs some thought *****.  How does this function differ from Unification.updateEnvToSatisfy? 
+
+Extend OrdType (TypeT.scala) and Ord (Value.scala) to 
+other types.  Want to allow typing of
+def min[A <: Ord](x: A)(y: A): A = if(x <= y) x else y
+def minimum[A <: Ord](xs: List[A]): A = ...
+
+
+*** Add comparison over Strings. -- DONE, needs formal tests -- done
 
 Type checking
 =============
@@ -38,11 +59,6 @@ e.g. val xs = mkEmpty[String].
 Priorities
 ==========
 
-
-1. Add Ord type class.   Extend OrdType (TypeT.scala) and Ord (Value.scala) to 
-other types.  Want to allow typing of
-def min[A <: Ord](x: A)(y: A): A = if(x <= y) x else y
-def minimum[A <: Ord](xs: List[A]): A = ...
 
 2. Add CellType type class.  Want to allow typing of
 def cells[A <: CellType](cols: List[Column])(row: Row): List[A] =

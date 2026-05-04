@@ -19,7 +19,7 @@ trait TypeConstraint{
   def satisfiedBy(typeEnv: TypeEnv0, t: TypeT) : Boolean
 
   /** The TypeConstraint representing the intersection (or conjunction) of this
-    * and other. */
+    * and other (used in Unification.scala). */
   def intersection(typeEnv: TypeEnv0, other: TypeConstraint): TypeConstraint
 
   /** String to use in error messages when this type is expected. */
@@ -35,7 +35,7 @@ trait TypeConstraint{
 trait TypeParamConstraint extends TypeConstraint{
 
   /** Does this imply other?  I.e., the types that satisfy this are a subset of
-    * the types that satisfy other? */
+    * the types that satisfy other?  (Used in TypeEnv.scala.) */
   def implies(other: TypeConstraint): Boolean
 
   /** String to use in error messages when this constraint is found.
