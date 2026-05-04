@@ -100,7 +100,7 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
           // Check tl is a concrete equality type
           close(te1,tl).map{ case (te2,`tl`) =>
             def fail = FailureR(s"Expected equality type, found ${tl.asString}")
-            te2.updateEnvToSatisfy(tl, EqTypeConstraint, fail)/* te2.mkEqType(tl)*/.map{ te3 => 
+            te2.updateEnvToSatisfy(tl, EqTypeConstraint, fail).map{ te3 => 
               typeCheckUnify(te3, right, tl).map{ case (te4, tr) =>
                 // Note, in the case of "[] == [f]" for f not an equality type, 
                 // unification fails.

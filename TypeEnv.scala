@@ -115,32 +115,6 @@ class TypeEnv(
   /** Get the constraint associated with tid. */
   def getConstraint(tid: TypeID): TypeConstraint = constraints(tid)
 
-  // /** Try to extend this so that t is an equality type. */
-  // def mkEqType(t: TypeT): Reply[TypeEnv] = {
-  //   def fail = FailureR(s"Expected equality type, found ${t.asString}")
-  //   updateEnvToSatisfy(t, EqTypeConstraint, fail)
-/*
-    t match{
-      case TypeVar(tv) => 
-        apply(tv) match{
-          case EqTypeConstraint => Ok(this)
-          case AnyTypeConstraint => Ok(this+(tv,EqTypeConstraint))
-          case SingletonTypeConstraint(t1) => println(t1); ??? 
-            // I think mkEqType(t1), but I can't find a test for this.
-        }
-      case TypeParam(name) =>
-        if(constraintForTypeParam(name).implies(EqTypeConstraint)) Ok(this)
-        else fail
-      case _: EqType => Ok(this)
-      case _: CellTypeVar => sys.error(s"Shouldn't happen: mkEqType($t)")
-      case ListType(underlying) => mkEqType(underlying)
-      case ft: FunctionType => fail
-    }
- */
-//  }
-
-  // var verbose = false
-
   /** Test whether t can satisfy the constraint c.  If needs be, add constraints
     * to TypeVars within t.  Return the resulting environment if successful;
     * otherwise return fail.  Pre: c is not a SingletonTypeConstraint. */
@@ -170,7 +144,6 @@ class TypeEnv(
         if(c.satisfiedBy(this, t)) Ok(this) else fail
     }
   }
-
 
   // ========= TypeParamMap functions
 

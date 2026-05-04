@@ -36,7 +36,10 @@ trait TypeParamConstraint extends TypeConstraint{
 
   /** Does this imply other?  I.e., the types that satisfy this are a subset of
     * the types that satisfy other?  (Used in TypeEnv.scala.) */
-  def implies(other: TypeConstraint): Boolean
+  //def implies(other: TypeConstraint): Boolean
+
+  def implies(typeEnv: TypeEnv0, other: TypeConstraint) =  
+    this.intersection(typeEnv, other) == this
 
   /** String to use in error messages when this constraint is found.
     * Overwritten in NumTypeConstraint and EqTypeConstraint.*/
@@ -64,6 +67,7 @@ case class SingletonTypeConstraint(t: TypeT) extends TypeConstraint{
 /** The type constraint corresponding to being an equality type. */
 case object EqTypeConstraint extends TypeParamConstraint{
   def satisfiedBy(typeEnv: TypeEnv0, t: TypeT) = {
+    // println(s"satisfiedBy($t)")
     // Note: t might be a typeVar in a recursive call for ListType(t)
     t match{
       case _: EqType => true
@@ -74,7 +78,13 @@ case object EqTypeConstraint extends TypeParamConstraint{
           println(s"EqTypeConstraint $t"); satisfiedBy(typeEnv, t)
         case AnyTypeConstraint => false
       }
-      case TypeParam(tp) => typeEnv.constraintForTypeParam(tp).implies(this)
+      case TypeParam(tp) => 
+        typeEnv.constraintForTypeParam(tp).implies(typeEnv, this)
+        // val c = typeEnv.constraintForTypeParam(tp)
+        // val r1 = c.implies(this)
+        // val r2 = c.implies(typeEnv, this) // this.intersection(typeEnv, c) == c
+        // assert(r1 == r2, c.toString)
+        // r1
       case _ => false // FunctionType
     }
   }
@@ -85,16 +95,55 @@ case object EqTypeConstraint extends TypeParamConstraint{
     case AnyTypeConstraint => EqTypeConstraint
   }
 
-  /** Does this imply other?  I.e., the types that satisfy this are a subset of
-    * the types that satisfy other? */
-  def implies(other: TypeConstraint): Boolean = other match{
-    case EqTypeConstraint => true
-    case AnyTypeConstraint => true  // In fact, never called
-  }
+  // /** Does this imply other?  I.e., the types that satisfy this are a subset of
+  //   * the types that satisfy other? */
+  // def implies(other: TypeConstraint): Boolean = other match{
+  //   case EqTypeConstraint => true
+  //   case AnyTypeConstraint => true  // In fact, never called
+  // }
 
   override def asString = "Eq" 
 
   def asStringE = "equality type"
+}
+
+// =================================================================
+
+case object OrdTypeConstraint extends TypeParamConstraint{
+
+  def satisfiedBy(typeEnv: TypeEnv0, t: TypeT) = {
+    // Note: t might be a typeVar in a recursive call for ListType(t)
+    t match{
+      case _: OrdType => true
+      case ListType(underlying) => satisfiedBy(typeEnv, underlying)
+      case TypeVar(tid) => typeEnv(tid) match{
+        case OrdTypeConstraint => true
+        case SingletonTypeConstraint(t) => // can this happen?
+          println(s"EqTypeConstraint $t"); satisfiedBy(typeEnv, t)
+        case EqTypeConstraint | AnyTypeConstraint => false
+      }
+      case TypeParam(tp) => 
+        // this.intersection(typeEnv, typeEnv.constraintForTypeParam(tp)) == this
+        typeEnv.constraintForTypeParam(tp).implies(typeEnv, this)
+      case _ => false // FunctionType
+    }
+  }
+
+  def intersection(typeEnv: TypeEnv0, other: TypeConstraint) = other match{
+    case EqTypeConstraint | OrdTypeConstraint | AnyTypeConstraint => 
+      OrdTypeConstraint
+  }
+
+  // /** Does this imply other?  I.e., the types that satisfy this are a subset of
+  //   * the types that satisfy other? */
+  // def implies(other: TypeConstraint): Boolean = other match{
+  //   case EqTypeConstraint | OrdTypeConstraint => true
+  //   case AnyTypeConstraint => true  // In fact, never called
+  // }
+
+  override def asString = "Ord" 
+
+  def asStringE = "Ord type"
 }
 
 // ==================================================================
@@ -105,8 +154,8 @@ case object AnyTypeConstraint extends TypeParamConstraint{
 
   def intersection(typeEnv: TypeEnv0, other: TypeConstraint) = other
 
-  def implies(other: TypeConstraint): Boolean = 
-    other == AnyTypeConstraint
+  // def implies(other: TypeConstraint): Boolean = 
+  //   other == AnyTypeConstraint
   // This only implies the same type constraint.
 
   def asStringE = "any type" // never used? 

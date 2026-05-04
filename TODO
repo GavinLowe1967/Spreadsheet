@@ -8,20 +8,29 @@ Add Ord type class.   Ord <: Eq (but currently equal).
 
 1. Rationalise TypeEnv.mkEqType  and Unification.updateEnvToSatisfy.
 (a) Move latter to within TypeEnv;
-(b) Update former to use latter.
+(b) Update former to use latter.  -- DONE
 
 2. Add OrdTypeConstraint in TypeConstraint.scala.
 
 3. Parser (StatementParser.scala)
 
+4. Update TypeChecker0.typeCheckBinOp to require OrdTypeConstraint
 
-3. Generalise TypeEnv.mkEqType to a function that extends the TypeEnv so that
-a type t is in a particular type class.  This needs some thought *****.  How does this function differ from Unification.updateEnvToSatisfy? 
+5. Add to TypeEnv.updateEnvToSatisfy.
+
+6. Think more generally about structure of type classes.  Can
+updateEnvToSatisfy be rationalised.  And should it include
+SingletonTypeConstraint?
 
 Extend OrdType (TypeT.scala) and Ord (Value.scala) to 
 other types.  Want to allow typing of
 def min[A <: Ord](x: A)(y: A): A = if(x <= y) x else y
 def minimum[A <: Ord](xs: List[A]): A = ...
+
+
+No need: Generalise TypeEnv.mkEqType to a function that extends the TypeEnv so
+that a type t is in a particular type class.  This needs some thought *****.
+How does this function differ from Unification.updateEnvToSatisfy?
 
 
 *** Add comparison over Strings. -- DONE, needs formal tests -- done

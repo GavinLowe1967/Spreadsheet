@@ -12,57 +12,6 @@ object Unification{
 
   import TypeVar.TypeID // Type variables (Ints)
 
-/*
-  /** Replace tId by t in typeEnv, if it is consistent with the constraints in
-    * typeEnv. Otherwise return fail. */
-  private def replaceInTypeEnv(
-    typeEnv: TypeEnv, tId: TypeID, t: TypeT, fail: => FailureR)
-      : Reply[(TypeEnv, TypeT)] = {
-    if(verbose) println(s"replaceInTypeEnv($tId, $t)")
-    assert(!t.isInstanceOf[TypeVar])
-    typeEnv(tId) match{
-      case SingletonTypeConstraint(t2) => unify(typeEnv, t, t2) // order?
-      case c => 
-        updateEnvToSatisfy(typeEnv, t, c, fail).map{ te =>
-          Ok(te.replace(tId, t), t)
-        }
-    }
-  }
- */
-
-/*
-  /** Test whether t can satisfy the constraint c.  If needs be, add constraints
-    * to TypeVars within t.  Return the resulting environment if successful;
-    * otherwise return fail.  Pre: c is not a SingletonTypeConstraint. */
-  private def updateEnvToSatisfy(
-    typeEnv: TypeEnv, t: TypeT, c: TypeConstraint, fail: => FailureR)
-      : Reply[TypeEnv] = {
-    if(verbose) println(s"updateEnvToSatisfy($t, $c)")
-    t match{
-      case ListType(underlying) => c match{
-        case EqTypeConstraint => updateEnvToSatisfy(typeEnv, underlying, c, fail)
-        case AnyTypeConstraint => Ok(typeEnv)
-      }
-      case _ : FunctionType => c match{
-        case AnyTypeConstraint => Ok(typeEnv)
-        case EqTypeConstraint => fail
-        // case SingletonTypeConstraint(t1) => println(s"t = $t\nt1 = $t1"); ???
-      }
-      case TypeVar(tId) => 
-        // This can happen by recursing via ListType(TypeVar(_)), e.g. the
-        // test "equals([],[[]])" in polyListTests.
-        val c1 = typeEnv(tId); val cc = c.intersection(typeEnv, c1)
-        //println(s"c1 = $c1 cc = $cc")
-        if(cc == c1) Ok(typeEnv) else Ok(typeEnv + (tId,cc))
-      // case TypeParam(tp) => 
-      //   if(c.satisfiedBy(typeEnv, t)) updateEnvToSatisfy(typeEnv,  Ok(typeEnv) 
-      //   else fail
-      case _ => // BaseTypes, TypeParams
-        if(c.satisfiedBy(typeEnv, t)) Ok(typeEnv) else fail
-    }
-  }
- */
-
   /** Identity on types. */
   private val idT = (t: TypeT) => t 
 
