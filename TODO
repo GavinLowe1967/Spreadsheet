@@ -5,12 +5,16 @@ Current
 
 
 Add Ord type class.   Ord <: Eq (but currently equal). 
+ Want to allow typing of
+def min[A <: Ord](x: A)(y: A): A = if(x <= y) x else y
+def minimum[A <: Ord](xs: List[A]): A = ...
 
 1. Rationalise TypeEnv.mkEqType  and Unification.updateEnvToSatisfy.
 (a) Move latter to within TypeEnv;
 (b) Update former to use latter.  -- DONE
 
 2. Add OrdTypeConstraint in TypeConstraint.scala.
+- Add to intersection, implies elsewhere -- DONE
 
 3. Parser (StatementParser.scala)
 
@@ -18,14 +22,16 @@ Add Ord type class.   Ord <: Eq (but currently equal).
 
 5. Add to TypeEnv.updateEnvToSatisfy.
 
-6. Think more generally about structure of type classes.  Can
+6. Extend OrdType (TypeT.scala) and Ord (Value.scala) to other types (RowType,
+ColumnType, ListType); Make TupleTypes potentially both EqType and OrdType.
+
+7. Think more generally about structure of type classes.  Can
 updateEnvToSatisfy be rationalised.  And should it include
 SingletonTypeConstraint?
 
-Extend OrdType (TypeT.scala) and Ord (Value.scala) to 
-other types.  Want to allow typing of
-def min[A <: Ord](x: A)(y: A): A = if(x <= y) x else y
-def minimum[A <: Ord](xs: List[A]): A = ...
+8. Think about SingletonTypeConstraint in TypeConstraint -- various ??? cases.
+
+
 
 
 No need: Generalise TypeEnv.mkEqType to a function that extends the TypeEnv so

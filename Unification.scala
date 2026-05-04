@@ -30,7 +30,7 @@ object Unification{
     else (t1,t2) match{
       case (TypeVar(tId1), TypeVar(tId2)) => // Both TypeVars: find intersection
         //if(true || verbose) println(s"\nunify($t1, $t2)")
-        typeEnv(tId1).intersection(typeEnv, typeEnv(tId2)) match{
+        typeEnv(tId1).intersection(typeEnv(tId2)) match{
           case SingletonTypeConstraint(t) =>
             val newTypeEnv = typeEnv.replace(tId1, t).replace(tId2, t)
             Ok(newTypeEnv, t)

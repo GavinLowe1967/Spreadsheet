@@ -134,7 +134,7 @@ class TypeEnv(
       case TypeVar(tId) => 
         // This can happen by recursing via ListType(TypeVar(_)), e.g. the
         // test "equals([],[[]])" in polyListTests.
-        val c1 = apply(tId); val cc = c.intersection(this, c1)
+        val c1 = apply(tId); val cc = c.intersection(c1)
         //println(s"c1 = $c1 cc = $cc")
         if(cc == c1) Ok(this) else Ok(this + (tId,cc))
       // case TypeParam(tp) => 
