@@ -131,6 +131,11 @@ object StatementParserTest extends ParserTest0{
         "f", List(("A",EqTypeConstraint)),
         List(List(("x",TypeParam("A")))), Some(BoolType), 
         BinOp(NameExp("x"), "==", NameExp("x")) ))
+    assert(ps("def f[A <: Ord](x: A): Boolean = x <= x") ==
+      FunctionDeclaration(
+        "f", List(("A",OrdTypeConstraint)),
+        List(List(("x",TypeParam("A")))), Some(BoolType), 
+        BinOp(NameExp("x"), "<=", NameExp("x")) ))
 
     assertFail(pe("{ def f(x: Int): Int = 5/x; f(0) }"))
     assertFail(pe("{ def f(x: Int): Int = 5/x; f(1/0) }"))

@@ -156,6 +156,33 @@ object TypeCheckerTest4{
       FunctionType(List(), List(ListType(IntType)), ListType(IntType)) )
   }
 
+  // The type of the `min` and `max` functions. 
+  private val minMaxType = FunctionType(
+    List(("A",OrdTypeConstraint)), List(TypeParam("A")),
+    FunctionType(List(), List(TypeParam("A")), TypeParam("A")) )
+  // The type of the `minimum` and `maximum` functions.
+  private val minimumType = FunctionType(
+    List(("A",OrdTypeConstraint)), List(ListType(TypeParam("A"))),
+    TypeParam("A") )
+
+  /** A test involcing the `min` and `minimum` functions. */
+  def minimumTest() = {
+    val script = 
+      "def foldl[A,B](f: B => A => B)(e: B)(xs: List[A]): B = "+
+        "  if(isEmpty xs) e else foldl f (f e (head xs)) (tail xs)\n"+
+        "def min[A <: Ord](x: A)(y: A) = if(x <= y) x else y\n"+
+        "def minimum[A <: Ord](xs: List[A]): A = "+
+        "  foldl (min: A => A => A) (head xs) (tail xs)"
+    // Note: the explicit type on `min` isn't necessary, but caused problems
+    // with an earlier varion of the type checker (because of a name clash).
+    tcpss(script) match{ case Ok(te) => 
+      assert(te("min") == minMaxType)
+      assert(te("minimum") == minimumType)
+
+    }
+  }
+
+
   /** Tests where return type of function omitted. */
   def rtTests() = {
     println("===rtTests===")
@@ -263,10 +290,14 @@ object TypeCheckerTest4{
 
   /** Tests on the result of loading haskell.dir. */
   def haskellTests() = {
+    println("===haskellTests===")
     tcpss("#include \"haskell.dir\"\n") match{ case Ok(te) => 
       assert(te("map") == mapType)
       assert(te("reverse") == reverseType)
       assert(te("filter") == filterType)
+      assert(te("min") == minMaxType); assert(te("max") == minMaxType)
+      assert(te("minimum") == minimumType); assert(te("maximum") == minimumType)
+
       //println(te("nonEmpty"))
       // FunctionType(List((A#24,AnyTypeConstraint)),
       //  List(ListType(TypeParam(A#24))), BoolType)

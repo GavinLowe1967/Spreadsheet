@@ -58,7 +58,9 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
     case TypedExp(ne @ NameExp(n), t) => (typeEnv.get(n) match{
       case None => FailureR(s"Name $n not found")
       case Some(List()) =>  FailureR(s"Forward reference to name $n")
-      case Some(List(t1)) => unify(typeEnv, t1, t)
+      case Some(List(t1)) => 
+// println(s"ExpTypeChecker.typeCheck($exp)\n\t $t1")
+        unify(typeEnv, t1, t)
       case Some(ts) =>
         val index = ts.indexOf(t)
         if(index >= 0){ ne.setIndex(index); Ok((typeEnv,t)) } 

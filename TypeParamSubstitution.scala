@@ -125,7 +125,8 @@ object TypeParamSubstitution{
       rtMap.get(tv) match{ case Some((tp,_)) => TypeParam(tp); case None => t }
     case ListType(u) => ListType(reverseRemapBy(rtMap, tParams, u))
     case FunctionType(params, domain, range) =>
-      assert(tParams.forall{ case (n,_) => !t.typeParams.contains(n) })
+      assert(tParams.forall{ case (n,_) => !t.typeParams.contains(n) },
+        s"reverseRemapBy($tParams,\n\t $t)")
       FunctionType(params++tParams, domain.map(reverseRemapBy(rtMap, List(), _)),
         reverseRemapBy(rtMap, List(), range))
     case TupleType(cptTs) => 

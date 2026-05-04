@@ -16,14 +16,35 @@ def minimum[A <: Ord](xs: List[A]): A = ...
 2. Add OrdTypeConstraint in TypeConstraint.scala.
 - Add to intersection, implies elsewhere -- DONE
 
-3. Parser (StatementParser.scala)
+3. Parser (StatementParser.scala) -- DONE
 
-4. Update TypeChecker0.typeCheckBinOp to require OrdTypeConstraint
+4. Update TypeChecker0.typeCheckBinOp to require OrdTypeConstraint -- DONE
 
-5. Add to TypeEnv.updateEnvToSatisfy.
+5. Add to TypeEnv.updateEnvToSatisfy. -- DONE  Needs testing
 
-6. Extend OrdType (TypeT.scala) and Ord (Value.scala) to other types (RowType,
-ColumnType, ListType); Make TupleTypes potentially both EqType and OrdType.
+In testing, hit bug in type checking of 
+
+def foldl[A,B](f: B => A => B)(e: B)(xs: List[A]): B = 
+  if(isEmpty xs) e else foldl f (f e (head xs)) (tail xs)
+def min[A <: Ord](x: A)(y: A) = if(x <= y) x else y
+def minimum[A <: Ord](xs: List[A]): A = 
+  foldl (min: A => A => A) (head xs) (tail xs)
+
+It seems to be with the type checking of (min: A => A => A) trying to unify 
+FunctionType(List((A,OrdTypeConstraint)), List(TypeParam(A)),
+  FunctionType(List(), List(TypeParam(A)), TypeParam(A))) and 
+FunctionType(List(), List(TypeParam(A)),
+  FunctionType(List(), List(TypeParam(A)), TypeParam(A))))
+
+It's because of the name clash on A (type parameters of min and minimum).  I think unify needs to rename.  Then return to TypeCheckerTest4.scala
+
+*** TODO: testing where type checking should fail; testing of evaluation.
+
+
+6. Extend OrdType (TypeT.scala) and Ord (Value.scala) to other types 
+a) RowType, ColumnType
+b) ListType; done TypeEnv.updateEnvToSatisfy
+c) Make TupleTypes potentially both EqType and OrdType.
 
 7. Think more generally about structure of type classes.  Can
 updateEnvToSatisfy be rationalised.  And should it include

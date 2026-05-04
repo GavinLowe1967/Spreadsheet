@@ -172,22 +172,14 @@ def product(xs: List[Int]): Int =
 def product(xs: List[Float]): Float = 
   if(isEmpty xs) 1.0 else head xs * product (tail xs)
 
-def min(x: Int)(y: Int): Int = if(x <= y) x else y
-def min(x: Float)(y: Float): Float = if(x <= y) x else y
-def max(x: Int)(y: Int): Int = if(x <= y) y else x
-def max(x: Float)(y: Float): Float = if(x <= y) y else x
+def min[A <: Ord](x: A)(y: A): A = if(x <= y) x else y
+def max[A <: Ord](x: A)(y: A): A = if(x >= y) x else y
 
-def minimum(xs: List[Int]): Int = {
-  assert(nonEmpty xs, "minimum []"); foldl1 (min: Int => Int => Int) xs
+def minimum[A <: Ord](xs: List[A]): A = {
+  assert(nonEmpty xs, "minimum []"); foldl1 min xs 
 }
-def minimum(xs: List[Float]): Float = {
-  assert(nonEmpty xs, "minimum []"); foldl1 (min: Float => Float => Float) xs
-}
-def maximum(xs: List[Int]): Int = {
-  assert(nonEmpty xs, "maximum []"); foldl1 (max: Int => Int => Int) xs
-}
-def maximum(xs: List[Float]): Float = {
-  assert(nonEmpty xs, "maximum []"); foldl1 (max: Float => Float => Float) xs
+def maximum[A <: Ord](xs: List[A]): A = {
+  assert(nonEmpty xs, "maximum []"); foldl1 max xs
 }
 
 def power(x: Int)(n: Int): Int = {

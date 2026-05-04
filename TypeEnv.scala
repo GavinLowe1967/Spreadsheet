@@ -123,12 +123,13 @@ class TypeEnv(
     // if(verbose) println(s"updateEnvToSatisfy($t, $c)")
     t match{
       case ListType(underlying) => c match{
-        case EqTypeConstraint => updateEnvToSatisfy(underlying, c, fail)
+        case EqTypeConstraint | OrdTypeConstraint => 
+          updateEnvToSatisfy(underlying, c, fail)
         case AnyTypeConstraint => Ok(this)
       }
       case _ : FunctionType => c match{
         case AnyTypeConstraint => Ok(this)
-        case EqTypeConstraint => fail
+        case EqTypeConstraint | OrdTypeConstraint => fail
         // case SingletonTypeConstraint(t1) => println(s"t = $t\nt1 = $t1"); ???
       }
       case TypeVar(tId) => 

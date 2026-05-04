@@ -28,6 +28,7 @@ object StatementParser extends Parser0 with StatementParserT{
   private def typeConstraint: Parser[TypeParamConstraint] = (
     lit("<:") ~> (
       keyword("Eq") > (_ => EqTypeConstraint) 
+      | keyword("Ord") > (_ => OrdTypeConstraint) 
       // | lit("Num") > (_ => NumTypeConstraint) // MemberOf(TypeT.NumTypes))
     ) 
     | success(AnyTypeConstraint)

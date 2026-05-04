@@ -72,10 +72,16 @@ object TypeCheckerTest2{
       assert(te("f") == FunctionType(
         List(("A",EqTypeConstraint)), List(TypeParam("A")), BoolType
       ))}
-    tcpss("def f[A <: Eq](x: A): Boolean = [] == [x]") match{  case Ok(te) => 
+    tcpss("def f[A <: Eq](x: A) = [] == [x]") match{  case Ok(te) => 
       assert(te("f") == FunctionType(
         List(("A",EqTypeConstraint)), List(TypeParam("A")), BoolType
       ))}
+    // Ord type class
+    tcpss("def min[A <: Ord](x: A)(y: A) = if(x <= y) x else y") match{  
+      case Ok(te) =>
+        assert(te("min") == FunctionType(
+          List(("A",OrdTypeConstraint)), List(TypeParam("A")),
+          FunctionType(List(), List(TypeParam("A")), TypeParam("A")) ))}
 
     tcpss("def mkSingle[A](x: A): List[A] = [x]") match{ case Ok(te) => 
       assert(te("mkSingle") == FunctionType(

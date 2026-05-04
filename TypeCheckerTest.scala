@@ -7,6 +7,7 @@ import TypeCheckerTest2._, TypeCheckerTest3._, TypeCheckerTest4._,
 
 /** Tests on the type checker. */
 object TypeCheckerTest{
+
   def main(args: Array[String]) = {
     var doAll = true; var i = 0
     while(i < args.length) args(i) match{
@@ -48,6 +49,7 @@ object TypeCheckerTest{
       curryingTests2()
       // ------                     TypeCheckerTest4.scala
       preludeTests()
+      minimumTest()
       rtTests()
       haskellTests()
       // -----                      TypeCheckerTest5.scala

@@ -36,7 +36,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   private 
   def checkFunctionApp1(typeEnv: TypeEnv, ft: FunctionType, args: List[Exp])
       : TypeCheckRes = {
-//println(s"***\ncheckFunctionApp1(\n\t$ft,\n\t$args)")
+// println(s"***\ncheckFunctionApp1(\n\t$ft,\n\t$args)")
     val FunctionType(tParams, domain, range) = ft
     if(domain.length != args.length)
       FailureR(s"Expected ${domain.length} arguments, found "+args.length)
@@ -64,13 +64,13 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     typeEnv: TypeEnv, domain: List[TypeT], range: TypeT, 
     typeParams: Set[TypeParamName], args: List[Exp])
       : TypeCheckRes = {
-//println(s"checkFunctionApp2(\n\t domain = $domain,\n\t range = $range, \n\t args = $args)")
+// println(s"checkFunctionApp2(\n\t domain = $domain,\n\t range = $range, \n\t args = $args)")
     // Generate a new name, and bind it to range in the environment;
     // then unify the types of args with domain, so the new name gets
     // updated to the appropriate return type.
     val name = newName(); val te1 = typeEnv + (name, range)
     typeCheckList1(te1, typeParams, args).map{ case (te2, argTs) =>
-//println(s"$args -> $argTs")
+// println(s"$args -> $argTs")
 //println(s"te2 = $te2")
       unifyList(te2, argTs, domain).map{ case (te3, invMap) =>
         // Extract type of name.  Need to apply invMap to reverse renaming
@@ -89,12 +89,15 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   private def typeCheckList1(
     typeEnv: TypeEnv, fnTParams: Set[TypeParamName], args: List[Exp])
       : Reply[(TypeEnv, List[TypeT])] = {
+//println(s"typeCheckList1: ${args}")
     if(args.isEmpty) Ok((typeEnv, List[TypeT]()))
     else etc.typeCheck(typeEnv, args.head).map{ case (te1, t1) =>
+//println(s"typeCheckList1: ${args.head}: $t1")
       if(t1.hasNullReturnFunction) forwardRefFail 
       else{
         // Rename type parameters to avoid name clashes.
-        val t2 = t1.renameTypeParams(TypeParam.newTypeParamMap, fnTParams)
+        val t2 = t1.renameTypeParams(/*TypeParam.newTypeParamMap,*/ fnTParams)
+//println(s"typeCheckList1: $t1 -> $t2")
         typeCheckList1(te1, fnTParams, args.tail).map{ case (te2, ts) =>
           Ok(te2, t2::ts)
         }

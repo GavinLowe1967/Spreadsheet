@@ -75,14 +75,19 @@ object Unification{
 
       case (_, TypeParam(tp)) =>  fail
 
-      case (f1 @ FunctionType(tc1,d1,r1), FunctionType(tc2,d2,r2)) =>  
+      case (f1: FunctionType, f2 @ FunctionType(tc2,d2,r2)) => 
         assert(tc2.isEmpty)
-        // Replace type parameters
+//if(tc1.nonEmpty) println(s"** unify($t1,\n\t $t2)")
+        // Rename type parameters of f1 to avoid clashes.
+        val f1a @ FunctionType(tc1,d1,r1) = 
+          f1.renameTypeParams(f2.typeParams.toSet)
+        // Replace type parameters by type variables
         val (te1, d11, r11, typeMap) =
-          replaceTypeParamsByTypeVars(typeEnv, f1.usedTParams, d1, r1)
+          replaceTypeParamsByTypeVars(typeEnv, f1a.usedTParams, d1, r1)
+        // Unify the parts
         unifyList(te1, d11, d2).map{ case (te2, dd) =>
           unify(te2, r11, r2).map{ case (te3, rr) =>
-            // Replace type parameters
+            // Rename type variables back to type parameters
             val ft1 = FunctionType(List(), dd, rr)
             val ft2 = reverseRemapBy(inverse(typeMap), tc1, ft1)
             Ok((te3, ft2))

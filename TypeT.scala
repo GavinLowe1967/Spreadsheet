@@ -10,6 +10,12 @@ trait TypeT{
   /** The type parameters included in this type. */
   def typeParams: List[TypeParamName]
 
+
+  /** Rename newly bound type parameters that name-clash with a member of tps to
+    * fresh values. */
+  def renameTypeParams(tps: Set[TypeParamName]): TypeT = 
+    renameTypeParams(TypeParam.newTypeParamMap, tps)
+
   /** Rename the type parameters according to f.  Also rename newly bound type
     * parameters that name-clash with a member of tps to fresh values.  Here
     * dom f is a subset of tps. */

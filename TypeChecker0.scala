@@ -111,13 +111,20 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
         case "<=" | ">=" | "<" | ">" => 
           // Note: at present this assumes concrete types from OrdType.  This
           // could be extended to, e.g., TypeVar as for "==".
-          close(te1,tl).map{ case (te2,`tl`) => tl match{
-            case _: OrdType => 
-              typeCheckUnify(te2, right, tl).map{ case (te3, tr) =>
-                Ok((te3,BoolType))
+          close(te1,tl).map{ case (te2,`tl`) => 
+            def fail = FailureR(s"Expected Ord type, found ${tl.asString}")
+            te2.updateEnvToSatisfy(tl, OrdTypeConstraint, fail).map{ te3 => 
+              typeCheckUnify(te3, right, tl).map{ case (te4, tr) =>
+                Ok((te4,BoolType))
               }.lift(right,true)
-            case _ =>  FailureR(s"Expected equality type, found ${tl.asString}")
-          }
+            }
+          //   tl match{
+          //   case _: OrdType => 
+          //     typeCheckUnify(te2, right, tl).map{ case (te3, tr) =>
+          //       Ok((te3,BoolType))
+          //     }.lift(right,true)
+          //   case _ =>  FailureR(s"Expected equality type, found ${tl.asString}")
+          // }
           }
         case "::" =>
           typeCheckUnify(te1, right, ListType(tl))
