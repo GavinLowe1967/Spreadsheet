@@ -28,8 +28,21 @@ trait Ord extends Value{
 
   def > (other: Ord) = !(this <= other)
 }
-// Note: at present, only implementing types are Cells.  This should be
-// extended.
+
+object Ord{
+  /** Is xs <= ys under lexicographic ordering?  Pre: all elements of xs and ys
+    * are of Ord types, with corresponding values of matching types. */
+  def compare(xs: List[Value], ys: List[Value]): Boolean = xs match{
+    case List() => true
+    case x::xs1 => ys match{
+      case List() => false
+      case y::ys1 =>
+        x.asInstanceOf[Ord] < y.asInstanceOf[Ord] || x == y && compare (xs1,ys1)
+    }
+  }
+}
+
+// ==================================================================
 
 /** Values that can be in a cell. */
 trait Cell extends Ord{
@@ -191,7 +204,7 @@ case object UnitValue extends Value{
 // ==================================================================
 
 /** A Row with value `row`, 0-based. */
-case class RowValue(row: Int) extends Value with Rangeable{
+case class RowValue(row: Int) extends Ord with Rangeable{
   require(row >= 0)
 
   def +(other: Arith) = other match{
@@ -203,6 +216,8 @@ case class RowValue(row: Int) extends Value with Rangeable{
       if(row >= v) RowValue(row-v) else EvalError("Negative row: "+(row-v))
     case RowValue(r) => IntValue(row-r)
   }
+
+  def <= (other: Ord) = other match{ case RowValue(r) => row <= r }
 
   def to(other: Rangeable) = other match{
     case RowValue(r1) => ListValue((row to r1).map(RowValue).toList)
@@ -218,7 +233,7 @@ case class RowValue(row: Int) extends Value with Rangeable{
 // =======================================================
 
 /** A Column with value `column`, where 0 represents #A, etc. */
-case class ColumnValue(column: Int) extends Value with Rangeable{
+case class ColumnValue(column: Int) extends Ord with Rangeable{
   require(column >= 0)
 
   def +(other: Arith) = other match{
@@ -231,6 +246,8 @@ case class ColumnValue(column: Int) extends Value with Rangeable{
       else EvalError("Negative column: "+(column-v))
     case ColumnValue(c) => IntValue(column-c)
   }
+
+  def <= (other: Ord) = other match{ case ColumnValue(c) => column <= c }
 
   def to(other: Rangeable) = other match{
     case ColumnValue(c1) => ListValue((column to c1).map(ColumnValue(_)).toList)
@@ -259,7 +276,7 @@ object ColumnValue{
 // =======================================================
 
 /** A List value. */
-case class ListValue(elems: List[Value]) extends Value{
+case class ListValue(elems: List[Value]) extends Ord{
   assert(elems.forall(v => !v.isInstanceOf[ErrorValue]))
 
   override def forError = 
@@ -274,21 +291,30 @@ case class ListValue(elems: List[Value]) extends Value{
     else EvalError("tail of empty list")
 
   def isEmpty: Value = BoolValue(elems.isEmpty)
+
+  def <= (other: Ord) = 
+    other match{ case ListValue(ys) => Ord.compare(elems, ys) }
 }
 
 object ListValue{
   /** Convenience factory method. */
   def apply(vs: Value*) = new ListValue(vs.toList)
+
 }
 
 // =======================================================
 
 /** A tuple value. */
-case class TupleValue(elems: List[Value]) extends Value{
+case class TupleValue(elems: List[Value]) extends Ord{
   val arity = elems.length
   require(2 <= arity && arity <= TupleType.MaxArity)
 
   assert(elems.forall(v => !v.isInstanceOf[ErrorValue]))
+
+  def <= (other: Ord) = 
+    other match{ 
+      case TupleValue(ys) if elems.length == ys.length => Ord.compare(elems, ys)
+    }
 
   override def forError = 
     elems.map(_.forError).mkString("(", ", ", ")")

@@ -148,11 +148,11 @@ case object UnitType extends BaseType{
   def asString = "Unit"
 }
 
-case object RowType extends EqType with BaseType{
+case object RowType extends OrdType with BaseType{
   def asString = "Row"
 }
 
-case object ColumnType extends EqType with BaseType{
+case object ColumnType extends OrdType with BaseType{
   def asString = "Column"
 }
 

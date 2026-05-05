@@ -59,10 +59,13 @@ object EvaluationTest{
     assert(eval("toFloat 3") == FloatValue(3.0F))
     // Tuples
     assert(eval("(2,3.5)") == TupleValue(IntValue(2), FloatValue(3.5F)))
+    assert(eval("(1,2.3) != (1,2.4) && (1,2.3) == (1,2.3)") == BoolValue(true))
     assert(eval("!(2+2 == 4)") == BoolValue(false))
     assert(eval("- (3)") == IntValue(-3))
     assert(eval("-{ val x = 4; x+6}") == IntValue(-10))
     assert(eval("-(3.6-2.6)") == FloatValue(-1.0F))
+    assert(eval("(2, 4.4) < (2, 5.0) && (#4, 2.3) >= (#4, 2.3) "+
+      " && (1,(2,3)) < (1,(2,4))") == BoolValue(true))
   }
 
   /** Blocks, if statements, list expressions. */
@@ -101,6 +104,10 @@ object EvaluationTest{
     assert(eval(
       "{val xs = [x+y | (x,y) <- [(1,4),(2,3),(3,4)], x != 2]; xs == [5,7]}"
     ) == BoolValue(true))
+    assert(eval("[1,2] <= [1,3] && [] < [3.6] && [\"hello\"] >= [\"hello\"] "+
+      " && [#4] > [#3]") == BoolValue(true))
+
+
     // ===== Pairs
     assert(eval("{val pair = (2,3.5); get1 pair}") == IntValue(2))
     assert(eval("get1((2,4,6,8))") == IntValue(2))
@@ -179,6 +186,11 @@ object EvaluationTest{
     assert(env("x3") == IntValue(7))
     assert(env("xs9") == mkList(1,2,3))
     assert(env("xs10") == ListValue(List(FloatValue(3.4F))))
+    assert(env("st1") == StringValue("a"))
+    assert(env("r1") == RowValue(3))
+    assert(env("c1") == ColumnValue(4))
+    //assert(env("b6") == BoolValue(true))
+    //println(env("b7"))
   }
 
   /** Tests on val declarations using tuples. */

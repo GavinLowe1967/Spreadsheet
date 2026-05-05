@@ -122,9 +122,20 @@ class TypeEnv(
       : Reply[TypeEnv] = {
     // if(verbose) println(s"updateEnvToSatisfy($t, $c)")
     t match{
+      case _: BaseType => c match{
+        case AnyTypeConstraint | OrdTypeConstraint | EqTypeConstraint => Ok(this)
+        case SingletonTypeConstraint(t1) => if(t == t1) Ok(this) else fail
+      }
       case ListType(underlying) => c match{
         case EqTypeConstraint | OrdTypeConstraint => 
           updateEnvToSatisfy(underlying, c, fail)
+        case AnyTypeConstraint => Ok(this)
+      }
+      case TupleType(cptTs) => c match{
+        case EqTypeConstraint | OrdTypeConstraint => 
+          def step(typeEnv: TypeEnv, cptT: TypeT) =
+            typeEnv.updateEnvToSatisfy(cptT, c, fail)
+          Reply.fold(step _, this, cptTs)
         case AnyTypeConstraint => Ok(this)
       }
       case _ : FunctionType => c match{
@@ -138,11 +149,13 @@ class TypeEnv(
         val c1 = apply(tId); val cc = c.intersection(c1)
         //println(s"c1 = $c1 cc = $cc")
         if(cc == c1) Ok(this) else Ok(this + (tId,cc))
-      // case TypeParam(tp) => 
-      //   if(c.satisfiedBy(typeEnv, t)) updateEnvToSatisfy(typeEnv,  Ok(typeEnv) 
-      //   else fail
-      case _ => // BaseTypes, TypeParams
-        if(c.satisfiedBy(this, t)) Ok(this) else fail
+      case TypeParam(tp) => 
+        if(constraintForTypeParam(tp).implies(c)) Ok(this) else fail
+      case CellTypeVar(ctv) =>  c match{
+        case AnyTypeConstraint | OrdTypeConstraint | EqTypeConstraint => Ok(this)
+        case SingletonTypeConstraint(t1) => println(s"$t $c") ; ???
+          // Perhaps Ok(this + (ctv,t1))
+      }
     }
   }
 

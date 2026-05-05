@@ -123,6 +123,8 @@ object BinOpApply{
       case ColumnValue(c1) => { case ColumnValue(c2) => mkRes(c1 == c2) }
       case ListValue(elems1) => { case ListValue(elems2) => 
         mkRes(elems1 == elems2) } // Note: lists can contain no error values
+      case TupleValue(cpts1) => { case TupleValue(cpts2) =>
+        mkRes(cpts1 == cpts2) }
     }
   }
 

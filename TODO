@@ -38,26 +38,22 @@ FunctionType(List(), List(TypeParam(A)),
 
 It's because of the name clash on A (type parameters of min and minimum).  I think unify needs to rename.  Then return to TypeCheckerTest4.scala
 
-*** TODO: testing where type checking should fail; testing of evaluation.
+testing where type checking should fail; -- DONE
+TODO: testing of evaluation.
 
 
 6. Extend OrdType (TypeT.scala) and Ord (Value.scala) to other types 
-a) RowType, ColumnType
-b) ListType; done TypeEnv.updateEnvToSatisfy
-c) Make TupleTypes potentially both EqType and OrdType.
+a) RowType, ColumnType -- DONE
+b) ListType; done TypeEnv.updateEnvToSatisfy -- DONE
+c) Make TupleTypes potentially both EqType and OrdType. -- DONE
 
 7. Think more generally about structure of type classes.  Can
 updateEnvToSatisfy be rationalised.  And should it include
 SingletonTypeConstraint?
-
+*** Simplify TypeConstraint.satisfiedBy.  Only ever clled from
+    TypeEnv.updateEnvToSatisfy, so maybe we don't need it.
 8. Think about SingletonTypeConstraint in TypeConstraint -- various ??? cases.
 
-
-
-
-No need: Generalise TypeEnv.mkEqType to a function that extends the TypeEnv so
-that a type t is in a particular type class.  This needs some thought *****.
-How does this function differ from Unification.updateEnvToSatisfy?
 
 
 *** Add comparison over Strings. -- DONE, needs formal tests -- done
@@ -94,6 +90,7 @@ e.g. val xs = mkEmpty[String].
 
 Priorities
 ==========
+
 
 
 2. Add CellType type class.  Want to allow typing of

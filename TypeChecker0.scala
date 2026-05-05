@@ -105,7 +105,7 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
                 // Note, in the case of "[] == [f]" for f not an equality type, 
                 // unification fails.
                 Ok((te4,BoolType))
-              }.lift(right,true)
+              } // Don't lift here: lifted in typeCheckUnify
             }
           }
         case "<=" | ">=" | "<" | ">" => 
@@ -116,7 +116,7 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
             te2.updateEnvToSatisfy(tl, OrdTypeConstraint, fail).map{ te3 => 
               typeCheckUnify(te3, right, tl).map{ case (te4, tr) =>
                 Ok((te4,BoolType))
-              }.lift(right,true)
+              } // Don't lift to right here: lifted in typeCheckUnify
             }
           //   tl match{
           //   case _: OrdType => 

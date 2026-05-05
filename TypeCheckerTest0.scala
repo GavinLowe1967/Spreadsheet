@@ -166,6 +166,9 @@ object TypeCheckerTestExpr{
     assertFail(tcp(
       "{def f(x:Int): Int = x; val xs = []; [3] == xs && [f] == xs}"))
     assertEq(tcp("{def f[A <: Eq](x: A): Boolean = [] == [x]; f(3)}"), BoolType)
+    assertEq(tcp("[1,2,3] <= [4]"), BoolType)
+    assertFail(tcp("[1,2] >= [3.5]"))
+    assertFail(tcp("[1.3,3.5] == [2, 6]"))
 
     // Mixing floats and ints
     assertFail(tcp("[1, 2.3]")) 
@@ -277,6 +280,13 @@ printErrors = false
     // "Application of overloaded function get3 with types ((A1,A2,A3)) => A3,
     // ((A1,A2,A3,A4)) => A3 can't be applied to argument of type (Int,Int)"
     assertFail(tcp("get3((2,4))"))
+    assertEq(tcp("(1,3.5) == (2, 6.7)"), BoolType)
+    assertFail(tcp("(1, 3.5) == (2, 6)"))
+    assertFail(tcp("(1, 3, 5) == (2, 6)"))
+    assertEq(tcp("(1,2) <= (3,4)"), BoolType)
+    assertFail(tcp("(1, 3.5) >= (2, 6)"))
+    assertFail(tcp("(1, 3, 5) > (2, 6)"))
+
   }
 
   /** Tests on block expressions. */
