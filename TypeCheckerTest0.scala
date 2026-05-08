@@ -169,6 +169,7 @@ object TypeCheckerTestExpr{
     assertEq(tcp("[1,2,3] <= [4]"), BoolType)
     assertFail(tcp("[1,2] >= [3.5]"))
     assertFail(tcp("[1.3,3.5] == [2, 6]"))
+    assertEq(tcp("() == () && () <= ()"), BoolType)
 
     // Mixing floats and ints
     assertFail(tcp("[1, 2.3]")) 

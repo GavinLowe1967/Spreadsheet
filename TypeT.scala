@@ -144,7 +144,7 @@ case object StringType extends CellType{
   def asString = "String"
 }
 
-case object UnitType extends BaseType{
+case object UnitType extends OrdType with BaseType{
   def asString = "Unit"
 }
 

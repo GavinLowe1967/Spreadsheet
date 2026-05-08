@@ -68,18 +68,22 @@ def map[A,B](f: A => B)(xs: List[A]): List[B] =
   if(isEmpty xs) [] else f(head xs) :: map f (tail xs)
 \end{scala}
 
-Types that allow equality tests, using |==| and |!=|, are called
-\emph{equality types}; examples include the atomic types, |List[A]| if |A| is
-itself an equality type, but not function types.  Some polymorphic functions
-can only be applied to equality types.  This is denoted by including a type
-assumption such as \SCALA{A <: Eq} to specify that |A| must be an instance of
-the equality type class~|Eq|.  For example, the following function removes the
-first occurrence (if any) of a value~|x| from a list; but it uses an equality
-test involving~|x|, so the type of~|x| must be an equality type.
+A type parameter~|A| may be restricted to be a member of a type class~|TC|
+using the notation |A <: TC|.  For example, the following functions require
+their type parameter to be an equality type or ordered type, respectively.
+%% Types that allow equality tests, using |==| and |!=|, are called
+%% \emph{equality types}; examples include the atomic types, |List[A]| if |A| is
+%% itself an equality type, but not function types.  Some polymorphic functions
+%% can only be applied to equality types.  This is denoted by including a type
+%% assumption such as \SCALA{A <: Eq} to specify that |A| must be an instance of
+%% the equality type class~|Eq|.  For example, the following function removes the
+%% first occurrence (if any) of a value~|x| from a list; but it uses an equality
+%% test involving~|x|, so the type of~|x| must be an equality type.
 %
 \begin{scala}
 def remove[A <: Eq](x: A)(xs: List[A]): List[A] =
   if(isEmpty xs) [] else if(head xs == x) tail xs else x :: remove x (tail xs)
+def min[A <: Ord](x: A)(y: A) = if(x <= y) x else y
 \end{scala}
 
 The language allows overloading of names of functions declared using |def|s

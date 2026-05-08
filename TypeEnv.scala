@@ -121,10 +121,11 @@ class TypeEnv(
   def updateEnvToSatisfy(t: TypeT, c: TypeConstraint, fail: => FailureR)
       : Reply[TypeEnv] = {
     // if(verbose) println(s"updateEnvToSatisfy($t, $c)")
+    require(!c.isInstanceOf[SingletonTypeConstraint])
     t match{
       case _: BaseType => c match{
         case AnyTypeConstraint | OrdTypeConstraint | EqTypeConstraint => Ok(this)
-        case SingletonTypeConstraint(t1) => if(t == t1) Ok(this) else fail
+        //case SingletonTypeConstraint(t1) => if(t == t1) Ok(this) else fail
       }
       case ListType(underlying) => c match{
         case EqTypeConstraint | OrdTypeConstraint => 
@@ -153,7 +154,7 @@ class TypeEnv(
         if(constraintForTypeParam(tp).implies(c)) Ok(this) else fail
       case CellTypeVar(ctv) =>  c match{
         case AnyTypeConstraint | OrdTypeConstraint | EqTypeConstraint => Ok(this)
-        case SingletonTypeConstraint(t1) => println(s"$t $c") ; ???
+        //case SingletonTypeConstraint(t1) => println(s"$t $c") ; ???
           // Perhaps Ok(this + (ctv,t1))
       }
     }

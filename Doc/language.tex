@@ -45,6 +45,26 @@ If |T1| and |T2| are types, then |T1 => T2| is the type of functions from |T1|
 to~|T2|.  Note that the constructor ``|=>|'' associates to the right, so
 \SCALA{T1 => T2 => T3} means \SCALA{T1 => (T2 => T3)}.
 
+The language uses type classes in a style similar to Haskell.  Each type class
+contains types with certain operators.  Type classes can be used to restrict
+functions to apply only to certain types; see
+Section~\ref{ssec:declarations}.  The current type classes are:
+%
+\begin{description}
+\item[{\scalashape Eq}:] Equality types, that allow comparison using |==| and
+  |!=|; these types include |Int|, |Float|, |Boolean|, |String|, |Row|,
+  |Column|, |Unit|, |List[T]| for |T| an equality type, and
+  |(T|$_1$|,...,T|$_n$|)| for |T|$_1$,\ldots, |T|$_n$ equality types.
+
+\item[{\scalashape Ord}:] Ordered types, that allow order comparison using
+  |<=|, |<|, |>=| and |>|; these types include |Int|, |Float|, |Boolean|,
+  |String|, |Row|, |Column|, |Unit|, |List[T]| for |T| an ordered type, and
+  |(T|$_1$|,...,T|$_n$|)| for |T|$_1$,\ldots, |T|$_n$ ordered types.
+\end{description}
+%
+If type $T$ is an ordered type, then it is also an |Eq| type.  (The converse
+is true, but the compiler does not recognise this fact, and it may not remain
+true in future versions.)
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,12 +76,14 @@ to~|T2|.  Note that the constructor ``|=>|'' associates to the right, so
 
 The script language contains the normal arithmetic operators, |+|, |-|, |*|
 and~|/|, over |Int| and |Float| (over |Int|, |/| performs rounding), and
-\SCALA{\%} over |Int|.  The language also contains the normal equality (|==|),
-inequality (|!=|), and order (|<|, |<=|, |>|, |>=|) operators.   Note
-that |Int| and |Float| are distinct types, so can't (currently) be combined
-using these operators.  Unary negation can be written using |-|; note that the
-expression might need to be included in parentheses when the |-| could be
-interpreted as a binary operator, for example,
+\SCALA{\%} over |Int|.  The language also contains the normal equality (|==|)
+and inequality (|!=|) operators, which can be applied to values of equality
+types, and the order (|<|, |<=|, |>|, |>=|) operators, which can be applied to
+values of ordered types.  Note that |Int| and |Float| are distinct types, so
+can't (currently) be combined using these operators.  Unary negation can be
+written using |-|; note that the expression might need to be included in
+parentheses when the |-| could be interpreted as a binary operator, for
+example,
 \begin{scala}
   { val x = 2
     (-1)
@@ -115,7 +137,10 @@ parentheses is required, for example |f((x,y))| (since the expression |f(x,y)|
 would imply that |f| takes two arguments, rather than a single tuple
 argument).  The functions |get1|, |get2|, |get3|, and |get4| extract the
 corresponding component from a tuple; for example $\sm{get2((2,4,6,8))} =
-\sm{4}$.
+\sm{4}$.  Tuples of the same type can be compared using the equality and order
+relations if the underlying types are themselves equality or ordered types; in
+the latter case, the ordering is lexicographic, so, for example \SCALA{(1, 2.0) <
+(1, 2.7)}.   
 
 A \emph{block expression} consists of a sequence of declarations, followed by
 an expression, separated by semicolons or newlines, and enclosed in braces;
@@ -148,6 +173,11 @@ and |until|.  The list |m to n| produces the list from~|m| to~|n| inclusive;
 for example, $\sm{3 to 5} = \sm{[3,4,5]}$.  The list |m until n| is similar,
 but does not include~|n|; for example, $\sm{3 until 5} = \sm{[3,4]}$.  These
 operators can also be applied to row and column values; see below. 
+
+Lists of the same type can be compared using the equality and order relations
+if the underlying types are themselves equality or ordered types; in the
+latter case, the ordering is lexicographic, so, for example \SCALA{[1, 2] <
+  [1, 3]}.
 
 List comprehensions provide a way to define a list, in a similar style to
 mathematical set comprehensions.  The expression \SCALA{[e \| x <- xs]}
@@ -196,7 +226,9 @@ subtracted from it, with the obvious effect.  For example, $\sm{\#C} + 2 =
 $\sm{\#C} - 3$, gives an error.  Similarly, a row value can have another row
 value subtracted from it; and a column value can have another column value
 subtracted from it.  For example, $\sm{\#5} - \sm{\#2} = \sm{\#E} - \sm{\#B} =
-3$. 
+3$.  Two row operators can be compared using the equality or order relations,
+with obvious meanings; for example, |#3 < #5|; two column values can similarly
+be compared. 
 
 Lists of row and column values can be formed using the |to| and |until|
 operators.  For example \SCALA{#B to #D} $=$ \SCALA{[#B,#C,#D]}, and \SCALA{#2

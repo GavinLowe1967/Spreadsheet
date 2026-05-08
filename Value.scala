@@ -195,10 +195,12 @@ case class BoolValue(value: Boolean) extends Cell{
   override def forError = value.toString
 }
 
-case object UnitValue extends Value{
+case object UnitValue extends Ord{
   def getType = UnitType
 
   override def forError = "()"
+
+  def <= (other: Ord) = other match{ case UnitValue => true }
 }
 
 // ==================================================================

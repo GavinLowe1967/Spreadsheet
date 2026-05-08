@@ -121,6 +121,7 @@ object BinOpApply{
       case StringValue(st1) => { case StringValue(st2) => mkRes(st1 == st2) }
       case RowValue(r1) => { case RowValue(r2) => mkRes(r1 == r2) }
       case ColumnValue(c1) => { case ColumnValue(c2) => mkRes(c1 == c2) }
+      case UnitValue => { case UnitValue => mkRes(true) }
       case ListValue(elems1) => { case ListValue(elems2) => 
         mkRes(elems1 == elems2) } // Note: lists can contain no error values
       case TupleValue(cpts1) => { case TupleValue(cpts2) =>

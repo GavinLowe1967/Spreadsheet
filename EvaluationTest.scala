@@ -41,6 +41,7 @@ object EvaluationTest{
     assert(eval("(2+3)*4 <= 6 && 6*7 == 42") == BoolValue(false))
     assertFail(eval("3/0+4")); assertFail(eval("2+5/0"))
     assert(eval("()") == UnitValue)
+    assert(eval("() == () && !( () < () )") == BoolValue(true))
     // "to" and "until"
     assert(eval("3 to 5") == ListValue(List(3,4,5).map(IntValue)))
     assert(eval("3 until 5") == ListValue(List(3,4).map(IntValue)))
