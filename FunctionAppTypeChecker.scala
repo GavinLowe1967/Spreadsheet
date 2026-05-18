@@ -139,7 +139,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
 
   def findFunctionApp(typeEnv: TypeEnv, fa: FunctionApp, ts: Array[FunctionType])
       : Reply[(TypeEnv, TypeT)] = {
-    val FunctionApp(ne @ NameExp(fn), args) = fa
+    val FunctionApp(ne @ NameExp(fn, List()), args) = fa
     assert(ts.length >= 2, ts.mkString("\n"))
     // If args don't typecheck, then just return the error
     etc.typeCheckList(typeEnv.newScope, args).lift(fa).map{ case (_,argsTs) => 

@@ -14,6 +14,7 @@ object TypeChecker0{
     * those cells from the type environment.. */
   def close(typeEnv: TypeEnv, t: TypeT): TypeCheckRes = {
     val untypedCells = typeEnv.getUntypedCells
+    // assert(t.typeVars.isEmpty, s"close: $t")
     if(untypedCells.isEmpty) Ok(typeEnv.removeUntypedCells, t)
     else{
       val s = if(untypedCells.length > 1) "s" else ""

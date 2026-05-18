@@ -17,6 +17,8 @@ case class FunctionType(
     (params.map(_._1) ++ domain.flatMap(_.typeParams) ++ range.typeParams
     ).distinct
 
+  def typeVars = (domain.flatMap(_.typeVars) ++ range.typeVars).distinct
+
   def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = {
     // Extend f to map any new parameter names that clash with an element of
     // tps to a new name.

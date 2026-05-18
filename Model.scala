@@ -68,7 +68,7 @@ class Model(val height: Int, val width: Int){
   /** Perform the operation `name()`. */
   def executeOperation(name: String) = {
     def handleError(err: ErrorValue) = view.addInfo(err.msg)
-    val call = CallStatement(FunctionApp(NameExp(name), List()))
+    val call = CallStatement(FunctionApp(NameExp(name, List()), List()))
     Execution.perform(env, handleError, call)
     view.redisplay()
   }

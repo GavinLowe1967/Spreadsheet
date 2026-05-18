@@ -28,8 +28,9 @@ trait Exp extends HasExtent{
 // ==================================================================
 
 /** A name. */
-case class NameExp(name: NameExp.Name) extends Exp{
-  override def toString = name
+case class NameExp(name: NameExp.Name, tParams: List[TypeT]) extends Exp{
+  // override def toString = 
+  //   name+(if(tParams.nonEmpty) tParams.mkString("[",",","]") else "")
 
   /** If this function name is overloaded, the index into the list of
     * definitions. */
@@ -51,6 +52,8 @@ object NameExp{
     * @param index The index in the list of declarations. */
   def getName(name: String, index: Int) = 
     if(index < 0) name else name+"$$"+index
+
+  def apply(name: Name) = new NameExp(name, List())
 }
 
 // ==================================================================

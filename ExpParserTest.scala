@@ -158,6 +158,11 @@ object ExpParserTest extends ParserTest0{
       TypedExp(BinOp(IntExp(2), "<", IntExp(3)), BoolType) )
     assert(p("2 < 3 : Boolean") == 
       BinOp(IntExp(2), "<", TypedExp(IntExp(3), BoolType)))
+
+    assert(p("f[Int]") == NameExp("f", List(IntType)))
+    assert(p("f [Int, Float => A]") == NameExp("f", 
+        List(IntType, FunctionType(List(), List(FloatType), TypeParam("A")))
+    ))
   }
 
   /** Tests for list comprehensions. */

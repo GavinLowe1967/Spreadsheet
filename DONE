@@ -56,6 +56,10 @@ TypeEnv.updateEnvToSatisfy, so maybe we don't need it. -- DONE
 
 *** Add comparison over Strings. -- DONE, needs formal tests -- done
 
+0. Add Ord type to manual. -- done
+
+Make Unit an equality, Ord type. -- done
+
 ===== Allow sorting-like operations
 
 Add built-in sortBlockByColumn function.  But execution requires an Environment.

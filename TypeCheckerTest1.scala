@@ -290,4 +290,40 @@ printErrors = false
       assertListListInt(te, "xs"); assertListListInt(te, "ys")
     }
   }
+
+  /** Tests on expressions using actual type parameters. */
+  def typeParamTests() = {
+printErrors = true
+    // "Type parameters applied to non-function x ..."
+    assertFail(tcpss("val x = 3; val y = x[Int]"))
+    // "Wrong number of type parameters for function f ..."
+    assertFail(tcpss("def f[A](x: A) = x; val y = f[Int,Float](3)"))
+    tcpss("def f[A](x: A) = x; val y = f[Int](3)") match{ case Ok(te) =>
+      assert(te("y") == IntType) }
+    tcpss("def f[A](x: A)(y: A) = x; val f1 = f[Int](3)") match{ case Ok(te) =>
+      assert(te("f1") == FunctionType(List(),List(IntType),IntType)) }
+    tcpss("def f[A](x: Int)(y: A) = y; val f1 = f[Float](3)") match{ 
+      case Ok(te) =>
+        assert(te("f1") == FunctionType(List(),List(FloatType),FloatType)) }
+    tcpss("def f[A](x: A) = [(x,3)]; val f1 = f[Float]") match{ case Ok(te) =>
+      assert(te("f1") == FunctionType(
+        List(), List(FloatType), ListType(TupleType(List(FloatType,IntType))) ))}
+    // "Actual type parameter (Int) => Int does not satisfy type constraint Eq"
+    assertFail(tcpss("def f[A <: Eq](x: A) = x; val f1 = f[Int => Int]"))
+    val script = "def f[A](x:Int) = 3; def f[A,B](x:Float) = 4; "+
+      "val f1 = f[Int]; val f2 = f[String,Boolean]"
+    tcpss(script) match{ case Ok(te) => 
+      assert(te("f1") == FunctionType(List(),List(IntType),IntType))
+      assert(te("f2") == FunctionType(List(),List(FloatType),IntType))
+    }
+    // "Cannot resolve overloaded name f at line 1 in f[Int]"
+    assertFail(tcpss("def f[A](x:Int) = 3; def f[A](x:A) = 4; val f1 = f[Int]"))
+    // "Cannot resolve overloaded name f with types ..."
+    assertFail(tcpss("def f[A <: Eq](x:Int) = 3; def f[A,B](x:A) = 4; "+
+      "val f1 = f[Int => Int]"))
+
+
+
+printErrors = false
+  }
 }

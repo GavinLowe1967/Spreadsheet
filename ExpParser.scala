@@ -13,7 +13,7 @@ trait StatementParserT{
 /** A parser for expressions. */
 class ExpParser(stmtParser: StatementParserT) extends Parser0{
 
-  import TypeParser.cellType
+  import TypeParser.{cellType,typeP}
 
   // ===== Some basic parsers
 
@@ -23,9 +23,20 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
       "true", "false", "Empty", "to", "until",
       "Int", "Float", "Boolean", "String", "Row", "Column", "List", "Eq")
 
+  /** Parser for concrete type parameters for a name. */
+  private def tParams: Parser[List[TypeT]] = 
+    opt(consumeWhite ~> inSquare(repSepNonEmpty(typeP, ","))) > { _ match{
+      case Some(ts) => ts; case None => List()
+    } }
+  // Note: the list of type parameters must be nonempty, to avoid interpreting
+  // an empty List value "[]" as a list of types.
+
   /** Parser for a name. */
   private def name1: Parser[Exp] = withExtent(
-    name ? (n => !ReservedNames.contains(n)) > (n => NameExp(n)) 
+   // name ? (n => !ReservedNames.contains(n))  > (n => NameExp(n, List())) 
+    name ? (n => !ReservedNames.contains(n)) ~~ tParams > { 
+      case (n,ps) => NameExp(n,ps) 
+    }
   )
 
   /** Parser for a boolean litteral. */
@@ -258,7 +269,8 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
 
   private def prefixOp: Parser[Exp] = 
     (lit("!") | lit("-")) ~ singleParam > {
-      case(f,arg) => FunctionApp(NameExp(f),List(arg)) }
+      case(f,arg) => FunctionApp(NameExp(f, List()),List(arg)) }
+// FIXME
 
   // ===== Infix operators
 

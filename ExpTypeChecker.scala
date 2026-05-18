@@ -4,6 +4,7 @@ import TypeVar.{TypeID,nextTypeID} // Type variables (Ints)
 import TypeParam.TypeParamName // Names of type parameters (Strings)
 import NameExp.Name // Names of identifiers (Strings)
 import TypeT.showList
+import Substitution.substitute
 
 /** The interface of DeclarationTypeChecker, as seen by ExpTypeChecker. */
 trait TypeCheckerT{
@@ -42,25 +43,112 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
   /** Object used in typechecking function applications. */
   private val fatc = new FunctionAppTypeChecker(this)
 
+  /** Try to instantiate ft, which should be a FunctionType, with actual type
+    * parameters atps. */
+  private 
+  def instantiate(typeEnv: TypeEnv, n: String, atps: List[TypeT], ft: TypeT)
+      : TypeCheckRes = {
+    val FunctionType(tps, domain, range) = ft
+    if(tps.length == atps.length){
+      // Update te so that an actual type parameter satisfies the
+      // corresponding type constraint.
+      def update(te: TypeEnv, pair: (TypeParameter, TypeT)): Reply[TypeEnv] = {
+        val ((ftp,tc), atp) = pair
+        def fail = FailureR(
+          s"Actual type parameter ${atp.asString} does not satisfy "+
+            s"type constraint ${tc.asString}")
+        te.updateEnvToSatisfy(atp, tc, fail)
+      }
+      Reply.fold(update _, typeEnv, tps.zip(atps)).map{ case te1 =>
+        val map = Map.from(tps.map(_._1).zip(atps))
+        val range1 = substitute(map, range)
+        val domain1 = domain.map(substitute(map,_))
+        Ok((te1, FunctionType(List(), domain1, range1)))
+      }
+    }
+    else FailureR(s"Wrong number of type parameters for function $n")
+  }
+
+  /** Get all possible types for `ne`, instantiating type parameters of
+    * FunctionTypes appropriately (if possible). */ 
+  private def getAll(typeEnv: TypeEnv, ne: NameExp)
+      : Reply[List[(TypeEnv,TypeT)]] = {
+    val NameExp(n, atps) = ne
+    typeEnv.get(n) match{
+      case None => FailureR(s"Name $n not found") 
+      case Some(List()) => FailureR(s"Forward reference to name $n") 
+      case Some(List(t)) => 
+        if(atps.isEmpty) Ok(List((typeEnv,t)))
+        else t match{
+          case ft: FunctionType => 
+            instantiate(typeEnv, n, atps, ft) match{
+              case Ok(res) => Ok(List(res)); case fail: FailureR => fail
+            }
+          case _ => FailureR(s"Type parameters applied to non-function $n")
+        }
+      case Some(ts) => 
+        if(atps.isEmpty) Ok(ts.map(t => (typeEnv,t)))
+        else{
+          val prs0 = ts.map(t => 
+            instantiate(typeEnv, n, atps, t.asInstanceOf[FunctionType]))
+          val prs = prs0.filter(_.isInstanceOf[Ok[(TypeEnv,TypeT)]])
+          if(prs.nonEmpty) Ok(prs.map{case Ok(tr) => tr})
+          else if(prs.length == 1) prs0.head.asInstanceOf[FailureR]
+          else FailureR(s"Cannot resolve overloaded name $n with types\n"
+            +showList(ts))
+        }
+    }
+  }
+
+
   // ===== Type checking of expression
 
   /** Typecheck expression `exp` in type environment `typeEnv`.
     * @return a Reply, if successful, the updated type environment and the 
     * type of exp. */
   def typeCheck(typeEnv: TypeEnv, exp: Exp): TypeCheckRes = exp match{
-    case NameExp(n) => (typeEnv.get(n) match{
+    case ne @ NameExp(n, atps) => getAll(typeEnv, ne).map{
+      case List() => sys.error(s"typeCheck $ne") // shouldn't happen
+      case List(res) => Ok(res)
+      case _ => FailureR(s"Cannot resolve overloaded name $n")
+
+    }.lift(exp, true)
+      /* (typeEnv.get(n) match{
       case None => FailureR(s"Name $n not found") 
       case Some(List()) => FailureR(s"Forward reference to name $n") 
-      case Some(List(t)) => Ok((typeEnv,t))
+      case Some(List(t)) => 
+        if(atps.isEmpty) Ok((typeEnv,t))
+        else t match{
+          case FunctionType(tps, domain, range) => 
+            if(tps.length == atps.length){
+              // Update te so that an actual type parameter satisfies the
+              // corresponding type constraint.
+              def update(te: TypeEnv, pair: (TypeParameter, TypeT))
+                  : Reply[TypeEnv] = {
+                val ((ftp,tc), atp) = pair
+                def fail = FailureR(
+                  s"Actual type parameter ${atp.asString} does not satisfy "+
+                    s"type constraint ${tc.asString}")
+                te.updateEnvToSatisfy(atp, tc, fail)
+              }
+              Reply.fold(update _, typeEnv, tps.zip(atps)).map{ case te1 =>
+                val map = Map.from(tps.map(_._1).zip(atps))
+                val range1 = substitute(map, range)
+                val domain1 = domain.map(substitute(map,_))
+                Ok(te1, FunctionType(List(), domain1, range1))
+              }
+            }
+            else FailureR(s"Wrong number of type parameters for function $n")
+          case _ => FailureR(s"Type parameters applied to non-function $n")
+        }
       case Some(ts) => 
         FailureR(s"Cannot resolve overloaded name $n with types\n"+showList(ts))
-    }).lift(exp, true)
-    case TypedExp(ne @ NameExp(n), t) => (typeEnv.get(n) match{
+    }*/
+  //).lift(exp, true)
+    case TypedExp(ne @ NameExp(n, List()), t) => (typeEnv.get(n) match{
       case None => FailureR(s"Name $n not found")
       case Some(List()) =>  FailureR(s"Forward reference to name $n")
-      case Some(List(t1)) => 
-// println(s"ExpTypeChecker.typeCheck($exp)\n\t $t1")
-        unify(typeEnv, t1, t)
+      case Some(List(t1)) => unify(typeEnv, t1, t)
       case Some(ts) =>
         val index = ts.indexOf(t)
         if(index >= 0){ ne.setIndex(index); Ok((typeEnv,t)) } 
@@ -122,7 +210,8 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
         }.lift(exp)
 
     // Application of function name; allow overloading here
-    case fa @ FunctionApp(NameExp(fn), args) => (typeEnv.get(fn) match{
+    case fa @ FunctionApp(NameExp(fn, List()), args) => (typeEnv.get(fn) match{
+// FIXME: type params
       case None => FailureR(s"Name $fn not found").lift(exp, true) 
       case Some(List()) => 
         FailureR(s"Forward reference to name $fn").lift(exp, true)

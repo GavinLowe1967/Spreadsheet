@@ -4,6 +4,8 @@ DIR = spreadsheet
 
 all: $(DIR)/AllTests.class $(DIR)/SpreadsheetApp.class 
 
+spreadsheet: $(DIR)/SpreadsheetApp.class 
+
 # ===== Language
 
 # Types

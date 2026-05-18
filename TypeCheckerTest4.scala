@@ -122,6 +122,7 @@ object TypeCheckerTest4{
         ListType(TypeParam("A")) ) ))
 
     // concat :: [A] List[List[A]] => List[A]
+    //println(te("concat"))
     assert(te("concat") == FunctionType(
       List(("A",AnyTypeConstraint)),
       List(ListType(ListType(TypeParam("A")))), ListType(TypeParam("A"))))

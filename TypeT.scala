@@ -10,6 +10,8 @@ trait TypeT{
   /** The type parameters included in this type. */
   def typeParams: List[TypeParamName]
 
+  /** The TypeVars in this type. */
+  def typeVars: List[TypeVar]
 
   /** Rename newly bound type parameters that name-clash with a member of tps to
     * fresh values. */
@@ -45,11 +47,11 @@ object TypeT{
 case class TypeVar(tv: TypeID) extends TypeT{
   def asString = s"t$tv"                   
   def typeParams = List()
+  def typeVars = List(this)
   def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = this
   def hasNullReturnFunction = false
 }
 
-// =========
 
 object TypeVar{
   /** The type of identifiers for type variables. */
@@ -61,10 +63,13 @@ object TypeVar{
   def nextTypeID(): TypeID = { next += 1; next-1 }
 }
 
+// ================================================================
+
 /** The type for an untyped cell expression. */
 case class CellTypeVar(tv: TypeID) extends TypeT{
   def asString = s"t$tv"                   
   def typeParams = List()
+  def typeVars = List()
   def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = this
   def hasNullReturnFunction = false
 }
@@ -75,6 +80,7 @@ case class CellTypeVar(tv: TypeID) extends TypeT{
 case class TypeParam(name: String) extends TypeT{
   def asString = name 
   def typeParams = List(name)
+  def typeVars = List()
   def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) =
     f.get(name) match{
       case Some(n1) => TypeParam(n1); case None => this 
@@ -119,6 +125,7 @@ trait OrdType extends EqType
 /** Marker trait for base types, i.e. atomic. */
 trait BaseType extends TypeT{
   def typeParams = List()
+  def typeVars = List()
   def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = this
   def hasNullReturnFunction = false
 }
@@ -172,6 +179,8 @@ case class ListType(underlying: TypeT) extends TypeT{
 
   def typeParams = underlying.typeParams
 
+  def typeVars = underlying.typeVars
+
   def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = 
     ListType(underlying.renameTypeParams(f, tps))
 
@@ -187,6 +196,8 @@ case class TupleType(componentTs: List[TypeT]) extends TypeT{
   def asString = componentTs.map(_.asString).mkString("(", ",", ")")
 
   def typeParams = componentTs.flatMap(_.typeParams).distinct
+
+  def typeVars = componentTs.flatMap(_.typeVars).distinct
 
   def renameTypeParams(f: TypeParamMap, tps: Set[TypeParamName]) = 
     TupleType(componentTs.map(_.renameTypeParams(f, tps)))

@@ -16,10 +16,8 @@ object BinOpApply{
       case "%" => 
         def err = EvalError("Division by zero")
         mkIntOp({case (n1,n2) => if(n2 != 0) IntValue(n1%n2) else err})
-      case "<=" => mkOrd((_ <= _)) // mkBinRelOp((_<=_), (_<=_))
-      case "<" => mkOrd((_ < _)) 
-      case ">=" => mkOrd((_ >= _))
-      case ">" => mkOrd((_ > _))
+      case "<=" => mkOrd((_ <= _)); case "<" => mkOrd((_ < _)) 
+      case ">=" => mkOrd((_ >= _)); case ">" => mkOrd((_ > _))
       // case "&&" => andOp /*mkBoolOp((_&&_))*/; case "||" => mkBoolOp((_||_))
       case "==" => equalOp(true); case "!=" => equalOp(false)
       case "::" => consOp
