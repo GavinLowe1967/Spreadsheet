@@ -55,4 +55,11 @@ object Reply{
   def fold[A,B](f: (A, B) => Reply[A], e: A, xs: List[B]): Reply[A] =
     if(xs.isEmpty) Ok(e)
     else f(e, xs.head).map(e1 => fold(f, e1, xs.tail))
+
+  /** The first Ok value in xs; or else a FailureR value. */
+  def findFirst[A,B](f: A => Reply[B], xs: List[A]): Reply[B] = 
+    if(xs.isEmpty) FailureR("Failed")
+    else f(xs.head) match{
+      case ok: Ok[B] => ok; case fail: FailureR => findFirst(f, xs.tail)
+    }
 }

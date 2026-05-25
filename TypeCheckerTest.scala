@@ -1,8 +1,8 @@
 package spreadsheet
 
 import TypeT._
-import TypeCheckerTest1._, TypeCheckerTest2._, TypeCheckerTest3._, 
-  TypeCheckerTest4._, TypeCheckerTest5._
+import TypeCheckerTestDecl._, TypeCheckerTest1._, TypeCheckerTest2._, 
+  TypeCheckerTest3._, TypeCheckerTest4._, TypeCheckerTest5._
 //import TypeChecker.TestHooks._
 
 /** Tests on the type checker. */
@@ -19,17 +19,20 @@ object TypeCheckerTest{
       // printErrors = true
       // ------                    TypeCheckerTest0.scala
       TypeCheckerTestExpr.expTests()
-      // --------                  TypeCheckerTest1.scala
+      // --------                   TypeCheckerTestDecl.scala
       println("===singleDecTests===")
       singleDecTests()
+
       println("===scriptTests===")
       scriptTests()
+      println("===listTests===")
+      listTests()
+      // --------                  TypeCheckerTest1.scala
+      assertionTests()
       println("===cellTests===")
       cellTests()
       println("===cellWriteTests===")
       cellWriteTests()
-      println("===listTests===")
-      listTests()
       println("===typeParamTests===")
       typeParamTests()
       // -----                      TypeCheckerTest2.scala

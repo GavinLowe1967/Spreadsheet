@@ -59,7 +59,9 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
             s"type constraint ${tc.asString}")
         te.updateEnvToSatisfy(atp, tc, fail)
       }
+      // Do this for all the type parameters
       Reply.fold(update _, typeEnv, tps.zip(atps)).map{ case te1 =>
+        // Substitute formal type parameters with actual type parameters.
         val map = Map.from(tps.map(_._1).zip(atps))
         val range1 = substitute(map, range)
         val domain1 = domain.map(substitute(map,_))
@@ -93,13 +95,13 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
             instantiate(typeEnv, n, atps, t.asInstanceOf[FunctionType]))
           val prs = prs0.filter(_.isInstanceOf[Ok[(TypeEnv,TypeT)]])
           if(prs.nonEmpty) Ok(prs.map{case Ok(tr) => tr})
-          else if(prs.length == 1) prs0.head.asInstanceOf[FailureR]
+          // prs0.length > 1, so following case doesn't apply.
+          // else if(prs0.length == 1) prs0.head.asInstanceOf[FailureR]
           else FailureR(s"Cannot resolve overloaded name $n with types\n"
             +showList(ts))
         }
     }
   }
-
 
   // ===== Type checking of expression
 
@@ -111,50 +113,18 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
       case List() => sys.error(s"typeCheck $ne") // shouldn't happen
       case List(res) => Ok(res)
       case _ => FailureR(s"Cannot resolve overloaded name $n")
-
     }.lift(exp, true)
-      /* (typeEnv.get(n) match{
-      case None => FailureR(s"Name $n not found") 
-      case Some(List()) => FailureR(s"Forward reference to name $n") 
-      case Some(List(t)) => 
-        if(atps.isEmpty) Ok((typeEnv,t))
-        else t match{
-          case FunctionType(tps, domain, range) => 
-            if(tps.length == atps.length){
-              // Update te so that an actual type parameter satisfies the
-              // corresponding type constraint.
-              def update(te: TypeEnv, pair: (TypeParameter, TypeT))
-                  : Reply[TypeEnv] = {
-                val ((ftp,tc), atp) = pair
-                def fail = FailureR(
-                  s"Actual type parameter ${atp.asString} does not satisfy "+
-                    s"type constraint ${tc.asString}")
-                te.updateEnvToSatisfy(atp, tc, fail)
-              }
-              Reply.fold(update _, typeEnv, tps.zip(atps)).map{ case te1 =>
-                val map = Map.from(tps.map(_._1).zip(atps))
-                val range1 = substitute(map, range)
-                val domain1 = domain.map(substitute(map,_))
-                Ok(te1, FunctionType(List(), domain1, range1))
-              }
-            }
-            else FailureR(s"Wrong number of type parameters for function $n")
-          case _ => FailureR(s"Type parameters applied to non-function $n")
-        }
-      case Some(ts) => 
-        FailureR(s"Cannot resolve overloaded name $n with types\n"+showList(ts))
-    }*/
-  //).lift(exp, true)
-    case TypedExp(ne @ NameExp(n, List()), t) => (typeEnv.get(n) match{
-      case None => FailureR(s"Name $n not found")
-      case Some(List()) =>  FailureR(s"Forward reference to name $n")
-      case Some(List(t1)) => unify(typeEnv, t1, t)
-      case Some(ts) =>
-        val index = ts.indexOf(t)
+
+    case TypedExp(ne @ NameExp(n, atps), t) => getAll(typeEnv, ne).map{ _ match{
+      case List((te1,t1)) => unify(te1, t1, t)
+      case List() => ??? // shouldn't happen
+      case pairs => 
+        val ts = pairs.map(_._2); val index = ts.indexOf(t)
         if(index >= 0){ ne.setIndex(index); Ok((typeEnv,t)) } 
         else FailureR(s"Overloaded name $n with types\n"+showList(ts)+
           s"\nis not of type ${t.asString}")
-    }).lift(exp, true)
+    } }.lift(exp, true)
+
     // Atomic types
     case IntExp(v) => Ok((typeEnv,IntType))
     case FloatExp(v) => Ok((typeEnv,FloatType))
@@ -166,6 +136,16 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
     // Binary operators  
     case BinOp(left, op, right) => 
       botc.typeCheckBinOp(typeEnv, left, op, right).lift(exp)
+
+    // Conditionals
+    case IfExp(test, thenClause, elseClause) =>
+      typeCheckUnify(typeEnv, test, BoolType).map{ case (te1, bt) =>
+        assert(bt == BoolType)
+        typeCheckAndClose(te1, thenClause).map{ case (te2,t1) =>
+          typeCheckUnify(te2, elseClause, t1)
+        }
+      }.lift(exp)
+
     // Typed cell expressions
     case ce @ CellExp(column, row, theType) =>
       checkCellRead(typeEnv, column, row, te => Ok(te, theType)).lift(exp)
@@ -180,14 +160,7 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
       checkCellRead(
         typeEnv, column, row, te => crtc.typeCheckBranches(te, branches)
       ).lift(exp)
-    // Conditionals
-    case IfExp(test, thenClause, elseClause) =>
-      typeCheckUnify(typeEnv, test, BoolType).map{ case (te1, bt) =>
-        assert(bt == BoolType)
-        typeCheckAndClose(te1, thenClause).map{ case (te2,t1) =>
-          typeCheckUnify(te2, elseClause, t1)
-        }
-      }.lift(exp)
+
     // List literals
     case ListLiteral(elems) => 
       if(elems.isEmpty){
@@ -199,6 +172,11 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
         // Try to unify types of remainder with t1
         typeCheckListSingleType(te1, elems.tail, t1).lift(exp)
       }
+      // List comprehensions
+    case ListComprehension(e, qs) => 
+      checkQualifiers(typeEnv, qs).map{ te1 =>
+        typeCheck(te1, e).map{ case (te2,t) => Ok(te2, ListType(t)) }
+      }.lift(exp)
       // Tuple literals
     case TupleLiteral(elems) => 
       if(elems.length > TupleType.MaxArity)
@@ -210,6 +188,30 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
         }.lift(exp)
 
     // Application of function name; allow overloading here
+    case fa @ FunctionApp(ne @ NameExp(fn, _), args) => getAll(typeEnv, ne).map{
+      case List() =>  sys.error(s"typeCheck $fa") // shouldn't happen
+      case List((te1,t)) => 
+        fatc.checkFunctionApp(te1, t, args) .lift(fa, true)
+      case pairs => 
+        def tryPair(pair: (TypeEnv,TypeT)): TypeCheckRes = {
+          val (te1,t) = pair
+          fatc.checkFunctionApp(te1, t.asInstanceOf[FunctionType], args)
+        }
+        val results = pairs.map(tryPair); var i = 0; val n = results.length
+        while(i < n && results(i).isInstanceOf[FailureR]) i += 1
+        if(i < n){ ne.setIndex(i); results(i) }
+        else FailureR("Failure ***")
+
+        // Reply.findFirst(tryPair, pairs)
+/*
+        val ts = pairs.map(_._2)
+        assert(ts.nonEmpty && ts.forall(_.isInstanceOf[FunctionType])) 
+        val ts1 = ts.map(_.asInstanceOf[FunctionType]).toArray
+// FIXME: using typeEnv below is wrong
+        fatc.findFunctionApp(typeEnv, fa, ts1) // Note: don't lift here.
+ */
+    }
+/*
     case fa @ FunctionApp(NameExp(fn, List()), args) => (typeEnv.get(fn) match{
 // FIXME: type params
       case None => FailureR(s"Name $fn not found").lift(exp, true) 
@@ -226,11 +228,13 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
         val ts1 = ts.map(_.asInstanceOf[FunctionType]).toArray
         fatc.findFunctionApp(typeEnv, fa, ts1) // Note: don't lift here.
     })
+ */
     // Function applications
     case FunctionApp(f, args) => 
       typeCheck(typeEnv, f).lift(exp).map{ case (te1, ff) =>
         fatc.checkFunctionApp(te1, ff, args).lift(exp, true)
       }//.lift(exp, true)
+
     // Block
     case BlockExp(stmts, e) => 
       // Create a new scope for this block, but return to the outer scope at
@@ -241,11 +245,7 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
         }
         else Ok((te1.endScope, UnitType))
       }.lift(exp)
-      // Typed expressions
-    case ListComprehension(e, qs) => 
-      checkQualifiers(typeEnv, qs).map{ te1 =>
-        typeCheck(te1, e).map{ case (te2,t) => Ok(te2, ListType(t)) }
-      }.lift(exp)
+    // Typed expressions
     case TypedExp(e, t) => 
       // Check t is not an unknown type parameter (or typo).
       if(t match{ case TypeParam(n) => !typeEnv.contains(n); case _ => false })

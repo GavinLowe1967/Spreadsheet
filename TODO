@@ -16,8 +16,19 @@ done by having TypeChecker0.close check that t contains no TypeVars.
 3. In ExpTypeChecker, filter for those with the correct number of type
 parameters, substitute actual type parameters for formal type parameters, then
 branch (error if none; checkFunctionApp if one; findFunctionApp if multiple).
--- Partially done outside of function applications.  Needs more testing.  Check
-   actual type paramters satisfy constraints of formal parameters
+
+-- Done for TypedExps, but needs testing ***
+improve error messages from Unification.scala
+
+-- Needs to be done for function applications. ***
+
+*** The current approach gets the index wrong.  Chenage getAll to tag each
+    type with the index into the original list of types.
+
+There's currently an inconsistency in the case where multiple options are
+possible: in the case of untyped unapplied functions, this is an error; but in
+the case of typed expressions or function applications, the first case is
+chosen.  RESOLVE this inconsistency.
 
 Also ExpTypeChecker.scala ll 51, 58
 
