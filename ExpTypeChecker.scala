@@ -72,29 +72,38 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
   }
 
   /** Get all possible types for `ne`, instantiating type parameters of
-    * FunctionTypes appropriately (if possible). */ 
+    * FunctionTypes appropriately (if possible).  Each type is combined with
+    * the corresponding type environment, and its index in the overloading
+    * list. */ 
   private def getAll(typeEnv: TypeEnv, ne: NameExp)
-      : Reply[List[(TypeEnv,TypeT)]] = {
+      : Reply[List[(TypeEnv,TypeT,Int)]] = {
     val NameExp(n, atps) = ne
     typeEnv.get(n) match{
       case None => FailureR(s"Name $n not found") 
       case Some(List()) => FailureR(s"Forward reference to name $n") 
       case Some(List(t)) => 
-        if(atps.isEmpty) Ok(List((typeEnv,t)))
+        if(atps.isEmpty) Ok(List((typeEnv,t,-1)))
         else t match{
           case ft: FunctionType => 
             instantiate(typeEnv, n, atps, ft) match{
-              case Ok(res) => Ok(List(res)); case fail: FailureR => fail
+              case Ok((te,t1)) => Ok(List((te,t1,-1)))
+              case fail: FailureR => fail
             }
           case _ => FailureR(s"Type parameters applied to non-function $n")
         }
+
       case Some(ts) => 
-        if(atps.isEmpty) Ok(ts.map(t => (typeEnv,t)))
+        if(atps.isEmpty) Ok(ts.zipWithIndex.map{ case(t,i) => (typeEnv,t,i) }) 
         else{
+          // Instantiate type parameters in each
+//println(s"ts = $ts")
           val prs0 = ts.map(t => 
             instantiate(typeEnv, n, atps, t.asInstanceOf[FunctionType]))
-          val prs = prs0.filter(_.isInstanceOf[Ok[(TypeEnv,TypeT)]])
-          if(prs.nonEmpty) Ok(prs.map{case Ok(tr) => tr})
+//println(s"prs0 = $prs0")
+          // Select successes, and combine with indices. 
+          val prs = prs0.zipWithIndex.filter(
+            _._1.isInstanceOf[Ok[(TypeEnv,TypeT)]])
+          if(prs.nonEmpty) Ok(prs.map{case (Ok((te,t1)),i) => (te,t1,i)})
           // prs0.length > 1, so following case doesn't apply.
           // else if(prs0.length == 1) prs0.head.asInstanceOf[FailureR]
           else FailureR(s"Cannot resolve overloaded name $n with types\n"
@@ -111,15 +120,16 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
   def typeCheck(typeEnv: TypeEnv, exp: Exp): TypeCheckRes = exp match{
     case ne @ NameExp(n, atps) => getAll(typeEnv, ne).map{
       case List() => sys.error(s"typeCheck $ne") // shouldn't happen
-      case List(res) => Ok(res)
+      case List((te,t,i)) => ne.setIndex(i); Ok((te,t))
       case _ => FailureR(s"Cannot resolve overloaded name $n")
     }.lift(exp, true)
 
     case TypedExp(ne @ NameExp(n, atps), t) => getAll(typeEnv, ne).map{ _ match{
-      case List((te1,t1)) => unify(te1, t1, t)
+      case List((te1,t1,i)) => ne.setIndex(i); unify(te1, t1, t) // FIXME: use i
       case List() => ??? // shouldn't happen
       case pairs => 
         val ts = pairs.map(_._2); val index = ts.indexOf(t)
+// FIXME: index in "pairs" (which are triples)
         if(index >= 0){ ne.setIndex(index); Ok((typeEnv,t)) } 
         else FailureR(s"Overloaded name $n with types\n"+showList(ts)+
           s"\nis not of type ${t.asString}")
@@ -190,26 +200,23 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
     // Application of function name; allow overloading here
     case fa @ FunctionApp(ne @ NameExp(fn, _), args) => getAll(typeEnv, ne).map{
       case List() =>  sys.error(s"typeCheck $fa") // shouldn't happen
-      case List((te1,t)) => 
-        fatc.checkFunctionApp(te1, t, args) .lift(fa, true)
-      case pairs => 
-        def tryPair(pair: (TypeEnv,TypeT)): TypeCheckRes = {
-          val (te1,t) = pair
-          fatc.checkFunctionApp(te1, t.asInstanceOf[FunctionType], args)
+      case List((te1,t,i)) => 
+        ne.setIndex(i)
+        fatc.checkFunctionApp(te1, t, args).lift(fa, true) // FIXME: use i
+      case triples => 
+//println(triples.map{ case (_,t1,i) => s"$t1 $i" })
+        // Try this instance
+        def tryPair(triple: (TypeEnv,TypeT,Int)): (TypeCheckRes,Int) = {
+          val (te1,t1,i) = triple
+          (fatc.checkFunctionApp(te1, t1.asInstanceOf[FunctionType], args), i)
         }
-        val results = pairs.map(tryPair); var i = 0; val n = results.length
-        while(i < n && results(i).isInstanceOf[FailureR]) i += 1
-        if(i < n){ ne.setIndex(i); results(i) }
-        else FailureR("Failure ***")
-
-        // Reply.findFirst(tryPair, pairs)
-/*
-        val ts = pairs.map(_._2)
-        assert(ts.nonEmpty && ts.forall(_.isInstanceOf[FunctionType])) 
-        val ts1 = ts.map(_.asInstanceOf[FunctionType]).toArray
-// FIXME: using typeEnv below is wrong
-        fatc.findFunctionApp(typeEnv, fa, ts1) // Note: don't lift here.
- */
+        // Find successes
+        val results = triples.map(tryPair).filter(_._1.isInstanceOf[Ok[_]])
+        if(results.nonEmpty){
+          val (ok @ Ok(_), i) = results.head; ne.setIndex(i); ok
+        }
+        else FailureR(s"Can't resolve overloaded name $fn")
+// IMPROVE error messages
     }
 /*
     case fa @ FunctionApp(NameExp(fn, List()), args) => (typeEnv.get(fn) match{

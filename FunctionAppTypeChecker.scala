@@ -137,6 +137,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
 // FIXME, what about a type like ListType(FunctionType(_,_,_)) ???
   }
 
+/*
   /** Find the first instance of a type in ts that allows fa to be type checked
     * correctly. */
   def findFunctionApp(typeEnv: TypeEnv, fa: FunctionApp, ts: Array[FunctionType])
@@ -171,4 +172,5 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
       ).lift(fa, true)
     }
   }
+ */
 }

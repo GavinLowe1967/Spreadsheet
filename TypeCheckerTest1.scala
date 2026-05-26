@@ -164,7 +164,7 @@ printErrors = false
 
   /** Tests on expressions using actual type parameters. */
   def typeParamTests() = {
-printErrors = true
+//printErrors = true
     // "Type parameters applied to non-function x ..."
     assertFail(tcpss("val x = 3; val y = x[Int]"))
     // "Wrong number of type parameters for function f ..."
@@ -193,6 +193,7 @@ printErrors = true
     // "Cannot resolve overloaded name f with types ..."
     assertFail(tcpss("def f[A <: Eq](x:Int) = 3; def f[A,B](x:A) = 4; "+
       "val f1 = f[Int => Int]"))
+   
     tcpss("def f[A <: Eq](x:Int) = 3; def f[A](x:A) = 4.0; "+
       "val f1 = f[Int => Int]") match{ case Ok(te) => 
         assert(te("f1") == FunctionType(
@@ -227,6 +228,31 @@ printErrors = true
     // (Int) => Float
     assertFail(tcpss(
       "def f[A](x:Int) = 3; def f[A](x:A) = 4; val f1 = f[Int]: Int => Float"))
-printErrors = false
+
+    // ======== Function applications
+    tcpss("def f[A](x: A) = 3; val y = f[Float](2.3)") match{ case Ok(te) => 
+      assert(te("y") == IntType) }
+    // Overloading; first case applies
+    tcpss("def f[A](x:Int) = 3; def f[A](x:A) = 4.0; val y = f[Int](3)") match{ 
+      case Ok(te) => assert(te("y") == IntType) }
+    val script2 = "def f[A](x:Int) = 3; def f[A,B](x:Float) = 4.0; "+
+      "val y1 = f[Int](2); val y2 = f[String,Boolean](2.0)"
+    tcpss(script2) match{ case Ok(te) => 
+      assert(te("y1") == IntType && te("y2") == FloatType) }
+     // "Actual type parameter (Int) => Int does not satisfy type constraint Eq"
+    assertFail(tcpss("def f[A <: Eq](x: Int) = x; val y1 = f[Int => Int](3)"))
+    tcpss("def f[A <: Eq](x: Int) = x; def f[A](x: Float) = 3.0; "+
+      "val y1 = f[Int => Int](3.0)") match{ case Ok(te) =>
+        assert(te("y1") == FloatType) }
+    // "Expected Float, found Int"
+    assertFail(tcpss("def f[A <: Eq](x: Int) = x; def f[A](x: Float) = 3.0; "+
+      "val y1 = f[Int => Int](3)"))
+    tcpss("def f[A](x:Int) = 3; def f[A](x:A) = 4.0; val y1 = f[Int](3)") match{
+      case Ok(te) => assert(te("y1") == IntType) }
+    tcpss("def f[A](x:A) = 4.0; def f[A](x:Int) = 3; val y1 = f[Int](3)") match{
+      case Ok(te) => assert(te("y1") == FloatType) }
+    tcpss("def f[A](x:Int) = 3; def f[A](x:A) = 4.0; val y = f[Int](3)") match{ 
+      case Ok(te) => assert(te("y") == IntType) }
+//printErrors = false
   }
 }

@@ -16,25 +16,18 @@ done by having TypeChecker0.close check that t contains no TypeVars.
 3. In ExpTypeChecker, filter for those with the correct number of type
 parameters, substitute actual type parameters for formal type parameters, then
 branch (error if none; checkFunctionApp if one; findFunctionApp if multiple).
+-- Done. 
 
--- Done for TypedExps, but needs testing ***
-improve error messages from Unification.scala
+4. Evaluation.scala, l 154.  Check cases with overloadign carefully. -- DONE
 
--- Needs to be done for function applications. ***
-
-*** The current approach gets the index wrong.  Chenage getAll to tag each
-    type with the index into the original list of types.
+3a. Tidy up ExptypeCheker, FunctionAppTypeChecker.
 
 There's currently an inconsistency in the case where multiple options are
 possible: in the case of untyped unapplied functions, this is an error; but in
 the case of typed expressions or function applications, the first case is
-chosen.  RESOLVE this inconsistency.
+chosen.  RESOLVE this inconsistency.  Consider improving error messages.
 
-Also ExpTypeChecker.scala ll 51, 58
-
-4. Have TypeChecker0.close check that t contains no TypeVars.
-
-5. Evaluation.scala, l 154
+5. Have TypeChecker0.close check that t contains no TypeVars.
 
 6. Add CellType type class.  Want to allow typing of
 def cells[A <: CellType](cols: List[Column])(row: Row): List[A] =
@@ -48,6 +41,7 @@ operation sortByName() = sortBlockByColumn[String](columns, rows, #A)
 This requires Evaluation to know what the type parameter represents, so store 
 this in the environment.
 
+* improve error messages from Unification.scala
 
 Type checking
 =============

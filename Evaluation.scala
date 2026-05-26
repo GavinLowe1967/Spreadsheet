@@ -151,7 +151,7 @@ class Evaluation(executor: ExecutionT){
 
   /** Evaluate `e` in environment `env`. */
   private def eval0(env: Environment, e: Exp): Value = e match{
-    case ne @ NameExp(name, List()) => env(ne.getName) 
+    case ne @ NameExp(name, _) => env(ne.getName) 
     case IntExp(value) => IntValue(value)
     case FloatExp(value) => FloatValue(value) 
     case BoolExp(value) => BoolValue(value)
