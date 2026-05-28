@@ -201,7 +201,7 @@ printErrors = false
         ) }
 
     // ===== TypedExps
-
+//printErrors = true
     tcpss("def f[A](x: A) = 3; val f1 = f[Float]: Float => Int") match{ 
       case Ok(te) =>
         assert(te("f1") == FunctionType(List(),List(FloatType),IntType)) }
@@ -211,30 +211,35 @@ printErrors = false
     // "Expected Int, found Float" ** IMPROVE error message
     assertFail(tcpss("def f[A](x: A) = 3; val f1 = f[Float]: Int => Int"))
     // === Overloading
-    // Here the first matching instance is selected
-    tcpss("def f[A](x:Int) = 3; def f[A](x:A) = 4; val f1 = f[Int]: Int => Int"
-    ) match{ case Ok(te) =>
-        assert(te("f1") == FunctionType(List(),List(IntType),IntType)) }
+    // Ambiguous use of overloaded name f at line 1"
+    assertFail(tcpss(
+      "def f[A](x:Int) = 3; def f[A](x:A) = 4; val f1 = f[Int]: Int => Int") )
+    // match{ case Ok(te) =>
+      //   assert(te("f1") == FunctionType(List(),List(IntType),IntType)) }
     // Here the type resolves the choice
     tcpss("def f[A](x:Int) = 3; def f[A](x:A) = 4.0; "+
       "val f1 = f[Int]: Int => Float") match{ case Ok(te) =>
         assert(te("f1") == FunctionType(List(),List(IntType),FloatType)) }
 
     // At present, the first instance is chosen.
-    tcpss("def f[A](x:Int) = 3; def f[A](x:A) = 4; val f1 = f[Int]: Int => Int"
-    ) match{ case Ok(te) => 
-        assert(te("f1") == FunctionType(List(),List(IntType),IntType)) }
+// FIXME FROM HERE
+    // Ambiguous use of overloaded name f at line 1
+    assertFail(tcpss(
+      "def f[A](x:Int) = 3; def f[A](x:A) = 4; val f2 = f[Int]: Int => Int")) 
+    // match{ case Ok(te) =>
+    // assert(te("f1") == FunctionType(List(),List(IntType),IntType)) }
     // Overloaded name f with types (Int) => Int, (Int) => Int is not of type
     // (Int) => Float
     assertFail(tcpss(
-      "def f[A](x:Int) = 3; def f[A](x:A) = 4; val f1 = f[Int]: Int => Float"))
+      "def f[A](x:Int) = 3; def f[A](x:A) = 4; val f3 = f[Int]: Int => Float"))
 
     // ======== Function applications
     tcpss("def f[A](x: A) = 3; val y = f[Float](2.3)") match{ case Ok(te) => 
       assert(te("y") == IntType) }
-    // Overloading; first case applies
-    tcpss("def f[A](x:Int) = 3; def f[A](x:A) = 4.0; val y = f[Int](3)") match{ 
-      case Ok(te) => assert(te("y") == IntType) }
+    // Overloading; amgiguous
+    assertFail(tcpss(
+      "def f[A](x:Int) = 3; def f[A](x:A) = 4.0; val y = f[Int](3)"))
+    //  match{ case Ok(te) => assert(te("y") == IntType) }
     val script2 = "def f[A](x:Int) = 3; def f[A,B](x:Float) = 4.0; "+
       "val y1 = f[Int](2); val y2 = f[String,Boolean](2.0)"
     tcpss(script2) match{ case Ok(te) => 
@@ -247,12 +252,16 @@ printErrors = false
     // "Expected Float, found Int"
     assertFail(tcpss("def f[A <: Eq](x: Int) = x; def f[A](x: Float) = 3.0; "+
       "val y1 = f[Int => Int](3)"))
-    tcpss("def f[A](x:Int) = 3; def f[A](x:A) = 4.0; val y1 = f[Int](3)") match{
-      case Ok(te) => assert(te("y1") == IntType) }
-    tcpss("def f[A](x:A) = 4.0; def f[A](x:Int) = 3; val y1 = f[Int](3)") match{
-      case Ok(te) => assert(te("y1") == FloatType) }
-    tcpss("def f[A](x:Int) = 3; def f[A](x:A) = 4.0; val y = f[Int](3)") match{ 
-      case Ok(te) => assert(te("y") == IntType) }
-//printErrors = false
+    // "Ambiguous application of overloaded name f"
+    assertFail(tcpss(
+      "def f[A](x:Int) = 3; def f[A](x:A) = 4.0; val y1 = f[Int](4)"))
+      //match{  case Ok(te) => assert(te("y1") == IntType) }
+    assertFail(tcpss(
+      "def f[A](x:A) = 4.0; def f[A](x:Int) = 3; val y1 = f[Int](5)"))
+    // match{      case Ok(te) => assert(te("y1") == FloatType) }
+    assertFail(tcpss(
+      "def f[A](x:Int) = 3; def f[A](x:A) = 4.0; val y = f[Int](6)"))
+    //match{    case Ok(te) => assert(te("y") == IntType) }
+// printErrors = false
   }
 }

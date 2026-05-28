@@ -42,12 +42,12 @@ object TypeCheckerTest3{
     //    assertFail(tcpss("def f(x: Int): Int = x+1; def f[A](x: A): A = x"))
     // Now allowed
     // Overloaded function where first case applies
-    tcpss("def f(x: Int) = true; def f[A](x: A) = x; val z = f(3)") match{
-      case Ok(te) => assert(te("z") == BoolType)
-    }
-    tcpss("def f[A](x: A) = x; def f(x: Int) = true; val z = f(3)") match{
-      case Ok(te) => assert(te("z") == IntType)
-    }
+//printErrors = true
+    // Ambiguous application of overloaded name f
+    assertFail(tcpss("def f(x: Int) = true; def f[A](x: A) = x; val z = f(3)"))
+    //match{     case Ok(te) => assert(te("z") == BoolType) }
+    assertFail(tcpss("def f[A](x: A) = x; def f(x: Int) = true; val z = f(3)"))
+    //match{ case Ok(te) => assert(te("z") == IntType) }
 
     assertFail(tcpss("val x = f 3\n val f = 5"))
     assertFail(tcpss("val x = f 3"))
@@ -76,11 +76,9 @@ object TypeCheckerTest3{
         assert(te("x") == IntType && te("y") == FloatType)
     }
     assertFail(tcpss(sumS+"; val x = sum[true]"))
-    // assertFail(tcpss(sumS+"; val x = sum[]")) -- now allowed; first case
-    // applies
-    tcpss(sumS+"; val x = sum [] ") match{ case Ok(te) =>
-      assert(te("x") == IntType)
-    }
+    assertFail(tcpss(sumS+"; val x = sum[]")) 
+    // tcpss(sumS+"; val x = sum [] ") match{ case Ok(te) =>
+    //  assert(te("x") == IntType)    }
     assertFail(tcpss(sumS+"; val x = sum 5 "))
     tcpss(sumS+"; val x = sum([]: List[Int])") match{ case Ok(te) =>
       assert(te("x") == IntType) }

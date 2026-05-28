@@ -127,12 +127,20 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
     case TypedExp(ne @ NameExp(n, atps), t) => getAll(typeEnv, ne).map{ _ match{
       case List((te1,t1,i)) => ne.setIndex(i); unify(te1, t1, t) // FIXME: use i
       case List() => ??? // shouldn't happen
-      case pairs => 
+      case triples => 
+        val filtered = triples.filter(_._2 == t)
+        if(filtered.isEmpty) FailureR(s"Cannot find matching type for name $n")
+        else if(filtered.length == 1){
+          val (te1,`t`,index) = filtered.head; ne.setIndex(index); Ok((te1,t))
+        }
+        else FailureR(s"Ambiguous use of overloaded name $n")
+/*
         val ts = pairs.map(_._2); val index = ts.indexOf(t)
 // FIXME: index in "pairs" (which are triples)
         if(index >= 0){ ne.setIndex(index); Ok((typeEnv,t)) } 
         else FailureR(s"Overloaded name $n with types\n"+showList(ts)+
           s"\nis not of type ${t.asString}")
+ */
     } }.lift(exp, true)
 
     // Atomic types
@@ -212,10 +220,11 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
         }
         // Find successes
         val results = triples.map(tryPair).filter(_._1.isInstanceOf[Ok[_]])
-        if(results.nonEmpty){
+        if(results.isEmpty) FailureR(s"Cannot find matching type for name $fn")
+        if(results.length == 1){
           val (ok @ Ok(_), i) = results.head; ne.setIndex(i); ok
         }
-        else FailureR(s"Can't resolve overloaded name $fn")
+        else FailureR(s"Ambiguous application of overloaded name $fn")
 // IMPROVE error messages
     }
 /*

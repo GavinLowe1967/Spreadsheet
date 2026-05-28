@@ -25,7 +25,8 @@ branch (error if none; checkFunctionApp if one; findFunctionApp if multiple).
 There's currently an inconsistency in the case where multiple options are
 possible: in the case of untyped unapplied functions, this is an error; but in
 the case of typed expressions or function applications, the first case is
-chosen.  RESOLVE this inconsistency.  Consider improving error messages.
+chosen.  RESOLVE this inconsistency.  Consider improving error messages. -- DONE
+
 
 5. Have TypeChecker0.close check that t contains no TypeVars.
 
