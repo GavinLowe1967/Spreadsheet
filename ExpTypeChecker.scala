@@ -7,12 +7,7 @@ import TypeT.showList
 import Substitution.substitute
 
 /** The interface of DeclarationTypeChecker, as seen by ExpTypeChecker. */
-trait TypeCheckerT{
-  /** Type check decls, returning the resulting type environment if
-    * successful. */
-  // def typeCheckDeclList(typeEnv: TypeEnv, decls: List[Declaration])
-  //     : Reply[TypeEnv]
- 
+trait TypeCheckerT{ 
   /** Type check stmts, returning the resulting type environment if
     * successful. 
     * @param topLevel is this at the top level, where operation declarations are 
@@ -96,10 +91,8 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
         if(atps.isEmpty) Ok(ts.zipWithIndex.map{ case(t,i) => (typeEnv,t,i) }) 
         else{
           // Instantiate type parameters in each
-//println(s"ts = $ts")
           val prs0 = ts.map(t => 
             instantiate(typeEnv, n, atps, t.asInstanceOf[FunctionType]))
-//println(s"prs0 = $prs0")
           // Select successes, and combine with indices. 
           val prs = prs0.zipWithIndex.filter(
             _._1.isInstanceOf[Ok[(TypeEnv,TypeT)]])
@@ -125,7 +118,7 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
     }.lift(exp, true)
 
     case TypedExp(ne @ NameExp(n, atps), t) => getAll(typeEnv, ne).map{ _ match{
-      case List((te1,t1,i)) => ne.setIndex(i); unify(te1, t1, t) // FIXME: use i
+      case List((te1,t1,i)) => ne.setIndex(i); unify(te1, t1, t)
       case List() => ??? // shouldn't happen
       case triples => 
         val filtered = triples.filter(_._2 == t)
@@ -134,13 +127,6 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
           val (te1,`t`,index) = filtered.head; ne.setIndex(index); Ok((te1,t))
         }
         else FailureR(s"Ambiguous use of overloaded name $n")
-/*
-        val ts = pairs.map(_._2); val index = ts.indexOf(t)
-// FIXME: index in "pairs" (which are triples)
-        if(index >= 0){ ne.setIndex(index); Ok((typeEnv,t)) } 
-        else FailureR(s"Overloaded name $n with types\n"+showList(ts)+
-          s"\nis not of type ${t.asString}")
- */
     } }.lift(exp, true)
 
     // Atomic types
@@ -210,42 +196,21 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
       case List() =>  sys.error(s"typeCheck $fa") // shouldn't happen
       case List((te1,t,i)) => 
         ne.setIndex(i)
-        fatc.checkFunctionApp(te1, t, args).lift(fa, true) // FIXME: use i
+        fatc.checkFunctionApp(te1, t, args).lift(fa, true) 
       case triples => 
-//println(triples.map{ case (_,t1,i) => s"$t1 $i" })
-        // Try this instance
+        // Try the instance `triple`.
         def tryPair(triple: (TypeEnv,TypeT,Int)): (TypeCheckRes,Int) = {
           val (te1,t1,i) = triple
           (fatc.checkFunctionApp(te1, t1.asInstanceOf[FunctionType], args), i)
         }
-        // Find successes
-        val results = triples.map(tryPair).filter(_._1.isInstanceOf[Ok[_]])
-        if(results.isEmpty) FailureR(s"Cannot find matching type for name $fn")
-        if(results.length == 1){
-          val (ok @ Ok(_), i) = results.head; ne.setIndex(i); ok
+        // Find successes; there should be only one
+        triples.map(tryPair).filter(_._1.isOk) match{
+          case List() => FailureR(s"Cannot find matching type for name $fn")
+          case List((ok,i)) => ne.setIndex(i); ok
+          case _ =>  FailureR(s"Ambiguous application of overloaded name $fn")
         }
-        else FailureR(s"Ambiguous application of overloaded name $fn")
-// IMPROVE error messages
     }
-/*
-    case fa @ FunctionApp(NameExp(fn, List()), args) => (typeEnv.get(fn) match{
-// FIXME: type params
-      case None => FailureR(s"Name $fn not found").lift(exp, true) 
-      case Some(List()) => 
-        FailureR(s"Forward reference to name $fn").lift(exp, true)
-      case Some(List(t)) => 
-        // println(s"$fn $args $t")
-        fatc.checkFunctionApp(typeEnv, t, args) .lift(fa, true)
-        //   case ok @ Ok(_) => ok
-        //   case f @ FailureR(err) => println(s"**$err"); f.lift(fa,true)
-        // }
-      case Some(ts) => 
-        assert(ts.nonEmpty && ts.forall(_.isInstanceOf[FunctionType])) 
-        val ts1 = ts.map(_.asInstanceOf[FunctionType]).toArray
-        fatc.findFunctionApp(typeEnv, fa, ts1) // Note: don't lift here.
-    })
- */
-    // Function applications
+    // General function applications
     case FunctionApp(f, args) => 
       typeCheck(typeEnv, f).lift(exp).map{ case (te1, ff) =>
         fatc.checkFunctionApp(te1, ff, args).lift(exp, true)
@@ -335,7 +300,6 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
     }
   }
 
-
   /** Typecheck qs, returning an updated TypeEnv if successful. */
   def checkQualifiers(typeEnv: TypeEnv, qs: List[Qualifier]): Reply[TypeEnv] = 
     Reply.fold(checkQualifier, typeEnv, qs)
@@ -355,5 +319,4 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
         case (te, BoolType) => Ok(te)
       }
   }
-  
 }

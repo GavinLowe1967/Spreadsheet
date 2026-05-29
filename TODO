@@ -20,7 +20,7 @@ branch (error if none; checkFunctionApp if one; findFunctionApp if multiple).
 
 4. Evaluation.scala, l 154.  Check cases with overloadign carefully. -- DONE
 
-3a. Tidy up ExptypeCheker, FunctionAppTypeChecker.
+3a. Tidy up ExptypeCheker, FunctionAppTypeChecker. -- DONE
 
 There's currently an inconsistency in the case where multiple options are
 possible: in the case of untyped unapplied functions, this is an error; but in
@@ -41,6 +41,8 @@ def sortBlockByColumn[A <: CellType](
 operation sortByName() = sortBlockByColumn[String](columns, rows, #A)
 This requires Evaluation to know what the type parameter represents, so store 
 this in the environment.
+
+7. Update manual (1) actual type parameters; ... 
 
 * improve error messages from Unification.scala
 

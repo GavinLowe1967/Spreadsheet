@@ -36,7 +36,6 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   private 
   def checkFunctionApp1(typeEnv: TypeEnv, ft: FunctionType, args: List[Exp])
       : TypeCheckRes = {
-// println(s"***\ncheckFunctionApp1(\n\t$ft,\n\t$args)")
     val FunctionType(tParams, domain, range) = ft
     if(domain.length != args.length)
       FailureR(s"Expected ${domain.length} arguments, found "+args.length)
@@ -48,10 +47,8 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
           typeEnv.newScope, ft.usedTParams, domain, range)
       checkFunctionApp2(te1, domain1, range1, ft.typeParams.toSet, args).map{
         case (te2, res0) => 
-// println(s"res0 = $res0")
           val (te3, res) = subTypeParamsInResult(te2, ft.unusedTParams, res0)
           Ok((te3.endScope, res))
-//          Ok((te2.endScope, res0))
       }
     }
   }
@@ -70,14 +67,9 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     // updated to the appropriate return type.
     val name = newName(); val te1 = typeEnv + (name, range)
     typeCheckList1(te1, typeParams, args).map{ case (te2, argTs) =>
-// println(s"$args -> $argTs")
-//println(s"te2 = $te2")
       unifyList(te2, argTs, domain).map{ case (te3, invMap) =>
         // Extract type of name.  Need to apply invMap to reverse renaming
         // done in unifyList.
-//println(s"te3 = $te3")
-//println(s"name: "+te3(name))
-//println(s"invMap = $invMap")
         Ok((te3, reverseRemapBy(invMap, te3(name))))
       }
     }
@@ -89,15 +81,12 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   private def typeCheckList1(
     typeEnv: TypeEnv, fnTParams: Set[TypeParamName], args: List[Exp])
       : Reply[(TypeEnv, List[TypeT])] = {
-//println(s"typeCheckList1: ${args}")
     if(args.isEmpty) Ok((typeEnv, List[TypeT]()))
     else etc.typeCheck(typeEnv, args.head).map{ case (te1, t1) =>
-//println(s"typeCheckList1: ${args.head}: $t1")
       if(t1.hasNullReturnFunction) forwardRefFail 
       else{
         // Rename type parameters to avoid name clashes.
-        val t2 = t1.renameTypeParams(/*TypeParam.newTypeParamMap,*/ fnTParams)
-//println(s"typeCheckList1: $t1 -> $t2")
+        val t2 = t1.renameTypeParams(fnTParams)
         typeCheckList1(te1, fnTParams, args.tail).map{ case (te2, ts) =>
           Ok(te2, t2::ts)
         }
@@ -116,7 +105,6 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
     else{
       // Replace type parameters in argTs.head by type variables
       val (te1, t1, typeMap) = mkInstance(typeEnv, argTs.head)
-      // println(s"Unifying $t1 and\n${paramTs.head}")
       unify(te1, t1, paramTs.head).map{ case (te2, _) =>
         unifyList(te2, argTs.tail, paramTs.tail).map{ case (te3, invMap) =>
           Ok((te3, union(invMap, inverse(typeMap))))
@@ -139,7 +127,8 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
 
 /*
   /** Find the first instance of a type in ts that allows fa to be type checked
-    * correctly. */
+ * correctly. */
+ // Note: it's now required that there's only a single instance. 
   def findFunctionApp(typeEnv: TypeEnv, fa: FunctionApp, ts: Array[FunctionType])
       : Reply[(TypeEnv, TypeT)] = {
     val FunctionApp(ne @ NameExp(fn, List()), args) = fa

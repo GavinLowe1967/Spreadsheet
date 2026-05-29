@@ -11,6 +11,9 @@ abstract class Reply[+A]{
 
   /** If a failure, add the source of `exp` to the message. */
   def lift(exp: HasExtent, lineNum: Boolean = false): Reply[A]
+
+  /** Is this an Ok value? */
+  def isOk: Boolean
 }
 
 // =======================================================
@@ -22,6 +25,8 @@ case class Ok[+A](x: A) extends Reply[A]{
   def mapOrLift[B](exp: HasExtent, f: A => Reply[B]) = f(x)
 
   def lift(exp: HasExtent, lineNum: Boolean = false) = this
+
+  def isOk = true
 }
 
 // =======================================================
@@ -48,6 +53,8 @@ case class FailureR(err: String) extends Reply[Nothing]{
     val l1 = e1.lineNumber; val l2 = e2.lineNumber
     FailureR(s"$err at lines ${l1} and ${l2}.")
   }
+
+  def isOk = false
 }
 
 object Reply{
@@ -56,10 +63,17 @@ object Reply{
     if(xs.isEmpty) Ok(e)
     else f(e, xs.head).map(e1 => fold(f, e1, xs.tail))
 
+/*
   /** The first Ok value in xs; or else a FailureR value. */
   def findFirst[A,B](f: A => Reply[B], xs: List[A]): Reply[B] = 
     if(xs.isEmpty) FailureR("Failed")
     else f(xs.head) match{
       case ok: Ok[B] => ok; case fail: FailureR => findFirst(f, xs.tail)
     }
+ */
+/*
+  /** The Ok elements of xs. */
+  def filterOk[A](xs: List[Reply[A]]): List[Reply[A]] = 
+    xs.filter{ case Ok(_) => true; case FailureR(_) => false }
+ */
 }
