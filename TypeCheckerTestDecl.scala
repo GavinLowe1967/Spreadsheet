@@ -15,10 +15,14 @@ object TypeCheckerTestDecl{
     assertFail(tcpss("val x = 2+false"))
     assertFail(tcpss("val y = 3 + 4.5"))
     tcpss("val y = 3 + 4") match{ case Ok(te) => assert(te("y") == IntType) }
+    assertFail(tcpss("val x = head([])"))
     // The following succeeds, but gives an evaluation error.
-    tcpss("val x = head([])") match{ case Ok(te) => te("x") match{
-      case TypeVar(t) => assert(te(t) == AnyTypeConstraint)
-    } }
+    tcpss("val x = head([]: List[Int])") match{ case Ok(te) => 
+      assert(te("x") == IntType) }
+    // // The following succeeds, but gives an evaluation error.
+    // tcpss("val x = head([])") match{ case Ok(te) => te("x") match{
+    //   case TypeVar(t) => assert(te(t) == AnyTypeConstraint)
+    // } }
 
     tcpss("val (x,(y,z)) = (2,(3.3,true))") match{ case Ok(te) => 
       assert(te("x") == IntType && te("y") == FloatType && te("z") == BoolType)
@@ -112,8 +116,11 @@ object TypeCheckerTestDecl{
     tcpss("val xs = 3 :: []") match{ case Ok(te) => assertListInt(te,"xs") }
     tcpss("val xs = 1 :: 2 :: []") match{ case Ok(te) => assertListInt(te,"xs") }
     assertFail(tcpss("val xs = [1]; val ys = true::xs"))  // IMPROVE error
-    tcpss("val xs = []; val ys = 1::xs") match{ case Ok(te) => 
+    assertFail(tcpss("val xs = []; val ys = 1::xs"))
+    tcpss("val xs = []: List[Int]; val ys = 1::xs") match{ case Ok(te) => 
       assertListInt(te, "xs"); assertListInt(te, "ys") }
+    // tcpss("val xs = []; val ys = 1::xs") match{ case Ok(te) => 
+    //   assertListInt(te, "xs"); assertListInt(te, "ys") }
     tcpss("val x = #A1: Int; val xs = [x, #A2: Int]; val y = x+3") match{ 
       case Ok(te) => assertListInt(te, "xs") }
     tcpss("val x = #D0: Float; val y = #D3: Float; val eq = [x] == [y]") match{

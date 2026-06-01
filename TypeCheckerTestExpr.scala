@@ -59,10 +59,14 @@ object TypeCheckerTestExpr{
     assertFail(tcp("[true, 4]"))
     assertListInt(tcp("[1,2,3]"))
     assertFail(tcp("[1, 3, false, 2, true]"))
-    tcp("[]") match{ case Ok((te, ListType(TypeVar(t)))) => 
-      assert(te(t) == AnyTypeConstraint) }
-    tcp("[[]]") match{ case Ok((te, ListType(ListType(TypeVar(t))))) => 
-      assert(te(t) == AnyTypeConstraint) }
+    // tcp("[]") match{ case Ok((te, ListType(TypeVar(t)))) => 
+    //   assert(te(t) == AnyTypeConstraint) }
+    assertFail(tcp("[]"))
+    assertListInt(tcp("[] : List[Int]"))
+    // tcp("[[]]") match{ case Ok((te, ListType(ListType(TypeVar(t))))) => 
+    //   assert(te(t) == AnyTypeConstraint) }
+    assertFail(tcp("[[]]"))
+    assertEq(tcp("[[]:List[Int]]"), ListType(ListType(IntType)))
     assertListInt(tcp("[#A1: Int, #A2: Int]"))
     assertFail(tcp("head(3)"))                            // IMPROVE error msg
 
@@ -70,15 +74,17 @@ object TypeCheckerTestExpr{
     assertListInt(tcp("3 :: []"))
     assertFail(tcp("1:: [true]"))                         // IMPROVE error 
     assertEq(tcp("true :: []"), ListType(BoolType)) 
-    tcp("[] :: []") match{ case Ok((te, ListType(ListType(TypeVar(t))))) => 
-      assert(te(t) == AnyTypeConstraint) } 
+    assertFail(tcp("[] :: []"))
+      // match{ case Ok((te, ListType(ListType(TypeVar(t))))) =>
+      // assert(te(t) == AnyTypeConstraint) } 
 
     // Equality tests
     assertEq(tcp("[1] == [2]"), BoolType)
     assertEq(tcp("tail([1]) == []"), BoolType)
     assertFail(tcp("tail([1]) == tail([false])")) 
     assertFail(tcp("[1,2] == 3"))
-    assertEq(tcp("[] == [3]"), BoolType)
+    assertFail(tcp("[] == [3]"))
+    assertEq(tcp("[]: List[Int] == [3]"), BoolType)
     assertEq(tcp("[3] == []"), BoolType)
     // "Expected equality type, found (Int) => Int"
     assertFail(tcp("{def f(x:Int): Int = x; [f] == []}"))
@@ -94,7 +100,9 @@ object TypeCheckerTestExpr{
       "{def f(x:Int): Int = x; val xs = []; [3] == xs && xs == [f]}"))
     assertFail(tcp(
       "{def f(x:Int): Int = x; val xs = []; [3] == xs && [f] == xs}"))
-    assertEq(tcp("{def f[A <: Eq](x: A): Boolean = [] == [x]; f(3)}"), BoolType)
+    assertFail(tcp("{def f[A <: Eq](x: A): Boolean = [] == [x]; f(3)}"))
+    assertEq(tcp("{def f[A <: Eq](x: A): Boolean = []: List[A] == [x]; f(3)}"),
+      BoolType)
     assertEq(tcp("[1,2,3] <= [4]"), BoolType)
     assertFail(tcp("[1,2] >= [3.5]"))
     assertFail(tcp("[1.3,3.5] == [2, 6]"))
@@ -104,8 +112,9 @@ object TypeCheckerTestExpr{
     assertFail(tcp("[1, 2.3]")) 
     assertFail(tcp("[1.6, 2]")) 
 
-    tcp("head([])") match{ case Ok((te, TypeVar(t))) => 
-      assert(te(t) == AnyTypeConstraint) } 
+    assertFail(tcp("head []"))
+    // tcp("head([])") match{ case Ok((te, TypeVar(t))) => 
+    //   assert(te(t) == AnyTypeConstraint) } 
 
     // "to" and "until"
     assertEq(tcp("3 to 5"), ListType(IntType))
@@ -130,9 +139,11 @@ object TypeCheckerTestExpr{
     assertEq(tcp(e2), ListType(IntType))
     val e3 = "#A1 match{ case _: Int => []; case Empty => [3]; case _ => [2] }"
     assertEq(tcp(e3), ListType(IntType))
-    tcp("#A1 match{ case Empty => [] }") match{ 
-      case Ok((te, ListType(TypeVar(t)))) =>
-        assert(te(t) == AnyTypeConstraint) }
+    assertFail(tcp("#A1 match{ case Empty => [] }"))
+    // tcp("#A1 match{ case Empty => [] }") match{ 
+    //   case Ok((te, ListType(TypeVar(t)))) =>
+    //     assert(te(t) == AnyTypeConstraint) }
+    assertEq(tcp("#A1 match{ case Empty => []: List[Int] }"), ListType(IntType))
 
     // "Expected Row, found Int"
     assertFail(tcp("Cell(#A,3) match{ case Empty => 4 }"))

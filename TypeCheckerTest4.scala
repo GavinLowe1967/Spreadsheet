@@ -33,8 +33,9 @@ object TypeCheckerTest4{
       "val sum3 = { def p(x:Float)(y:Float) = x+y; foldl p 0.0 }\n" +
       "val lengthp = { def f[A](x:A)(n:Int) = n+1; foldr f 0 } \n" +
       "val xs = concat [[3]]; val ys = concat[[2.3]] \n" +
-      "val concatp = foldr append [] \n" +
-      "val xsp = concatp [[3]] \n" +
+      // "val concatp = foldr append [] \n" +
+      // "val xsp = concatp [[3]] \n" +
+      "val xsp = foldr append [] [[3]]\n"+
       "def map1[A,B](f: A => B) = { "+
       "  def g(x: A)(ys: List[B]) = cons (f x) ys; foldr g [] }\n" +
       "def map2[A,B](f: A => B) = foldr(after cons f) []\n"+
@@ -68,7 +69,7 @@ object TypeCheckerTest4{
   def preludeTests() = {
     println("===preludeTests===")
     tcpss(script) match{ 
-      case Ok(te) => okTests(te); case FailureR(err) => println(err)
+      case Ok(te) => okTests(te) // ; case FailureR(err) => println(err)
     }
   }
 
@@ -128,11 +129,11 @@ object TypeCheckerTest4{
       List(ListType(ListType(TypeParam("A")))), ListType(TypeParam("A"))))
     assert(te("xs") == ListType(IntType) && te("ys") == ListType(FloatType))
     // concatp has type in terms of a type variable
-    te("concatp") match{
-      case FunctionType(
-        List(), List(ListType(ListType(TypeVar(t)))), ListType(TypeVar(t1))
-      ) => assert(t1 == t)
-    }
+    // te("concatp") match{
+    //   case FunctionType(
+    //     List(), List(ListType(ListType(TypeVar(t)))), ListType(TypeVar(t1))
+    //   ) => assert(t1 == t)
+    // }
     assert(te("xsp") == ListType(IntType))
     // Note: the "[]" in the definition of concatp has a specific type,
     // which is constrained to be IntType by the definition of xsp; so we

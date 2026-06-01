@@ -85,27 +85,28 @@ object EvaluationTest{
     assert(eval("7 * (if(2+2 == 5) 3 else 4+2)") == IntValue(42))
     assertFail(eval("if(2/0 == 4) 3 else 4"))
     // ===== List expressions
-    assert(eval("[]") == ListValue(/*AnyTyeval,*/ List()))
+    //assert(eval("[]") == ListValue(/*AnyTyeval,*/ List()))
+    assert(eval("[]: List[Int]") == ListValue(/*AnyTyeval,*/ List()))
     assert(eval("[4/4, 2+0, 6-3]") == 
       ListValue(IntValue(1), IntValue(2), IntValue(3)))
     assertFail(eval("[4/2, 3/0]"))
     assert(eval("head([1,2,3])") == IntValue(1))
-    assertFail(eval("head([])"))
+    assertFail(eval("head([]: List[Int])"))
     assert(eval("tail([1,2,3])") == ListValue(IntValue(2), IntValue(3)))
-    assertFail(eval("tail([])"))
+    assertFail(eval("tail([]: List[Int])"))
     assert(eval("[1,2] == [3,4]") == BoolValue(false))
     assert(eval("1 :: 2 :: []") == ListValue(IntValue(1), IntValue(2)))
     assert(eval("[1,2] != tail([3,1,2])") == BoolValue(false))
     assert(eval("[1,2] == tail([3,1,2])") == BoolValue(true))
     assert(eval("tail([1]) == []") == BoolValue(true))
-    assert(eval("[] == tail([1])") == BoolValue(true))
+    assert(eval("[]: List[Int] == tail([1])") == BoolValue(true))
     assert(eval(
       "{val xs = [x+y | x <- [1,2,3], y <- [4,7], x != 2]; xs == [5,8,7,10]}"
     ) == BoolValue(true))
     assert(eval(
       "{val xs = [x+y | (x,y) <- [(1,4),(2,3),(3,4)], x != 2]; xs == [5,7]}"
     ) == BoolValue(true))
-    assert(eval("[1,2] <= [1,3] && [] < [3.6] && [\"hello\"] >= [\"hello\"] "+
+    assert(eval("[1,2] <= [1,3] && []: List[Float] < [3.6] && [\"hello\"] >= [\"hello\"] "+
       " && [#4] > [#3]") == BoolValue(true))
 
 

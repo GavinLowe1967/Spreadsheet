@@ -145,9 +145,11 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
     case IfExp(test, thenClause, elseClause) =>
       typeCheckUnify(typeEnv, test, BoolType).map{ case (te1, bt) =>
         assert(bt == BoolType)
-        typeCheckAndClose(te1, thenClause).map{ case (te2,t1) =>
-          typeCheckUnify(te2, elseClause, t1)
+        typeCheck/*AndClose*/(te1, thenClause).map{ case (te2,t1) =>
+          typeCheckUnifyAndClose(te2, elseClause, t1)
         }
+        // Note: don't close in "then" branch, to allow expressions like "[]",
+        // where the type is resolved by the "else" branch.
       }.lift(exp)
 
     // Typed cell expressions

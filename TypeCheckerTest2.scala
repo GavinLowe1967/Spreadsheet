@@ -51,21 +51,26 @@ object TypeCheckerTest2{
         List(("A",AnyTypeConstraint)), List(TypeParam("A")),
         ListType(TypeParam("A"))
       ))}
-    tcpss("def mkEmpty[A](): List[A] = []; val xs = mkEmpty()") match{
+    assertFail(tcpss("def mkEmpty[A](): List[A] = []; val xs = mkEmpty()"))
+    assertFail(tcpss("def mkEmpty[A]() = []: List[A]; val xs = mkEmpty()"))
+    tcpss("def mkEmpty[A]() = []: List[A]; val xs = mkEmpty[Int]()") match{
       case Ok(te) =>
         assert(te("mkEmpty") == FunctionType(
           List(("A",AnyTypeConstraint)), List(), ListType(TypeParam("A"))
         ))
-        //assert(te("xs") == ListType(TypeParam("A")))      
-        te("xs") match{ 
-          case ListType(TypeVar(tv)) => assert(te(tv) == AnyTypeConstraint) }
+        assert(te("xs") == ListType(IntType))
     }
-    tcpss("def mkEmpty[A <: Eq](): List[A] = []; val xs = mkEmpty()") match{
-      case Ok(te) =>
-
-        // assert(te("xs") == ListType(TypeParam("A")))
-        te("xs") match{ 
-          case ListType(TypeVar(tv)) => assert(te(tv) == EqTypeConstraint) }
+    // tcpss("def mkEmpty[A](): List[A] = []; val xs = mkEmpty()") match{
+    //   case Ok(te) =>
+    //     assert(te("mkEmpty") == FunctionType(
+    //       List(("A",AnyTypeConstraint)), List(), ListType(TypeParam("A"))
+    //     ))
+    //     //assert(te("xs") == ListType(TypeParam("A")))      
+    //     te("xs") match{ 
+    //       case ListType(TypeVar(tv)) => assert(te(tv) == AnyTypeConstraint) }
+    // }
+    tcpss("def mkEmpty[A <: Eq]() = []: List[A]; val xs = mkEmpty[Int]()") match{
+      case Ok(te) => assert(te("xs") == ListType(IntType))
     }
 
     // Tests on Eq
@@ -73,7 +78,8 @@ object TypeCheckerTest2{
       assert(te("f") == FunctionType(
         List(("A",EqTypeConstraint)), List(TypeParam("A")), BoolType
       ))}
-    tcpss("def f[A <: Eq](x: A) = [] == [x]") match{  case Ok(te) => 
+    assertFail(tcpss("def f[A <: Eq](x: A) = [] == [x]"))
+    tcpss("def f[A <: Eq](x: A) = []: List[A] == [x]") match{  case Ok(te) => 
       assert(te("f") == FunctionType(
         List(("A",EqTypeConstraint)), List(TypeParam("A")), BoolType
       ))}

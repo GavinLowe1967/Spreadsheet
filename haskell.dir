@@ -26,7 +26,7 @@ val nonEmpty = after not isEmpty
 def singleton[A](xs: List[A]) = nonEmpty xs && isEmpty (tail xs)
 
 def map[A,B](f: A => B)(xs: List[A]): List[B] = 
-  if(isEmpty xs) []: List[B] else f(head xs) :: map f (tail xs)
+  if(isEmpty xs) [] else f(head xs) :: map f (tail xs)
 
 def append[A](xs: List[A])(ys: List[A]): List[A] = 
   if(isEmpty xs) ys else head xs :: append (tail xs) ys
@@ -82,7 +82,8 @@ def splitAt[A](n: Int)(xs: List[A]): (List[A],List[A]) =
   (take n xs, drop n xs)
 
 def takeWhile[A](p: A => Boolean)(xs: List[A]): List[A] = 
-  if(isEmpty xs || !(p (head xs))) [] else head xs :: takeWhile p (tail xs)
+  if(isEmpty xs || !(p (head xs))) []
+  else head xs :: takeWhile p (tail xs)
 
 def dropWhile[A](p: A => Boolean)(xs: List[A]): List[A] = 
   if(isEmpty xs || !(p (head xs))) xs else dropWhile p (tail xs)
@@ -116,15 +117,15 @@ def notElem[A <: Eq](x: A)(xs: List[A]): Boolean =
   isEmpty xs || (x != head xs && notElem x (tail xs))
 
 def zip[A,B](xs: List[A])(ys: List[B]): List[(A,B)] = 
-  if(isEmpty xs || isEmpty ys) [] 
+  if(isEmpty xs || isEmpty ys) []
   else (head xs, head ys) :: zip (tail xs) (tail ys)
 
 def zip3[A,B,C](xs: List[A])(ys: List[B])(zs: List[C]): List[(A,B,C)] = 
-  if(isEmpty xs || isEmpty ys || isEmpty zs) [] 
+  if(isEmpty xs || isEmpty ys || isEmpty zs) []
   else (head xs, head ys, head zs) :: zip3 (tail xs) (tail ys) (tail zs)
 
 def zipWith[A,B,C](f: A => B => C)(xs: List[A])(ys: List[B]): List[C] = 
-  if(isEmpty xs || isEmpty ys) [] 
+  if(isEmpty xs || isEmpty ys) []
   else f (head xs) (head ys) :: zipWith f (tail xs) (tail ys)
 
 def unzip[A,B](ps: List[(A,B)]): (List[A], List[B]) =
