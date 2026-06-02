@@ -11,12 +11,10 @@ object TypeChecker0{
   type TypeCheckRes = Reply[(TypeEnv,TypeT)]
 
   /** Check that all UntypedCellExps have been given a concrete type, and remove
-    * those cells from the type environment.. */
-  def close(typeEnv: TypeEnv, t: TypeT): TypeCheckRes = {
+    * those cells from the type environment. */
+  def closeCells(typeEnv: TypeEnv, t: TypeT): TypeCheckRes = {
     val untypedCells = typeEnv.getUntypedCells
-    if(t.typeVars.nonEmpty) FailureR("Unable to fully resolve type "+t.asString)
-    // assert(t.typeVars.isEmpty, s"close: $t")
-    else if(untypedCells.isEmpty) Ok(typeEnv.removeUntypedCells, t)
+    if(untypedCells.isEmpty) Ok(typeEnv.removeUntypedCells, t)
     else{
       val s = if(untypedCells.length > 1) "s" else ""
       FailureR(
@@ -24,6 +22,15 @@ object TypeChecker0{
           untypedCells.map(_.getExtent.asString).mkString(", ")
       )
     }
+  }
+
+  /** Check that all TypeValrs have been given a concrete type.  Check that all
+    * UntypedCellExps have been given a concrete type, and remove those cells
+    * from the type environment. */
+  def close(typeEnv: TypeEnv, t: TypeT): TypeCheckRes = {
+    if(t.typeVars.nonEmpty) FailureR("Unable to fully resolve type "+t.asString)
+    // assert(t.typeVars.isEmpty, s"close: $t")
+    else closeCells(typeEnv, t)
   }
 
   /** The next type identifier to use. */
