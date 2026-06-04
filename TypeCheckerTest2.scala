@@ -102,6 +102,55 @@ object TypeCheckerTest2{
         List(("A",OrdTypeConstraint)), 
         List(TypeParam("A"), TypeParam("A")), BoolType))}
 
+    // CellType type class
+    val cellDef = "def cell[A <: CellType](c: Column, r: Row) = Cell(c,r): A \n "
+    tcpss(cellDef+"val x = cell[Int](#A, #3)") match{ case Ok(te) =>
+      assert(te("cell") == FunctionType(
+        List(("A",CellTypeConstraint)),
+        List(ColumnType, RowType), TypeParam("A") ))
+      assert(te("x") == IntType) 
+    }
+    assertFail(tcpss(cellDef+"val x = cell(#A, #3)"))
+    // "Actual type parameter (Int,Int) does not satisfy type constraint
+    // CellType"
+    assertFail(tcpss(cellDef+"val x = cell[(Int,Int)](#A, #3)"))
+    // "Expected CellType, found A"
+    assertFail(tcpss("def cell[A](c: Column, r: Row) = Cell(c,r): A"))
+
+    val cellsDef = 
+      "def cells[A <: CellType](cs: List[Column], r: Row) = "+
+        "  [Cell(c,r): A | c <- cs] \n"
+    tcpss(cellsDef+"val xs = cells[Float](#A to #C, #3)") match{ case Ok(te) =>
+      assert(te("cells") == FunctionType(
+        List(("A",CellTypeConstraint)),
+        List(ListType(ColumnType), RowType), ListType(TypeParam("A")) ))
+      assert(te("xs") == ListType(FloatType))
+    }
+    assertFail(tcpss(cellsDef+"val xs = cells(#A to #C, #3)"))
+
+    val sortBlockDef = "def sortBlockByColumn[A <: CellType]("+
+      "cols: List[Column], rows: List[Row], c: Column) = {"+
+      "def before(r1: Row, r2: Row) = Cell(c,r1): A <= Cell(c,r2) : A \n"+
+      "sortBlockBy(cols, rows, before) }"
+    tcpss(sortBlockDef) match{ case Ok(te) => 
+      assert(te("sortBlockByColumn") == FunctionType(
+        List(("A",CellTypeConstraint)),
+        List(ListType(ColumnType), ListType(RowType), ColumnType), UnitType)) }
+
+    // tcpss("def sortBlockByColumn() = 3") match{ case Ok(te) =>
+    //   println(te("sortBlockByColumn"))  }
+
+    tcpss("def f[A <: CellType]() = { def g[B <: CellType]() = #A3: B; g[A] }"
+    ) match{ case Ok(te) => 
+        assert(te("f") == FunctionType(
+          List(("A",CellTypeConstraint)), List(),
+          FunctionType(List(), List(), TypeParam("A")) )) }
+    tcpss("def f[A <: CellType]() = { def g[A <: CellType]() = #A3: A; g[A] }"
+    ) match{ case Ok(te) => 
+        assert(te("f") == FunctionType(
+          List(("A",CellTypeConstraint)), List(),
+          FunctionType(List(), List(), TypeParam("A")) )) }
+
     // Lists
     tcpss("def mkSingle[A](x: A): List[A] = [x]") match{ case Ok(te) => 
       assert(te("mkSingle") == FunctionType(

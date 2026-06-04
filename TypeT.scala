@@ -76,8 +76,12 @@ case class CellTypeVar(tv: TypeID) extends TypeT{
 
 // ==================================================================
 
+/** Marker trait for types that can be associated with a cell read such as
+  * "#A3: <type>" -- CellTypes and TypeParams. */
+trait CellReadType extends TypeT
+
 /** A type parameter, named in the script. */
-case class TypeParam(name: String) extends TypeT{
+case class TypeParam(name: String) extends CellReadType{
   def asString = name 
   def typeParams = List(name)
   def typeVars = List()
@@ -130,8 +134,13 @@ trait BaseType extends TypeT{
   def hasNullReturnFunction = false
 }
 
-/** A marker trait for types that can appear in cells of the spreadsheet. */
-trait CellType extends OrdType with BaseType
+/** A marker trait for types that can appear in cells of the spreadsheet.
+  * Note: this includes ErrorType and EmptyType. */
+trait CellValueType extends OrdType with BaseType
+
+/** A marker trait for types that are subclasses of the script type
+  * `CellType`. */
+trait CellType extends CellValueType with CellReadType
 
 /* Now all the base types. */
 
@@ -163,11 +172,11 @@ case object ColumnType extends OrdType with BaseType{
   def asString = "Column"
 }
 
-case object EmptyType extends CellType{
+case object EmptyType extends CellValueType{
   def asString = "empty cell"
 }
 
-case object ErrorType extends CellType{
+case object ErrorType extends CellValueType{
   def asString = "error value"
 }
 

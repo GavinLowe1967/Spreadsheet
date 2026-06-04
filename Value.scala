@@ -69,7 +69,7 @@ trait Cell extends Ord{
   //   withCSource(CellWriteSource(c, r, d))
 
   /** The type of this value.  Set in subclasses. */
-  def getType: CellType // TypeT
+  def getType: CellValueType // TypeT
 
   /** Is this an empty Cell? */
   def isEmpty = getType == EmptyType

@@ -25,7 +25,7 @@ class TypeEnv(
   private val constraints: Constraints, // = HashMap[TypeID, TypeConstraint]
   private val typeParamMap: TypeParamMap, // HashMap[TypeParamName, TypeParamConstraint]
   private val untypedCells: List[UntypedCellExp],
-  private val cellTypeVarTypes: Map[CellTypeVar, CellType], 
+  private val cellTypeVarTypes: Map[CellTypeVar, CellValueType], 
   private val stack: List[Frame]
 ) extends EvaluationTypeEnv(constraints, typeParamMap){
 
@@ -35,7 +35,7 @@ class TypeEnv(
     constraints: Constraints = constraints,
     typeParamMap: TypeParamMap = typeParamMap,
     untypedCells: List[UntypedCellExp] = untypedCells,
-    cellTypeVarTypes: Map[CellTypeVar, CellType] = cellTypeVarTypes,
+    cellTypeVarTypes: Map[CellTypeVar, CellValueType] = cellTypeVarTypes,
     stack: List[Frame] = stack
   ) = new TypeEnv(
     nameMap, constraints, typeParamMap, untypedCells, cellTypeVarTypes, stack)
@@ -125,12 +125,14 @@ class TypeEnv(
     t match{
       case _: BaseType => c match{
         case AnyTypeConstraint | OrdTypeConstraint | EqTypeConstraint => Ok(this)
-        //case SingletonTypeConstraint(t1) => if(t == t1) Ok(this) else fail
+        case CellTypeConstraint => 
+          if(t.isInstanceOf[CellType]) Ok(this) else fail
       }
       case ListType(underlying) => c match{
         case EqTypeConstraint | OrdTypeConstraint => 
           updateEnvToSatisfy(underlying, c, fail)
         case AnyTypeConstraint => Ok(this)
+        case CellTypeConstraint => fail
       }
       case TupleType(cptTs) => c match{
         case EqTypeConstraint | OrdTypeConstraint => 
@@ -138,11 +140,11 @@ class TypeEnv(
             typeEnv.updateEnvToSatisfy(cptT, c, fail)
           Reply.fold(step _, this, cptTs)
         case AnyTypeConstraint => Ok(this)
+        case CellTypeConstraint => fail
       }
       case _ : FunctionType => c match{
         case AnyTypeConstraint => Ok(this)
-        case EqTypeConstraint | OrdTypeConstraint => fail
-        // case SingletonTypeConstraint(t1) => println(s"t = $t\nt1 = $t1"); ???
+        case EqTypeConstraint | OrdTypeConstraint | CellTypeConstraint => fail
       }
       case TypeVar(tId) => 
         // This can happen by recursing via ListType(TypeVar(_)), e.g. the
@@ -153,9 +155,8 @@ class TypeEnv(
       case TypeParam(tp) => 
         if(constraintForTypeParam(tp).implies(c)) Ok(this) else fail
       case CellTypeVar(ctv) =>  c match{
-        case AnyTypeConstraint | OrdTypeConstraint | EqTypeConstraint => Ok(this)
-        //case SingletonTypeConstraint(t1) => println(s"$t $c") ; ???
-          // Perhaps Ok(this + (ctv,t1))
+        case AnyTypeConstraint | OrdTypeConstraint | EqTypeConstraint | 
+            CellTypeConstraint => Ok(this)
       }
     }
   }
@@ -181,7 +182,7 @@ class TypeEnv(
     make(untypedCells = cell::untypedCells)
 
   /** Add tv -> ct to cellTypeVarTypes. */
-  def + (tv: CellTypeVar, ct: CellType) = {
+  def + (tv: CellTypeVar, ct: CellValueType) = {
     assert(!cellTypeVarTypes.contains(tv))
     make(cellTypeVarTypes = cellTypeVarTypes + (tv -> ct))
   }
@@ -266,7 +267,7 @@ object TypeEnv{
       new NameMap ++ 
         BuiltInFunctions.builtInTypes //.map{ case (n,t) => (n, List(t)) }
     new TypeEnv(nameMap, new Constraints, new TypeParamMap, 
-      List[UntypedCellExp](), Map[CellTypeVar, CellType](), List[Frame]())
+      List[UntypedCellExp](), Map[CellTypeVar, CellValueType](), List[Frame]())
   }
 
   private val builtInNames = BuiltInFunctions.builtInTypes.map(_._1)

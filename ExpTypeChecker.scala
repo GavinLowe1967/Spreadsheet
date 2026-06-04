@@ -156,7 +156,15 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
 
     // Typed cell expressions
     case ce @ CellExp(column, row, theType) =>
-      checkCellRead(typeEnv, column, row, te => Ok(te, theType)).lift(exp)
+      def checkType(te: TypeEnv) = theType match{
+        case TypeParam(tp) => 
+          def fail = FailureR(s"Expected CellType, found $tp")
+          te.updateEnvToSatisfy(theType, CellTypeConstraint, fail).map{
+            case te2 => Ok(te2, theType)
+          }
+        case _ => Ok(te, theType)
+      }
+      checkCellRead(typeEnv, column, row, checkType).lift(exp)
     // Untyped cell expressions
     case cell @ UntypedCellExp(column, row) =>   
       def setType(te: TypeEnv) = {

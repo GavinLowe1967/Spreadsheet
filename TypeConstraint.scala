@@ -1,27 +1,8 @@
 package spreadsheet
 
-/*
-/** The interface of TypeEnv as seen by a TypeConstraint, namely the ability
-  * to find the TypeConstraint stored against a TypeVar or TypeParam.
-  * Note: this is used to avoid cyclic compilation dependencies. */
-trait TypeEnv0{
-  /** The constraint associated with TypeVar(tid). */
-  def apply(tid: TypeVar.TypeID) : TypeConstraint
-
-  /** The constraint associated with TypeParam(tp). */
-  def constraintForTypeParam(tp: TypeParam.TypeParamName) : TypeParamConstraint
-}
- */
-
-// ==================================================================
 
 /** A constraint upon a type variable. */
 trait TypeConstraint{
-  /** Is this constraint satisfied by type t?  */
-  //def satisfiedBy(typeEnv: TypeEnv0, t: TypeT) : Boolean
-// IMPROVE: called only from TypeEnv.updateEnvToSatisfy on a limited range of
-// types; so definitions can be simplified. 
-
   /** The TypeConstraint representing the intersection (or conjunction) of this
     * and other (used in Unification.scala). */
   def intersection(other: TypeConstraint): TypeConstraint
@@ -37,7 +18,6 @@ trait TypeConstraint{
   * quantification over the relevant types, and always contains at least two
   * possible types. */
 trait TypeParamConstraint extends TypeConstraint{
-
   /** Does this imply other?  I.e., the types that satisfy this are a subset of
     * the types that satisfy other?  (Used in TypeEnv.scala.) */
   def implies(other: TypeConstraint) =  this.intersection(other) == this
@@ -55,8 +35,6 @@ trait TypeParamConstraint extends TypeConstraint{
   * Unification.unify (via TypeEnv.replace) when a TypeVar is unified with a
   * concrete type. */
 case class SingletonTypeConstraint(t: TypeT) extends TypeConstraint{
-  //def satisfiedBy(typeEnv: TypeEnv0, t1: TypeT) = t1 == t
-
   def intersection(other: TypeConstraint) = other match{
     case AnyTypeConstraint => this
     case _ =>  println(s"$t $other"); ??? //FIXME
@@ -70,25 +48,9 @@ case class SingletonTypeConstraint(t: TypeT) extends TypeConstraint{
 
 /** The type constraint corresponding to being an equality type. */
 case object EqTypeConstraint extends TypeParamConstraint{
-  // def satisfiedBy(typeEnv: TypeEnv0, t: TypeT) = {
-  //   // Note: t might be a typeVar in a recursive call for ListType(t)
-  //   t match{
-  //     case _: EqType => true
-  //     // case TypeVar(tid) => typeEnv(tid) match{
-  //     //   //case EqTypeConstraint | OrdTypeConstraint => true
-  //     //   case SingletonTypeConstraint(t) => // can this happen?
-  //     //     println(s"EqTypeConstraint $t"); satisfiedBy(typeEnv, t)
-  //     //   case tpc: TypeParamConstraint => tpc.implies(this)
-  //     //   //case AnyTypeConstraint => false
-  //     // }
-  //     case TypeParam(tp) => typeEnv.constraintForTypeParam(tp).implies(this)
-  //     // case ListType(underlying) => ??? // satisfiedBy(typeEnv, underlying)
-  //     case _ => ??? // false // FunctionType, TupleType *IMPROVE*
-  //   }
-  // }
-
   def intersection(other: TypeConstraint) = other match{
     case OrdTypeConstraint => OrdTypeConstraint
+    case CellTypeConstraint => CellTypeConstraint
     case EqTypeConstraint | AnyTypeConstraint => EqTypeConstraint
       // tested by  applyE(threeE, true) in TypeCheckerTest2
     case SingletonTypeConstraint(_) => ???
@@ -102,24 +64,8 @@ case object EqTypeConstraint extends TypeParamConstraint{
 // =================================================================
 
 case object OrdTypeConstraint extends TypeParamConstraint{
-  // def satisfiedBy(typeEnv: TypeEnv0, t: TypeT) = {
-  //   // Note: t might be a typeVar in a recursive call for ListType(t)
-  //   t match{
-  //     case _: OrdType => true
-  //     // case ListType(underlying) => satisfiedBy(typeEnv, underlying)
-  //     // case TypeVar(tid) => typeEnv(tid) match{
-  //     //   // case OrdTypeConstraint => true
-  //     //   case SingletonTypeConstraint(t) => // can this happen?
-  //     //     println(s"OrdTypeConstraint $t"); satisfiedBy(typeEnv, t)
-  //     //   case tpc: TypeParamConstraint => tpc.implies(this)
-  //     //   //case EqTypeConstraint | AnyTypeConstraint => false
-  //     // }
-  //     case TypeParam(tp) => typeEnv.constraintForTypeParam(tp).implies(this)
-  //     case _ => ??? // false // FunctionType, TupleType
-  //   }
-  // }
-
   def intersection(other: TypeConstraint) = other match{
+    case CellTypeConstraint => CellTypeConstraint
     case EqTypeConstraint | OrdTypeConstraint | AnyTypeConstraint => 
       OrdTypeConstraint
     case SingletonTypeConstraint(_) => ???
@@ -132,10 +78,21 @@ case object OrdTypeConstraint extends TypeParamConstraint{
 
 // ==================================================================
 
+/** The trait of types that can appear in cells. */
+case object CellTypeConstraint extends TypeParamConstraint{
+  def intersection(other: TypeConstraint) = other match{
+    case CellTypeConstraint | EqTypeConstraint | OrdTypeConstraint | 
+        AnyTypeConstraint => CellTypeConstraint
+    case _ => ???
+  }
+
+  def asStringE = "CellType"
+}
+
+// ==================================================================
+
 /** The trivial type constraint, that allows all types. */
 case object AnyTypeConstraint extends TypeParamConstraint{
-  // def satisfiedBy(typeEnv: TypeEnv0, t: TypeT) = true
-
   def intersection(other: TypeConstraint) = other
 
   def asStringE = "any type" // never used? 

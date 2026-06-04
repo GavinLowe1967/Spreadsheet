@@ -27,12 +27,12 @@ possible: in the case of untyped unapplied functions, this is an error; but in
 the case of typed expressions or function applications, the first case is
 chosen.  RESOLVE this inconsistency.  Consider improving error messages. -- DONE
 
-
-5. Have TypeChecker0.close check that t contains no TypeVars.  
--- ??? Maybe this shouldn't be in close.  Or don't be so strict about types
-for recursive functions.
+5. Have TypeChecker0.close check that t contains no TypeVars.  -- DONE
+Consider calling closeCells instead of close in some places. 
 
 6. Add CellType type class.  Want to allow typing of
+
+def cell[A <: CellType](c: Column, r: Row) = Cell(c,r): A
 def cells[A <: CellType](cols: List[Column])(row: Row): List[A] =
   [Cell(c,r): A | c <- cols]
 def sortBlockByColumn[A <: CellType](
@@ -41,8 +41,34 @@ def sortBlockByColumn[A <: CellType](
   sortBlockBy(cols, rows, before)
 }
 operation sortByName() = sortBlockByColumn[String](columns, rows, #A)
+def f[A <: CellType] = { def g[B <: CellType] = #A3: B; g[A] }
+
 This requires Evaluation to know what the type parameter represents, so store 
 this in the environment.
+
+a. Add CellType type constraint (TypeConstraint.scala) -- done
+b. Extend typeEnv.updateEnvToSatisfy -- done
+c. Parser (StatementParser.scala) -- done
+
+There are three related traits corresponding to cell types:
+
+- CellValueType: types of values that can appear in cells; includes ErrorType
+  and EmptyType
+- CellType: corresponds to script type of same name: IntType, FloatType, 
+  BoolType, StringType
+- CellReadType : the type associated with a typed cell read, CellType or 
+  TypeParam.
+
+-- If CellExp has a type parameter, make sure it satisfies CellTypeConstraint
+
+*** Duplicate of name sortBlockByColumn not detected
+
+d. In FunctionApp objects, store the types of concrete type parameters (?)
+e. Add mapping from formal type parameters to actual type parameters in Environment
+f. Update this mapping when calling function.
+g. In Evaluation.checkCellType, deal with case where eType is a TypeParam by using the mapping. 
+
+Extend to allow pattern of type parameter in cell match expressions 
 
 7. Update manual (1) actual type parameters; ... 
 

@@ -13,7 +13,7 @@ trait StatementParserT{
 /** A parser for expressions. */
 class ExpParser(stmtParser: StatementParserT) extends Parser0{
 
-  import TypeParser.{cellType,typeP}
+  import TypeParser.{cellType,typeP,typeParam}
 
   // ===== Some basic parsers
 
@@ -21,7 +21,8 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
     List("Cell", "if", "else", "def", "val", "operation", "for", 
       "match", "case", "assert", "IF", "ELSE",
       "true", "false", "Empty", "to", "until",
-      "Int", "Float", "Boolean", "String", "Row", "Column", "List", "Eq")
+      "Int", "Float", "Boolean", "String", "Row", "Column", "List", 
+      "Eq", "Ord", "CellType")
 
   /** Parser for concrete type parameters for a name. */
   private def tParams: Parser[List[TypeT]] = 
@@ -134,8 +135,8 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
       toPair(_::_) > (_.mkString)
 
   /** A parser for the latter part of a CellExp or a CellMatchExp. */
-  private def cellRHS: Parser[Either[CellType, List[MatchBranch]]] = (
-    lit(":") ~> cellType > { t => Left(t) }
+  private def cellRHS: Parser[Either[CellReadType, List[MatchBranch]]] = (
+    lit(":") ~> (cellType | typeParam) > { t => Left(t) }
     | 
     keyword("match") ~> inBrackets(listOf(matchBranch)) ? (_.nonEmpty) > 
       { bs => Right(bs) }

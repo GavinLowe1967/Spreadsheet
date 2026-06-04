@@ -127,13 +127,16 @@ object TypeParser extends Parser0{
       | lit(",") ~> repSep(typeP, ",") <~ lit(")")
     ) > { case (e, es) => if(es.isEmpty) e else TupleType(e::es) }
 
+  /** A parser for a type parameter. */
+  def typeParam: Parser[TypeParam] =  upperName > { n => TypeParam(n) }
+
   /** A parser for a type name, type parameter, tuple type, or parenthesised
     * type. */
   private def typeP1: Parser[TypeT] = (
     cellType
     | mkP("Unit", UnitType) | mkP("Row", RowType) | mkP("Column", ColumnType)
     | keyword("List") ~> inSquare(typeP) > { t => ListType(t) }
-    | upperName > { n => TypeParam(n) }
+    | typeParam  
     | tupleOrParens
 
   )

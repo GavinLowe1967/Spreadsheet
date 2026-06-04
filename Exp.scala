@@ -134,20 +134,20 @@ object ColumnExp{
 /** A reference to a Cell.  Note: the coordinates are in the order
   * (column,row), matching standard spreadsheet usage.  `theType` gives the
   * expected type of the value in the cell. */
-case class CellExp(column: Exp, row: Exp, theType: CellType) extends Exp{
+case class CellExp(column: Exp, row: Exp, theType: CellReadType) extends Exp{
   override def toString = s"Cell($column, $row): $theType"
 }
 
 /** An untyped cell expression. */
 case class UntypedCellExp(column: Exp, row: Exp) extends Exp{
   /** The type of this cell.  Set by the typechecker. */
-  private var theType: Option[CellType] = None
-  def setType(t: CellType) = { 
+  private var theType: Option[CellValueType] = None
+  def setType(t: CellValueType) = { 
     assert(theType == None || theType == Some(t), 
       s"Type of $this set for second time; $theType $t")
     theType = Some(t) 
   }
-  def getType: CellType = theType.get
+  def getType: CellValueType = theType.get
 
   /** The CellTypeVar used to represent the type of this cell during type
     * checking. */
@@ -163,22 +163,22 @@ case class UntypedCellExp(column: Exp, row: Exp) extends Exp{
 /** A pattern in a cell match expression. */
 trait MatchPattern{
   /** Does this pattern match type t? */
-  def matches(t: CellType): Boolean 
+  def matches(t: CellValueType): Boolean 
 }
 
 /** A pattern "name: theType" or "_: theType. */
 case class TypedPattern(oName: Option[NameExp.Name], theType: CellType)
     extends MatchPattern{
-  def matches(t: CellType) = t == theType
+  def matches(t: CellValueType) = t == theType
 }
 
 /** A pattern "Empty". */
 case object EmptyPattern extends MatchPattern{
-  def matches(t: CellType) = t == EmptyType
+  def matches(t: CellValueType) = t == EmptyType
 }
 
 case object Wildcard extends MatchPattern{
-  def matches(t: CellType) = true
+  def matches(t: CellValueType) = true
 }
 
 /** A pattern of the form "case pattern => body". */
