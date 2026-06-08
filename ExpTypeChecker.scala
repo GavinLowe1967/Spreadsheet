@@ -216,8 +216,10 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
           (fatc.checkFunctionApp(te1, t1.asInstanceOf[FunctionType], args), i)
         }
         // Find successes; there should be only one
-        triples.map(tryPair).filter(_._1.isOk) match{
-          case List() => FailureR(s"Cannot find matching type for name $fn")
+        val results = triples.map(tryPair)
+        results.filter(_._1.isOk) match{
+          case List() => results.head._1 // Return first error here.
+              // FailureR(s"Cannot find matching type for name $fn")
           case List((ok,i)) => ne.setIndex(i); ok
           case _ =>  FailureR(s"Ambiguous application of overloaded name $fn")
         }

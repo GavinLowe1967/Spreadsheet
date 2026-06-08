@@ -61,7 +61,8 @@ Cell(#D, firstEmpty) = "first empty"
 #A6 = fact(3); #B6 = 3+#A1 // untyped cell read.
 #C6 = if(false) 3 else #A1 // Untyped cell read.
 // List comprehension
-#D6 = sum([Cell(c,#6):Int | c <- #A to #C]) // 17
+#D6 = sum ((cells[Int] (#A to #C) #6) : List[Int]) 
+//#D6 = sum ([Cell(c,#6):Int | c <- #A to #C]) // 17
 
 // Rows 7, 8
 // This test checks the inner declarations of flag don't leak. 

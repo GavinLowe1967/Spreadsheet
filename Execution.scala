@@ -83,11 +83,12 @@ object Execution extends ExecutionT{
 
     case OperationDeclaration(name, body) =>
       view.addOperation(name) // Add to the "operations" menu
-      def f(env1: Environment)(args: List[Value]): Value = {
-        assert(args.isEmpty); val env2 = env1.clone
+      def f(env1: Environment)(aTParams: List[TypeT])(args: List[Value])
+          : Value = {
+        assert(args.isEmpty && aTParams.isEmpty); val env2 = env1.clone
         performAll(body, env2, handleError); UnitValue
       }
-      env.update(name, FunctionValue(f, List())); true
+      env.update(name, FunctionValue(f)); true
 
     case Assertion(condition) => eval(env, condition) match{
       case BoolValue(true) => true
@@ -139,15 +140,18 @@ object Execution extends ExecutionT{
       // env1 won't be used here.  Any names are interpreted in
       // env2, i.e. using static binding.  But some built-in functions use the
       // Environment directly to access cells.
-      def f(env1: Environment)(args: List[Value]): Value = {
+      def f(env1: Environment)(aTParams: List[TypeT])(args: List[Value])
+          : Value = {
         require(args.length == params0.length)
-        // Bind params to values of args in env
-        val env2 = env.clone
+        // Bind formal type parameters to actual type parameters (if present);
+        // and bind params to values of args in env
+        val env2 = 
+          if(aTParams.nonEmpty) env.setTPs(tParams, aTParams) else env.clone
         for(((x,_),v) <- params0.zip(args)) env2.update(x, v)
         evalFn(env2, List(), paramss.tail, body) 
         // Note: type parameters dealt with at top level.
       }
-      FunctionValue(f _, tParams)
+      FunctionValue(f _)
     }
 
   /** Execute the elements of `statements` in `env`, handling errors with

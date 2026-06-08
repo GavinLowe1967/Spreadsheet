@@ -99,16 +99,15 @@ class Environment(
 
   /** Set the formal parameter ftp to have value atp. */
   private def setTP(ftp: String, atp: TypeT) = {
-println(s"setTP($ftp, $atp)")
     tpMap += ftp -> 
       (atp match{ case TypeParam(atp1) => tpMap(atp1); case _ => atp })
-println(tpMap.get(ftp))
   }
 
   /** Extend this so as to set each element of ftps to have value the
     * corresponding element of atps. */
   def setTPs(ftps: List[String], atps: List[TypeT]): Environment = {
-    require(ftps.length == atps.length); val env1 = clone
+    require(ftps.length == atps.length, s"ftps = $ftps; atps = $atps"); 
+    val env1 = clone
     for((ftp,atp) <- ftps.zip(atps)) env1.setTP(ftp, atp)
     env1
   }

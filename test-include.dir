@@ -13,3 +13,6 @@ def apply[A,B](f: A => B)(x: A) = f x
 def zip[A,B](xs: List[A])(ys: List[B]): List[(A,B)] = 
   if(isEmpty xs || isEmpty ys) []: List[(A,B)]
   else (head xs, head ys) :: zip (tail xs) (tail ys)
+
+def cells[A <: CellType](cols: List[Column])(row: Row): List[A] =
+  [Cell(c,row): A | c <- cols]

@@ -67,7 +67,7 @@ object BuiltInFunctions{
   /* Definitions. */
 
   private def mkFunctionValue(f: PartialFunction[List[Value], Value]) = 
-    FunctionValue((env: Environment) => f /*args: List[Value], aTParams: List[TypeT]) =>  f(args) }*/ , List()  )
+    FunctionValue((env: Environment) => (atParams: List[TypeT]) => f)
 // FIXME: type parameters
 
   private val headFn = 
@@ -136,93 +136,101 @@ object BuiltInFunctions{
       env.setCellInfo(cols(i), rows(j), copy(i)(j))
   }
 
+/*
   /** The sortBlockByColumn function.  Sorts the block defined by `cols` and
     * `rows` according to column `cv`.  Note that `rows` is expected to be
     * ordered without; but if not, subsequently the block will be ordered in
     * the order given by `rows`. */
-  private val sortBlockByColumnFn = FunctionValue((env: Environment) => {
-    case List(ListValue(cols), ListValue(rows), cv) =>
-      assert(cols.forall(_.isInstanceOf[ColumnValue]))
-      assert(rows.forall(_.isInstanceOf[RowValue]))
-      val rowNums = rows.map{ case RowValue(r) => r }.toArray
-      val colNums = cols.map{ case ColumnValue(c) => c }.toArray
-      // Check no repetitions in `rows`
-      var result: Value = checkForRowRepetition(rowNums)
-      if(result != null) result
-      else if(rows.isEmpty) UnitValue
-      else{
-        val ColumnValue(col) = cv
-        // Check appropriate value in first cell in col
-        val row0 = rowNums(0)
-        val theType = env.getCell(col, row0).getType
-        if(theType == EmptyType) 
-            result = TypeError(s"Expected non-empty cell in ${cv.forError}$row0")
-        else if(theType == ErrorType)
-          result = UnitValue // do nothing in this case
-        // Check remaining cells in col have type `theType`. 
-        var i = 1
-        while(i < rowNums.length && result == null){
-          val row = rowNums(i); val cell = env.getCell(col,row)
-          if(cell.getType == ErrorType) result = UnitValue
-          else if(cell.getType != theType)
-            result = TypeError(s"Expected $theType, found ${cell.forError}, "+
-              s"in ${cv.forError}$row")
-          else i += 1
-        } // end of while loop
-        if(result != null) result 
+  private val sortBlockByColumnFn = {
+    def f(env: Environment)(atParams: List[TypeT])
+        : PartialFunction[List[Value], Value] = {
+      case List(ListValue(cols), ListValue(rows), cv) =>
+        assert(cols.forall(_.isInstanceOf[ColumnValue]))
+        assert(rows.forall(_.isInstanceOf[RowValue]))
+        val rowNums = rows.map{ case RowValue(r) => r }.toArray
+        val colNums = cols.map{ case ColumnValue(c) => c }.toArray
+        // Check no repetitions in `rows`
+        var result: Value = checkForRowRepetition(rowNums)
+        if(result != null) result
+        else if(rows.isEmpty) UnitValue
         else{
-          // Order to sort rows into. 
-          val sortedRows = rowNums.sortWith{ case (r1,r2) =>
-            (env.getCell(col,r1) <= env.getCell(col,r2)) }
-          copyCells(env, colNums, rowNums, sortedRows)
-          UnitValue
-        }
-      } // end of else
-  }, List())
-// FIXME: formal type parameter?
+          val ColumnValue(col) = cv
+          // Check appropriate value in first cell in col
+          val row0 = rowNums(0)
+          val theType = env.getCell(col, row0).getType
+          if(theType == EmptyType)
+            result = TypeError(s"Expected non-empty cell in ${cv.forError}$row0")
+          else if(theType == ErrorType)
+            result = UnitValue // do nothing in this case
+          // Check remaining cells in col have type `theType`.
+          var i = 1
+          while(i < rowNums.length && result == null){
+            val row = rowNums(i); val cell = env.getCell(col,row)
+            if(cell.getType == ErrorType) result = UnitValue
+            else if(cell.getType != theType)
+              result = TypeError(s"Expected $theType, found ${cell.forError}, "+
+                s"in ${cv.forError}$row")
+            else i += 1
+          } // end of while loop
+          if(result != null) result
+          else{
+            // Order to sort rows into.
+            val sortedRows = rowNums.sortWith{ case (r1,r2) =>
+              (env.getCell(col,r1) <= env.getCell(col,r2)) }
+            copyCells(env, colNums, rowNums, sortedRows)
+            UnitValue
+          }
+        } // end of else
+    } // end of f
+    FunctionValue(f)
+  }
+ */
 
   /** Exception corresponding to the function fv, below, giving an error. */ 
   private case class ErrorException(err: ErrorValue) extends Exception
 
   /** The sortBlockBy function.  Sorts the block defined by `cols` and `rows`,
     * according to the criterion defined by `f: (Row, Row) => Boolean`. */
-  private def sortBlockByFn = FunctionValue((env: Environment) => {
-    case List(ListValue(cols), ListValue(rows: List[RowValue] @unchecked),
-      fv: FunctionValue
-    ) =>
-      assert(cols.forall(_.isInstanceOf[ColumnValue]))
-      assert(rows.forall(_.isInstanceOf[RowValue]))
-      val rowNums = rows.map{ case RowValue(r) => r }.toArray
-      val colNums = cols.map{ case ColumnValue(c) => c }.toArray
-      // Check no repetitions in `rows`
-      var result: Value = checkForRowRepetition(rowNums.toArray)
-      if(result != null) result
-      else if(rows.isEmpty) UnitValue
-      else{
-        val FunctionValue(f, _) = fv 
-// FIXME: type parameters
-        // Note: if f returns an error, sortWith below throws an
-        // ErrorException, which gets caught.
-        def compare(r1: Int, r2: Int) = 
-          f(env)(List(RowValue(r1), RowValue(r2))) match{
-            case BoolValue(b) => b
-            case err: ErrorValue => throw ErrorException(err)
+  private def sortBlockByFn = {
+    def f(env: Environment)(atParams: List[TypeT])
+        : PartialFunction[List[Value], Value] = {
+      case List(ListValue(cols), ListValue(rows: List[RowValue] @unchecked),
+        fv: FunctionValue
+      ) =>
+        assert(cols.forall(_.isInstanceOf[ColumnValue]))
+        assert(rows.forall(_.isInstanceOf[RowValue]))
+        val rowNums = rows.map{ case RowValue(r) => r }.toArray
+        val colNums = cols.map{ case ColumnValue(c) => c }.toArray
+        // Check no repetitions in `rows`
+        var result: Value = checkForRowRepetition(rowNums.toArray)
+        if(result != null) result
+        else if(rows.isEmpty) UnitValue
+        else{
+          val FunctionValue(f) = fv
+          // Note: if f returns an error, sortWith below throws an
+          // ErrorException, which gets caught.
+          def compare(r1: Int, r2: Int) =
+            f(env)(List())(List(RowValue(r1), RowValue(r2))) match{
+              case BoolValue(b) => b
+              case err: ErrorValue => throw ErrorException(err)
+            }
+          try{
+            val sortedRows = rowNums.sortWith(compare _)
+            copyCells(env, colNums, rowNums, sortedRows)
+            UnitValue
           }
-        try{
-          val sortedRows = rowNums.sortWith(compare _)
-          copyCells(env, colNums, rowNums, sortedRows)
-          UnitValue
-        }
-        catch{ case ErrorException(err) => err }
-      }
-  }, List())
+          catch{ case ErrorException(err) => err }
+        } // end of else
+    } // end of f
+    FunctionValue(f)
+  }
 
   /** The built-in functions. */
   val builtIns =
     List(
       "head" -> headFn, "tail" -> tailFn, "isEmpty" -> isEmptyFn, "not" -> notFn,
       "toInt" -> toIntFn, "toFloat" -> toFloatFn, "!" -> notFn,
-      "toString" -> toStringFn, "sortBlockByColumn" -> sortBlockByColumnFn, 
+      "toString" -> toStringFn, //"sortBlockByColumn" -> sortBlockByColumnFn, 
       "sortBlockBy" -> sortBlockByFn
     ) ++ 
       selectorFns ++ negFns

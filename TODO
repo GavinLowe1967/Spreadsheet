@@ -83,6 +83,10 @@ I think it's best to take
 
  f: Environment => List[String] => PartialFunction[List[Value], Value]
 
+-- Do we need FuncitonValue.getATParams? 
+
+- Tidy up BuiltInFunctions
+
 
 - various FIXMEs in BuiltInFunctions.scala
 

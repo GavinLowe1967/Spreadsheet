@@ -12,11 +12,16 @@ def firstEmptyInColumn(c: Column, r: Row): Row =
 /** Find the first empty cell in column `c`. */
 def firstEmptyInColumn(c: Column): Row = firstEmptyInColumn(c, #0)
 
+def cells[A <: CellType](cols: List[Column])(row: Row): List[A] =
+  [Cell(c,r): A | c <- cols]
+
 
 // ========= Sorting functions
 
-// This assumes a particular type for the cells
-// def sortBlockByColumn(cols: List[Column], rows: List[Row], c: Column) = {
-//   def before(r1: Row, r2: Row) = Cell(c,r1): Int <= Cell(c, r2)
-//   sortBlockBy(cols, rows, before)
-// }
+/** Sort the block defined by columns `cols` and rows `row` according to
+  * column `c`.  That column should contain values of type `A`. */
+def sortBlockByColumn[A <: CellType](
+    cols: List[Column], rows: List[Row], c: Column) = {
+  def before(r1: Row, r2: Row) = Cell(c,r1): A <= Cell(c,r2): A
+  sortBlockBy(cols, rows, before)
+}

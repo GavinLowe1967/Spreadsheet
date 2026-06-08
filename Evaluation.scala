@@ -160,7 +160,7 @@ class Evaluation(executor: ExecutionT){
   /** Evaluate `e` in environment `env`. */
   private def eval0(env: Environment, e: Exp): Value = e match{
     case ne @ NameExp(name, atps) => env(ne.getName) match{
-      case fv : FunctionValue if atps.nonEmpty => fv.addTParams(atps)
+      case FunctionValue(f) if atps.nonEmpty => FunctionValue(f, atps)
       case v => v
     }
     case IntExp(value) => IntValue(value)
@@ -218,9 +218,7 @@ class Evaluation(executor: ExecutionT){
       case fv : FunctionValue =>
         evalList(env, args) match{
           case Left(vs) => 
-            val aTParams = fv.getATParams
-            // val env1 = if(tParams.nonEmpty){ val env1 = env.clone; 
-            fv(env,vs,aTParams) match{
+            fv(env, vs) match{
               case err: ErrorValue => maybeLiftError(e, err, true)
                   // Don't lift TypeErrors here, as that's confusing.  But
                   // include line number for function call.

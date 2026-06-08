@@ -128,6 +128,14 @@ object TypeCheckerTest2{
     }
     assertFail(tcpss(cellsDef+"val xs = cells(#A to #C, #3)"))
 
+    val sumDef = 
+      "def sum(xs: List[Int]): Int = "+
+        "  if(isEmpty xs) 0 else head xs + sum (tail xs)\n"+
+        "def sum(xs: List[Float]): Float = "+
+        "if(isEmpty xs) 0.0 else head xs + sum (tail xs)\n"
+    //println(tcpss(cellsDef+sumDef+"val n = sum(cells[Int](#A to #C, #3))"))
+
+
     val sortBlockDef = "def sortBlockByColumn[A <: CellType]("+
       "cols: List[Column], rows: List[Row], c: Column) = {"+
       "def before(r1: Row, r2: Row) = Cell(c,r1): A <= Cell(c,r2) : A \n"+
