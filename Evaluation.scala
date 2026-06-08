@@ -85,13 +85,21 @@ class Evaluation(executor: ExecutionT){
 
   /** Check value `v` read from cell `name` has type `eType`.  If so, return
     * `v`.  If not, give appropriate TypeError.  */
-  private def checkCellType(eType: TypeT)(v: Cell, name: String) = {
+  private 
+  def checkCellType(env: Environment, eType: TypeT) (v: Cell, name: String) = {
     assert(eType != null && v != null && name != null && v.getType != null,
       s"checkCellType($eType)($v, $name)")
     val vType = v.getType
-    if(vType == eType) v
+    val eType1 = eType match{ 
+      case TypeParam(tp) => env.getTP(tp) match{
+        case Some(et) => et; case None => eType
+      }
+      case _ => eType 
+    }
+// println(s"checkCellType: eType = $eType; eType1 = $eType1")
+    if(vType == eType1) v
     else TypeError(
-      s"Expected ${eType.asString}, found ${vType.asString} in cell "+name)
+      s"Expected ${eType1.asString}, found ${vType.asString} in cell "+name)
   }
 
   // ===== Evaluation
@@ -116,7 +124,7 @@ class Evaluation(executor: ExecutionT){
     e match{
       case CellExp(column, row, theType) =>
         // Check contents of cell has type theType
-        val v1 = applyToCell(column, row, checkCellType(theType))
+        val v1 = applyToCell(column, row, checkCellType(env, theType))
         liftValue(e, v1, true)
 
       case CellMatchExp(column, row, branches) =>
@@ -142,7 +150,7 @@ class Evaluation(executor: ExecutionT){
 
       case uce @ UntypedCellExp(column, row) => 
         // Check contents of cell has type uce.getType
-        val v1 = applyToCell(column, row, checkCellType(uce.getType))
+        val v1 = applyToCell(column, row, checkCellType(env, uce.getType))
         liftValue(e, v1, true)
 
       case _ => eval0(env, e)
@@ -151,7 +159,10 @@ class Evaluation(executor: ExecutionT){
 
   /** Evaluate `e` in environment `env`. */
   private def eval0(env: Environment, e: Exp): Value = e match{
-    case ne @ NameExp(name, _) => env(ne.getName) 
+    case ne @ NameExp(name, atps) => env(ne.getName) match{
+      case fv : FunctionValue if atps.nonEmpty => fv.addTParams(atps)
+      case v => v
+    }
     case IntExp(value) => IntValue(value)
     case FloatExp(value) => FloatValue(value) 
     case BoolExp(value) => BoolValue(value)
@@ -206,11 +217,14 @@ class Evaluation(executor: ExecutionT){
     case fa @ FunctionApp(f, args) => eval(env, f) match{
       case fv : FunctionValue =>
         evalList(env, args) match{
-          case Left(vs) => fv(env,vs) match{
-            case err: ErrorValue => maybeLiftError(e, err, true)
-              // Don't lift TypeErrors here, as that's confusing.  But include
-              // line number for function call.
-            case result => result
+          case Left(vs) => 
+            val aTParams = fv.getATParams
+            // val env1 = if(tParams.nonEmpty){ val env1 = env.clone; 
+            fv(env,vs,aTParams) match{
+              case err: ErrorValue => maybeLiftError(e, err, true)
+                  // Don't lift TypeErrors here, as that's confusing.  But
+                  // include line number for function call.
+              case result => result
           }
           case Right(err) => liftError(e, err)
         }

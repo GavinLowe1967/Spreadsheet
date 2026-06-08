@@ -1,6 +1,7 @@
 package spreadsheet
 
 import scala.collection.mutable.HashMap
+import TypeParam.TypeParamName
 
 /** An environment, for evaluating the spreadsheet.  This principally stores
   * the values of names.
@@ -9,11 +10,13 @@ import scala.collection.mutable.HashMap
   * script.
   * @param height The height of the spreadsheet.
   * @param width The width of the spreadsheet.
-  * @param nameMap A map from names declared in the script to their values. */
+  * @param nameMap A map from names declared in the script to their values.
+  * @param tpMap A map from names of type parameters to corresponding types. */
 class Environment(
   userCells: Array[Array[Cell]], calculatedCells: Array[Array[Cell]],
   val height: Int, val width: Int, 
-  private var nameMap: HashMap[String, Value] 
+  private var nameMap: HashMap[String, Value],
+  tpMap: HashMap[TypeParamName, TypeT]
 ){
   /* Note: indexing of cells is done by (column, row) coordinates, following the
    * spreadsheet convention. */
@@ -89,9 +92,30 @@ class Environment(
     case Some(v) => v; case None => sys.error(s"Name not found: $name")
   }
 
+  // ===== type parameters
+
+  /** Get the actual type parameter corresponding to a formal type parameter. */
+  def getTP(tp: String): Option[TypeT] = tpMap.get(tp)
+
+  /** Set the formal parameter ftp to have value atp. */
+  private def setTP(ftp: String, atp: TypeT) = {
+println(s"setTP($ftp, $atp)")
+    tpMap += ftp -> 
+      (atp match{ case TypeParam(atp1) => tpMap(atp1); case _ => atp })
+println(tpMap.get(ftp))
+  }
+
+  /** Extend this so as to set each element of ftps to have value the
+    * corresponding element of atps. */
+  def setTPs(ftps: List[String], atps: List[TypeT]): Environment = {
+    require(ftps.length == atps.length); val env1 = clone
+    for((ftp,atp) <- ftps.zip(atps)) env1.setTP(ftp, atp)
+    env1
+  }
+
   /** Clone this. */
-  override def clone = 
-    new Environment(userCells, calculatedCells, height, width, nameMap.clone)
+  override def clone = new Environment(
+    userCells, calculatedCells, height, width, nameMap.clone, tpMap.clone)
 
 }
 
@@ -103,7 +127,7 @@ object Environment{
   // private def initNameMap = 
   //   new HashMap[String, Value] ++ BuiltInFunctions.builtIns
 
-  /** The initial nameMap.  Set bt apply). */
+  /** The initial nameMap.  Set by apply. */
   private var initNameMap: HashMap[String, Value] = null
 
   def apply(height: Int, width: Int, initNameMap: HashMap[String, Value]) = {
@@ -111,7 +135,7 @@ object Environment{
     new Environment(
       Array.fill[Cell](width, height)(Empty()),
       Array.fill[Cell](width, height)(Empty()),
-      height, width, initNameMap
+      height, width, initNameMap, new HashMap[TypeParamName, TypeT]
     )
   }
 }

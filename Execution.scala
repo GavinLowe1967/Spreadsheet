@@ -79,7 +79,7 @@ object Execution extends ExecutionT{
 
     case fd @ FunctionDeclaration(name, tParams, paramss, rt, body) => 
       assert(paramss.nonEmpty)
-      env.update(fd.getName, evalFn(env, paramss, body)); true
+      env.update(fd.getName, evalFn(env, tParams.map(_._1), paramss, body)); true
 
     case OperationDeclaration(name, body) =>
       view.addOperation(name) // Add to the "operations" menu
@@ -87,7 +87,7 @@ object Execution extends ExecutionT{
         assert(args.isEmpty); val env2 = env1.clone
         performAll(body, env2, handleError); UnitValue
       }
-      env.update(name, FunctionValue(f)); true
+      env.update(name, FunctionValue(f, List())); true
 
     case Assertion(condition) => eval(env, condition) match{
       case BoolValue(true) => true
@@ -128,23 +128,26 @@ object Execution extends ExecutionT{
 
   /** The Value that represents the function that takes the elements of paramss
     * in turn, and returns body.  This will be a FunctionValue if paramss is
-    * non-empty.  */
-  private def evalFn(env: Environment, paramss: List[ParameterList], body: Exp)
+    * non-empty.  tParams is the formal type parameters.*/
+  private def evalFn(env: Environment, tParams: List[String], 
+    paramss: List[ParameterList], body: Exp)
       : Value = 
     if(paramss.isEmpty) eval(env, body)
     else{
       val params0 = paramss.head
       // Build a Scala function to capture the function of params0.  Note:
       // env1 won't be used here.  Any names are interpreted in
-      // env2, i.e. static binding.
+      // env2, i.e. using static binding.  But some built-in functions use the
+      // Environment directly to access cells.
       def f(env1: Environment)(args: List[Value]): Value = {
         require(args.length == params0.length)
         // Bind params to values of args in env
         val env2 = env.clone
         for(((x,_),v) <- params0.zip(args)) env2.update(x, v)
-        evalFn(env2, paramss.tail, body)
+        evalFn(env2, List(), paramss.tail, body) 
+        // Note: type parameters dealt with at top level.
       }
-      FunctionValue(f _)
+      FunctionValue(f _, tParams)
     }
 
   /** Execute the elements of `statements` in `env`, handling errors with

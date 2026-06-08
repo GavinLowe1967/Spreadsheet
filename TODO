@@ -50,6 +50,7 @@ a. Add CellType type constraint (TypeConstraint.scala) -- done
 b. Extend typeEnv.updateEnvToSatisfy -- done
 c. Parser (StatementParser.scala) -- done
 
+d. Typechecking -- done
 There are three related traits corresponding to cell types:
 
 - CellValueType: types of values that can appear in cells; includes ErrorType
@@ -59,14 +60,46 @@ There are three related traits corresponding to cell types:
 - CellReadType : the type associated with a typed cell read, CellType or 
   TypeParam.
 
--- If CellExp has a type parameter, make sure it satisfies CellTypeConstraint
+If CellExp has a type parameter, make sure it satisfies CellTypeConstraint
 
-*** Duplicate of name sortBlockByColumn not detected
+- Store formal parameters in FunctionValue object. (If actual type parameter
+  is itself a formal type parameter, then use the value of that.)
 
-d. In FunctionApp objects, store the types of concrete type parameters (?)
-e. Add mapping from formal type parameters to actual type parameters in Environment
-f. Update this mapping when calling function.
-g. In Evaluation.checkCellType, deal with case where eType is a TypeParam by using the mapping. 
+- Allow Environment to store mapping from formal type parameters to actual
+  type parameters. -- ??? Just for CellTypes???
+
+- In eval0 on NameExp, store concrete type parameters in new FunctionValue
+  object, if relevant. -- Done
+
+- In apply of FunctionValue, update env with actual type parameters. -- Done
+
+- In Evaluation.checkCellType, if eType is a type parameter, use the value
+  stored for that parameter.
+
+No, that's not quite right.  The binding of formal type parameters to actual
+tyepe parameters needs to be done in env2 within Execution.evalFn.  That means
+that the function f needs to take the actual type parameters as an argument.
+I think it's best to take 
+
+ f: Environment => List[String] => PartialFunction[List[Value], Value]
+
+
+- various FIXMEs in BuiltInFunctions.scala
+
+
+
+- In eval on FunctionApp, update 
+
+- Change FunctionValue.apply to take concrete type parameters.
+
+- In Execution.evalFn, arrange for f to take concrete type parameters and
+  update in env.
+
+e. In FunctionApp objects, store the types of concrete type parameters (?)
+f. Add mapping from formal type parameters to actual type parameters in 
+Environment.  Update this mapping when calling function (Execution.evalFn)
+h. In Evaluation.checkCellType, deal with case where eType is a TypeParam by
+using the mapping. 
 
 Extend to allow pattern of type parameter in cell match expressions 
 

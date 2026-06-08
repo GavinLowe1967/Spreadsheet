@@ -67,7 +67,8 @@ object BuiltInFunctions{
   /* Definitions. */
 
   private def mkFunctionValue(f: PartialFunction[List[Value], Value]) = 
-    FunctionValue((env: Environment) => f)
+    FunctionValue((env: Environment) => f /*args: List[Value], aTParams: List[TypeT]) =>  f(args) }*/ , List()  )
+// FIXME: type parameters
 
   private val headFn = 
     mkFunctionValue{ case List(l:ListValue) => l.head }
@@ -177,7 +178,8 @@ object BuiltInFunctions{
           UnitValue
         }
       } // end of else
-  })
+  }, List())
+// FIXME: formal type parameter?
 
   /** Exception corresponding to the function fv, below, giving an error. */ 
   private case class ErrorException(err: ErrorValue) extends Exception
@@ -197,7 +199,8 @@ object BuiltInFunctions{
       if(result != null) result
       else if(rows.isEmpty) UnitValue
       else{
-        val FunctionValue(f) = fv
+        val FunctionValue(f, _) = fv 
+// FIXME: type parameters
         // Note: if f returns an error, sortWith below throws an
         // ErrorException, which gets caught.
         def compare(r1: Int, r2: Int) = 
@@ -212,7 +215,7 @@ object BuiltInFunctions{
         }
         catch{ case ErrorException(err) => err }
       }
-  })
+  }, List())
 
   /** The built-in functions. */
   val builtIns =
