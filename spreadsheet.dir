@@ -12,9 +12,13 @@ def firstEmptyInColumn(c: Column, r: Row): Row =
 /** Find the first empty cell in column `c`. */
 def firstEmptyInColumn(c: Column): Row = firstEmptyInColumn(c, #0)
 
+/** The cells in columns `cols` in row `row`.  Each cell should have type `A`. */
 def cells[A <: CellType](cols: List[Column])(row: Row): List[A] =
-  [Cell(c,r): A | c <- cols]
+  [Cell(col,row): A | col <- cols]
 
+/** The cells in rows `rows` in column `col`.  Each cell should have type `A`. */
+def cells[A <: CellType](col: Column)(rows: List[Row]): List[A] =
+  [Cell(col,row): A | row <- rows]
 
 // ========= Sorting functions
 

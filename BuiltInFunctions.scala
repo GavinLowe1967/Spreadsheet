@@ -68,7 +68,6 @@ object BuiltInFunctions{
 
   private def mkFunctionValue(f: PartialFunction[List[Value], Value]) = 
     FunctionValue((env: Environment) => (atParams: List[TypeT]) => f)
-// FIXME: type parameters
 
   private val headFn = 
     mkFunctionValue{ case List(l:ListValue) => l.head }

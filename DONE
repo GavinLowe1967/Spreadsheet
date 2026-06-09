@@ -1,5 +1,82 @@
 ===================================== DONE
 
+
+Allow concrete type parameter to be included in function calls; and require it
+when the parameter is not deducible.  e.g
+def mkEmpty[A](): List[A] = []; val xs = mkEmpty[Int]()
+Also require type to be deducible in instances of "[]".  I think this can be
+done by having TypeChecker0.close check that t contains no TypeVars.
+
+1. Add list of types to NameExp, to represent, e.g., mkEmpty[Int]. -- DONE
+
+2. Parser. (ExpParser, l30, l261? -- DONE
+
+3. In ExpTypeChecker, filter for those with the correct number of type
+parameters, substitute actual type parameters for formal type parameters, then
+branch (error if none; checkFunctionApp if one; findFunctionApp if multiple).
+-- Done. 
+
+4. Evaluation.scala, l 154.  Check cases with overloadign carefully. -- DONE
+
+3a. Tidy up ExptypeCheker, FunctionAppTypeChecker. -- DONE
+
+There's currently an inconsistency in the case where multiple options are
+possible: in the case of untyped unapplied functions, this is an error; but in
+the case of typed expressions or function applications, the first case is
+chosen.  RESOLVE this inconsistency.  Consider improving error messages. -- DONE
+
+5. Have TypeChecker0.close check that t contains no TypeVars.  -- DONE
+Consider calling closeCells instead of close in some places. 
+
+6. Add CellType type class.  Want to allow typing of
+
+def cell[A <: CellType](c: Column, r: Row) = Cell(c,r): A
+def cells[A <: CellType](cols: List[Column])(row: Row): List[A] =
+  [Cell(c,r): A | c <- cols]
+def sortBlockByColumn[A <: CellType](
+    cols: List[Column], rows: List[Row], c: Column) = {
+  def before(r1: Row, r2: Row) = Cell(c,r1): A <= Cell(c,r2)
+  sortBlockBy(cols, rows, before)
+}
+operation sortByName() = sortBlockByColumn[String](columns, rows, #A)
+def f[A <: CellType] = { def g[B <: CellType] = #A3: B; g[A] }
+
+This requires Evaluation to know what the type parameter represents, so store 
+this in the environment.
+
+a. Add CellType type constraint (TypeConstraint.scala) -- done
+b. Extend typeEnv.updateEnvToSatisfy -- done
+c. Parser (StatementParser.scala) -- done
+
+d. Typechecking -- done
+There are three related traits corresponding to cell types:
+- CellValueType: types of values that can appear in cells; includes ErrorType
+  and EmptyType
+- CellType: corresponds to script type of same name: IntType, FloatType, 
+  BoolType, StringType
+- CellReadType : the type associated with a typed cell read, CellType or 
+  TypeParam.
+If CellExp has a type parameter, make sure it satisfies CellTypeConstraint
+
+e. Evaluation.  -- done
+- Adapt FunctionValue so the encapsulated function expects to receive the
+  actual type parameters.
+  f: Environment => List[String] => PartialFunction[List[Value], Value]
+- In eval0 on NameExp, store actual type parameters in new FunctionValue
+  object, if relevant. 
+- In FunctionValue.apply, pass in actual type parameters.
+- Allow Environment to store mapping from formal type parameters to actual
+  type parameters.
+- In Execution.evalFunction, set that mapping.
+- In Evaluation.checkCellType, if eType is a type parameter, use the value
+  stored for that parameter.
+
+
+9. Update manual (1) actual type parameters; (2) CellType type class -- done
+
+
+----
+
 Add Ord type class.   Ord <: Eq (but currently equal). 
  Want to allow typing of
 def min[A <: Ord](x: A)(y: A): A = if(x <= y) x else y

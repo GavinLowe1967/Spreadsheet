@@ -60,11 +60,15 @@ Section~\ref{ssec:declarations}.  The current type classes are:
   |<=|, |<|, |>=| and |>|; these types include |Int|, |Float|, |Boolean|,
   |String|, |Row|, |Column|, |Unit|, |List[T]| for |T| an ordered type, and
   |(T|$_1$|,...,T|$_n$|)| for |T|$_1$,\ldots, |T|$_n$ ordered types.
+
+\item[{\scalashape CellType}:] The types of values that can appear in cells:
+  |Int|, |Float|, |Boolean|, and |String|.
 \end{description}
 %
-If type $T$ is an ordered type, then it is also an |Eq| type.  (The converse
-is true, but the compiler does not recognise this fact, and it may not remain
-true in future versions.)
+Each cell type (from |CellType|) is also an ordered type (|Ord|) and an
+equality type (|Eq|).  Each ordered type is also an equality type (the
+converse is true, but the compiler does not recognise this fact, and it may
+not remain true in future versions.)
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

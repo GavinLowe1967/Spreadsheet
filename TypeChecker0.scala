@@ -28,7 +28,9 @@ object TypeChecker0{
     * UntypedCellExps have been given a concrete type, and remove those cells
     * from the type environment. */
   def close(typeEnv: TypeEnv, t: TypeT): TypeCheckRes = {
-    if(t.typeVars.nonEmpty) FailureR("Unable to fully resolve type "+t.asString)
+    if(t.typeVars.nonEmpty) 
+      FailureR(s"Unable to fully resolve type ${t.asString}.  "+
+        "Providing a concrete type parameter might help.")
     // assert(t.typeVars.isEmpty, s"close: $t")
     else closeCells(typeEnv, t)
   }

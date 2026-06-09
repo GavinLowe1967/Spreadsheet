@@ -3,114 +3,6 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
-Allow concrete type parameter to be included in function calls; and require it
-when the parameter is not deducible.  e.g
-def mkEmpty[A](): List[A] = []; val xs = mkEmpty[Int]()
-Also require type to be deducible in instances of "[]".  I think this can be
-done by having TypeChecker0.close check that t contains no TypeVars.
-
-1. Add list of types to NameExp, to represent, e.g., mkEmpty[Int]. -- DONE
-
-2. Parser. (ExpParser, l30, l261? -- DONE
-
-3. In ExpTypeChecker, filter for those with the correct number of type
-parameters, substitute actual type parameters for formal type parameters, then
-branch (error if none; checkFunctionApp if one; findFunctionApp if multiple).
--- Done. 
-
-4. Evaluation.scala, l 154.  Check cases with overloadign carefully. -- DONE
-
-3a. Tidy up ExptypeCheker, FunctionAppTypeChecker. -- DONE
-
-There's currently an inconsistency in the case where multiple options are
-possible: in the case of untyped unapplied functions, this is an error; but in
-the case of typed expressions or function applications, the first case is
-chosen.  RESOLVE this inconsistency.  Consider improving error messages. -- DONE
-
-5. Have TypeChecker0.close check that t contains no TypeVars.  -- DONE
-Consider calling closeCells instead of close in some places. 
-
-6. Add CellType type class.  Want to allow typing of
-
-def cell[A <: CellType](c: Column, r: Row) = Cell(c,r): A
-def cells[A <: CellType](cols: List[Column])(row: Row): List[A] =
-  [Cell(c,r): A | c <- cols]
-def sortBlockByColumn[A <: CellType](
-    cols: List[Column], rows: List[Row], c: Column) = {
-  def before(r1: Row, r2: Row) = Cell(c,r1): A <= Cell(c,r2)
-  sortBlockBy(cols, rows, before)
-}
-operation sortByName() = sortBlockByColumn[String](columns, rows, #A)
-def f[A <: CellType] = { def g[B <: CellType] = #A3: B; g[A] }
-
-This requires Evaluation to know what the type parameter represents, so store 
-this in the environment.
-
-a. Add CellType type constraint (TypeConstraint.scala) -- done
-b. Extend typeEnv.updateEnvToSatisfy -- done
-c. Parser (StatementParser.scala) -- done
-
-d. Typechecking -- done
-There are three related traits corresponding to cell types:
-
-- CellValueType: types of values that can appear in cells; includes ErrorType
-  and EmptyType
-- CellType: corresponds to script type of same name: IntType, FloatType, 
-  BoolType, StringType
-- CellReadType : the type associated with a typed cell read, CellType or 
-  TypeParam.
-
-If CellExp has a type parameter, make sure it satisfies CellTypeConstraint
-
-- Store formal parameters in FunctionValue object. (If actual type parameter
-  is itself a formal type parameter, then use the value of that.)
-
-- Allow Environment to store mapping from formal type parameters to actual
-  type parameters. -- ??? Just for CellTypes???
-
-- In eval0 on NameExp, store concrete type parameters in new FunctionValue
-  object, if relevant. -- Done
-
-- In apply of FunctionValue, update env with actual type parameters. -- Done
-
-- In Evaluation.checkCellType, if eType is a type parameter, use the value
-  stored for that parameter.
-
-No, that's not quite right.  The binding of formal type parameters to actual
-tyepe parameters needs to be done in env2 within Execution.evalFn.  That means
-that the function f needs to take the actual type parameters as an argument.
-I think it's best to take 
-
- f: Environment => List[String] => PartialFunction[List[Value], Value]
-
--- Do we need FuncitonValue.getATParams? 
-
-- Tidy up BuiltInFunctions
-
-
-- various FIXMEs in BuiltInFunctions.scala
-
-
-
-- In eval on FunctionApp, update 
-
-- Change FunctionValue.apply to take concrete type parameters.
-
-- In Execution.evalFn, arrange for f to take concrete type parameters and
-  update in env.
-
-e. In FunctionApp objects, store the types of concrete type parameters (?)
-f. Add mapping from formal type parameters to actual type parameters in 
-Environment.  Update this mapping when calling function (Execution.evalFn)
-h. In Evaluation.checkCellType, deal with case where eType is a TypeParam by
-using the mapping. 
-
-Extend to allow pattern of type parameter in cell match expressions 
-
-7. Update manual (1) actual type parameters; ... 
-
-* improve error messages from Unification.scala
-
 Type checking
 =============
 
@@ -147,7 +39,21 @@ Priorities
 Unify how Eq and Ord are implemented: former is in BinOpApply and latter is in
 Value.scala.
 
+Give better error message when formal type parameters are required but not
+provided.  When used in a cell read type, or as a necessary type parameter,
+but no formal value parameter uses that type.
+def f[A <: CellExp]() = { def g[B <: CellExp]() = #A3: B; g[A] }
+def f1[A <: CellType]() = { val x = #A3: A; 7 }; val y = f1()
+- Store in TypeEnv those type parameters used in cell reads;
+- In TypeChecker.typeCheckFnDecl, store that in the FunctionType object;
+- In ExpTypeChecker, case of FunctionApp, check required type parameters
+  provided.  And also update TypeEnv if actual type parameter used for
+  necessary formal type parameter.
 
+* In cell match constructs, allow type parameter as pattern. 
+
+
+* improve error messages from Unification.scala
 
 - Make sure #include-d files exist, or give error
 
@@ -173,6 +79,8 @@ Value.scala.
 - Anonymous functions.
 
 - Export sheet and load sheet operations.
+
+- Add libraries to manual.
 
 ---
 

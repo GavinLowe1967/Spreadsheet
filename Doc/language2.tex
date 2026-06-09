@@ -45,6 +45,10 @@ val a = add(4,5) 6; val f = add(6,7); val b = f 8
 %
 Here |f| is a function of type |Int => Int|.
 
+%%%%%%%%%%
+
+\subsubsection{Polymorphism}
+
 Parametric polymorphism is supported in a style similar to as in Scala.  Type
 parameters are introduced by enclosing them in square brackets after the name
 of a function, for example:
@@ -85,6 +89,30 @@ def remove[A <: Eq](x: A)(xs: List[A]): List[A] =
   if(isEmpty xs) [] else if(head xs == x) tail xs else x :: remove x (tail xs)
 def min[A <: Ord](x: A)(y: A) = if(x <= y) x else y
 \end{scala}
+
+When a polymorphic function is called, concrete type parameters may be
+provided to instantiate the formal type parameters.  This is necessary when
+the return type of a function call cannot be deduced from the types of the
+parameters.  For example, in the following
+\begin{scala}
+def makeEmpty[A]() = []: List[A]; val xs = makeEmpty[Int]()
+\end{scala}
+the concrete type parameter |Int| is necessary to deduce that |xs| is of type
+|List[Int]|.  Likewise, it is sometimes necessary to provide a concrete type
+parameter so that the type checker can deduce the type of values read from
+cells.  For example, in
+\begin{scala}
+def cells[A <: CellType](cols: List[Column])(row: Row): List[A] =
+  [Cell(col,row): A | col <- cols]
+val xs = cells[Float](#A to #C) #4
+\end{scala}
+the concrete type parameter is necessary to deduce that the cells are expected
+to hold |Float|s. 
+
+
+%%%%%%%%%%
+
+\subsubsection{Overloading}
 
 The language allows overloading of names of functions declared using |def|s
 (but not |val|s).  For example,
