@@ -13,10 +13,10 @@ trait TypeConstraint{
 
 // ==================================================================
 
-/** A type constraint corresponding to a type parameter of a function, either
-  * EqTypeConstraint or AnyTypeConstraint.  Note: this represents a universal
-  * quantification over the relevant types, and always contains at least two
-  * possible types. */
+/** A type constraint corresponding to a type parameter of a function:
+  * anything other than SingletonTypeConstraint.  Note: this represents a
+  * universal quantification over the relevant types, and always contains at
+  * least two possible types. */
 trait TypeParamConstraint extends TypeConstraint{
   /** Does this imply other?  I.e., the types that satisfy this are a subset of
     * the types that satisfy other?  (Used in TypeEnv.scala.) */
@@ -49,9 +49,9 @@ case class SingletonTypeConstraint(t: TypeT) extends TypeConstraint{
 /** The type constraint corresponding to being an equality type. */
 case object EqTypeConstraint extends TypeParamConstraint{
   def intersection(other: TypeConstraint) = other match{
-    case OrdTypeConstraint => OrdTypeConstraint
-    case CellTypeConstraint => CellTypeConstraint
+    case NumTypeConstraint => NumTypeConstraint
     case EqTypeConstraint | AnyTypeConstraint => EqTypeConstraint
+    case c: TypeParamConstraint => c // Ord, CellType
       // tested by  applyE(threeE, true) in TypeCheckerTest2
     case SingletonTypeConstraint(_) => ???
   }
@@ -65,9 +65,9 @@ case object EqTypeConstraint extends TypeParamConstraint{
 
 case object OrdTypeConstraint extends TypeParamConstraint{
   def intersection(other: TypeConstraint) = other match{
+    case NumTypeConstraint => NumTypeConstraint
     case CellTypeConstraint => CellTypeConstraint
-    case EqTypeConstraint | OrdTypeConstraint | AnyTypeConstraint => 
-      OrdTypeConstraint
+    case _: TypeParamConstraint => OrdTypeConstraint // Eq, Ord, Any
     case SingletonTypeConstraint(_) => ???
   }
 
@@ -78,15 +78,28 @@ case object OrdTypeConstraint extends TypeParamConstraint{
 
 // ==================================================================
 
-/** The trait of types that can appear in cells. */
+/** The constraint for types that can appear in cells. */
 case object CellTypeConstraint extends TypeParamConstraint{
   def intersection(other: TypeConstraint) = other match{
-    case CellTypeConstraint | EqTypeConstraint | OrdTypeConstraint | 
-        AnyTypeConstraint => CellTypeConstraint
-    case _ => ???
+    case NumTypeConstraint => NumTypeConstraint
+    case _: TypeParamConstraint => CellTypeConstraint // Cell, Eq, Ord, Any
+    case SingletonTypeConstraint(_) => ???
   }
 
   def asStringE = "CellType"
+}
+
+
+// ==================================================================
+
+/** The constraint for numeric types. */
+case object NumTypeConstraint extends TypeParamConstraint{
+  def intersection(other: TypeConstraint) = other match{
+    case _ : TypeParamConstraint => NumTypeConstraint
+    case SingletonTypeConstraint(_) => ???
+  }
+
+  def asStringE = "Num type"
 }
 
 // ==================================================================

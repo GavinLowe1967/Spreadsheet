@@ -13,7 +13,7 @@ class EvaluationTypeEnv(
   private val constraints: Constraints, // = HashMap[TypeID, TypeConstraint]
   private val typeParamMap: TypeParamMap 
                               // = HashMap[TypeParamName, TypeParamConstraint]
-) /* extends TypeEnv0 */{
+){
 
   // ========= Constraints functions
 

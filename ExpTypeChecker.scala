@@ -78,6 +78,10 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
       case Some(List()) => FailureR(s"Forward reference to name $n") 
       case Some(List(t)) => 
         if(atps.isEmpty) Ok(List((typeEnv,t,-1)))
+//  t match{
+// //          case ft: FunctionType if ft.needsConcreteTParam => FailureR(s"XXX $t")
+//           case _ => Ok(List((typeEnv,t,-1)))
+//         }
         else t match{
           case ft: FunctionType => 
             instantiate(typeEnv, n, atps, ft) match{

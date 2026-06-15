@@ -142,13 +142,17 @@ trait CellValueType extends OrdType with BaseType
   * `CellType`. */
 trait CellType extends CellValueType with CellReadType
 
+/** A marker trait for types that are subclasses of the script type
+  * `NumType`. */
+trait NumType extends CellType
+
 /* Now all the base types. */
 
-case object IntType extends CellType {
+case object IntType extends NumType {
   def asString = "Int"
 }
 
-case object FloatType extends CellType{
+case object FloatType extends NumType{
   def asString = "Float"
 }
 

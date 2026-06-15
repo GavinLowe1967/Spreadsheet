@@ -21,8 +21,9 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
     List("Cell", "if", "else", "def", "val", "operation", "for", 
       "match", "case", "assert", "IF", "ELSE",
       "true", "false", "Empty", "to", "until",
+      // Types and type classes
       "Int", "Float", "Boolean", "String", "Row", "Column", "List", 
-      "Eq", "Ord", "CellType")
+      "Eq", "Ord", "CellType", "Num")
 
   /** Parser for concrete type parameters for a name. */
   private def tParams: Parser[List[TypeT]] = 
@@ -32,7 +33,7 @@ class ExpParser(stmtParser: StatementParserT) extends Parser0{
   // Note: the list of type parameters must be nonempty, to avoid interpreting
   // an empty List value "[]" as a list of types.
 
-  /** Parser for a name. */
+  /** Parser for a name, optionally with type parameters. */
   private def name1: Parser[Exp] = withExtent(
    // name ? (n => !ReservedNames.contains(n))  > (n => NameExp(n, List())) 
     name ? (n => !ReservedNames.contains(n)) ~~ tParams > { 

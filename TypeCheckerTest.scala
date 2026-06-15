@@ -2,7 +2,8 @@ package spreadsheet
 
 import TypeT._
 import TypeCheckerTestDecl._, TypeCheckerTest1._, TypeCheckerTest2._, 
-  TypeCheckerTest3._, TypeCheckerTest4._, TypeCheckerTest5._
+  TypeCheckerTest3._, TypeCheckerTest4._, TypeCheckerTest5._, 
+  TypeCheckerConstraintTest._
 //import TypeChecker.TestHooks._
 
 /** Tests on the type checker. */
@@ -44,6 +45,9 @@ object TypeCheckerTest{
       typeConstraintTests()
       println("===higherOrderTests===")
       higherOrderTests()
+      // -----                       TypeCheckerConstraintTest.scala
+      numTests()
+
       // ------                      TypeCheckerTest3.scala
       println("===forLoopTests===")
       forLoopTests()

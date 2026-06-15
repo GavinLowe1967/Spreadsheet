@@ -8,6 +8,7 @@ def id[A](x: A): A = x
 def const[A,B](x: A)(y: B): A = x
 
 def after[A,B,C](f: B => C)(g: A => B)(x: A): C = f(g x)
+// def after[B,C](f: B => C) = { def af[A](g: A => B)(x: A): C = f(g x); af }
 
 def flip[A,B,C](f: A => B => C)(x: B)(y: A): C = f y x
 
@@ -36,7 +37,17 @@ def filter[A](p: A => Boolean)(xs: List[A]): List[A] =
   else if(p(head xs)) head xs :: filter p (tail xs) 
   else filter p (tail xs)
 
+/*
 /** The nth element of xs, counting from 0. */
+def index(n: Int): List[A] => A = {
+  def indexn[A](xs: List[A]): A = {
+    assert(n >= 0 && !(isEmpty xs), "Indexing error")
+    if(n == 0) head xs else index(n-1) (tail xs)
+  }
+  indexn
+}
+ */
+
 def index[A](n: Int)(xs: List[A]): A = {
   assert(n >= 0 && !(isEmpty xs), "Indexing error")
   if(n == 0) head xs else index(n-1) (tail xs) 

@@ -3,6 +3,86 @@ https://retractionwatch.com/2013/04/18/influential-reinhart-rogoff-economics-pap
 Current
 =======
 
+Add Num type class, with subclasses Int and Float.  Allow arithmetic operators
+over these classes.  Allow
+
+def zero[A <: NumType]() = 0: A
+def sum[A <: NumType](xs: List[A]): A = 
+  if(xs.isEmpty) 0: A else xs.head + sum(xs.tail)
+
+1. Add NumTypeConstraint in TypeConstraint.scala. -- done
+
+2. Parser (StatementParser.scala and ExpParser.ReservedNames) -- done
+
+3. Update BinOpTypeChecker.typeCheckBinOp to require NumTypeConstraint for
++,-,*,/. -- Done 
+
+4. Add to TypeEnv.updateEnvToSatisfy -- Done 
+
+-- More testing ? 
+
+5. Evaluation.
+
+
+---------
+
+Give better error message when formal type parameters are required but not
+provided.  When used in a cell read type, or as a necessary type parameter,
+but no formal value parameter uses that type.
+def f[A <: CellExp]() = { def g[B <: CellExp]() = #A3: B; g[A] }
+def f1[A <: CellType]() = { val x = #A3: A; 7 }; val y = f1()
+- Store in TypeEnv those type parameters used in cell reads;
+- In TypeChecker.typeCheckFnDecl, store that in the FunctionType object;
+- In ExpTypeChecker, case of FunctionApp, check required type parameters
+  provided.  And also update TypeEnv if actual type parameter used for
+  necessary formal type parameter.
+
+Alternative: whenever a function has a type parameter but no value parameter
+uses that type.  
+- Function to caluclate this in FunctionType
+- Use it in ExpTypeChecker.getAll
+
+No, this forbids functions like `after` and `index` from haskell.dir.  Unless we 
+write
+def after[B,C](f: B => C)[A](g: A => B)(x: A): C = f(g x)
+Or have the type checker push the A through. 
+That could be done by rewriting Statement.mkFunctionType.  But then the script 
+would have to write, e.g., after(f)[Int] which looks unnatural.
+
+With "def f[A,B](x: A)(y: B) = ...", we wouldn't require concrete type
+parameters with "f 3 true", but would with "f 3".  For each FunctionType, we
+can calculate how many value parameters are needed for concrete type
+parameters to be unnecessary: 0 if no formal type parameters; 1 if all ftps
+included in domain; if range is a FunctionType, 1+ the result for that
+FunctionType for the remaining type parameters; otherwise infinite.
+
+The curried form is, e.g.
+  FunctionApp( FunctionApp( NameExp(name,atps), args1 ), args2)
+where name is associated with a FunctionType.  That's not convenient.
+
+
+** Or where a FunctionType returns a FunctionType, include the parameters of the
+latter.
+
+- In the parser, mark the NameExp with the number of vectors of
+parameters.
+
+- In FunctionType, calculate the number of vectors of paramters needed.
+
+- Put it together in ExpTypeChecker/checkFunctionApp
+
+consider
+
+def f(x: Int, y: Int) = ...
+def f[A](x: Int)(y: A) = ...
+val z = f(1,2)
+
+This is clearly an application of the first definition; but needs the
+parameters to see this.
+
+const tests, TypeCheckerTest3, line 140
+
+
 Type checking
 =============
 
@@ -36,19 +116,9 @@ e.g. val xs = mkEmpty[String].
 Priorities
 ==========
 
+
 Unify how Eq and Ord are implemented: former is in BinOpApply and latter is in
 Value.scala.
-
-Give better error message when formal type parameters are required but not
-provided.  When used in a cell read type, or as a necessary type parameter,
-but no formal value parameter uses that type.
-def f[A <: CellExp]() = { def g[B <: CellExp]() = #A3: B; g[A] }
-def f1[A <: CellType]() = { val x = #A3: A; 7 }; val y = f1()
-- Store in TypeEnv those type parameters used in cell reads;
-- In TypeChecker.typeCheckFnDecl, store that in the FunctionType object;
-- In ExpTypeChecker, case of FunctionApp, check required type parameters
-  provided.  And also update TypeEnv if actual type parameter used for
-  necessary formal type parameter.
 
 * In cell match constructs, allow type parameter as pattern. 
 

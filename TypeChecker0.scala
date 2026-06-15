@@ -29,7 +29,7 @@ object TypeChecker0{
     * from the type environment. */
   def close(typeEnv: TypeEnv, t: TypeT): TypeCheckRes = {
     if(t.typeVars.nonEmpty) 
-      FailureR(s"Unable to fully resolve type ${t.asString}.  "+
+      FailureR(s"Unable to fully resolve type.  "+
         "Providing a concrete type parameter might help.")
     // assert(t.typeVars.isEmpty, s"close: $t")
     else closeCells(typeEnv, t)
@@ -102,12 +102,26 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
     )
   }
 
+  /** Typecheck the application of an operator over type class `c` to an
+    * argument of type `tl` and to `right`, giving result of type `resType`. */
+  private def typeCheckTypeClassOp(typeEnv: TypeEnv, c: TypeParamConstraint, 
+      tl: TypeT, right: Exp, resType: TypeT) =
+    close(typeEnv,tl).map{ case (te2,`tl`) =>
+      def fail = FailureR(s"Expected {c.asStringE}, found ${tl.asString}")
+      te2.updateEnvToSatisfy(tl, c, fail).map{ te3 =>
+        typeCheckUnify(te3, right, tl).map{ case (te4, tr) => Ok((te4, resType))
+        } // Don't lift here: lifted in typeCheckUnify
+      }
+    }
+
   /** Typecheck BinOp(left, op, right). */
   def typeCheckBinOp(typeEnv: TypeEnv, left: Exp, op: String, right: Exp)
       : TypeCheckRes =
     typeCheck(typeEnv, left).map{ case (te1, tl) =>
       op match{
-        case "==" | "!=" =>
+        case "==" | "!=" => 
+          typeCheckTypeClassOp(te1, EqTypeConstraint, tl, right, BoolType)
+/*          
           // Check tl is a concrete equality type
           close(te1,tl).map{ case (te2,`tl`) =>
             def fail = FailureR(s"Expected equality type, found ${tl.asString}")
@@ -119,7 +133,10 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
               } // Don't lift here: lifted in typeCheckUnify
             }
           }
+ */
         case "<=" | ">=" | "<" | ">" => 
+          typeCheckTypeClassOp(te1, OrdTypeConstraint, tl, right, BoolType)
+/*
           // Note: at present this assumes concrete types from OrdType.  This
           // could be extended to, e.g., TypeVar as for "==".
           close(te1,tl).map{ case (te2,`tl`) => 
@@ -129,6 +146,8 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
                 Ok((te4,BoolType))
               } // Don't lift to right here: lifted in typeCheckUnify
             }
+ }
+ */
           //   tl match{
           //   case _: OrdType => 
           //     typeCheckUnify(te2, right, tl).map{ case (te3, tr) =>
@@ -136,14 +155,46 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
           //     }.lift(right,true)
           //   case _ =>  FailureR(s"Expected equality type, found ${tl.asString}")
           // }
-          }
+          
+        case "*" | "/" => 
+          typeCheckTypeClassOp(te1, NumTypeConstraint, tl, right, tl)
+
+        // case "+" if tl == StringType => 
+        //   // + with String on left, anything on right.
+        //   typeCheck(te1, right).map{ case (te2, tr) => 
+        //     Ok((te2,StringType)) 
+        //   }.lift(right)
+
+        case "+" =>
+          if(tl == StringType)
+            // + with String on left, anything on right.
+            typeCheck(te1, right).map{ case (te2, tr) =>
+              Ok((te2,StringType))
+            }.lift(right)
+          else if(tl == RowType || tl == ColumnType)
+            // Row,Int => Row or Column,Int => Column
+            typeCheckUnify(te1, right, IntType).map{ 
+              case (te2, IntType) => Ok((te2, tl)) 
+            }.lift(right)
+          else // arithmetic 
+            typeCheckTypeClassOp(te1, NumTypeConstraint, tl, right, tl)
+
+        case "-" => 
+          if(tl == RowType || tl == ColumnType) 
+            // tl,Int => tl or tl,tl => Int
+            close(te1,tl).map{ case (te2,`tl`) => 
+              typeCheck(te2, right).map{ case (te3, tr) =>
+                if(tr == IntType) Ok((te3, tl))
+                else if (tr == tl) Ok((te3, IntType))
+                else FailureR(
+                  s"Expected Int or ${tl.asString}, found ${tr.asString}")
+              }.lift(right)
+            }
+          else typeCheckTypeClassOp(te1, NumTypeConstraint, tl, right, tl)
+
         case "::" =>
           typeCheckUnify(te1, right, ListType(tl))
-        case "+" if tl == StringType => 
-          // + with String on left, anything on right.
-          typeCheck(te1, right).map{ case (te2, tr) => 
-            Ok((te2,StringType)) 
-          }.lift(right)
+
         case _ => // Overloaded operator
           val ts = binopTypes(op)
           if(ts.length == 1){ // Unify tl with expected type

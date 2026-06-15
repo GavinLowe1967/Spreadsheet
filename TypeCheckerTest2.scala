@@ -112,7 +112,7 @@ object TypeCheckerTest2{
     }
 //printErrors = true
     assertFail(tcpss(cellDef+"val x = cell(#A, #3)"))
-// printErrors = false
+//printErrors = false
     // "Actual type parameter (Int,Int) does not satisfy type constraint
     // CellType"
     assertFail(tcpss(cellDef+"val x = cell[(Int,Int)](#A, #3)"))
@@ -130,7 +130,7 @@ object TypeCheckerTest2{
     }
     assertFail(tcpss(cellsDef+"val xs = cells(#A to #C, #3)"))
 
-    println(tcpss("def f[A <: CellType]() = { val x = #A3: A; 7 }; val y = f()"))
+    //println(tcpss("def f[A <: CellType]() = { val x = #A3: A; 7 }; val y = f()"))
 
     val sumDef = 
       "def sum(xs: List[Int]): Int = "+

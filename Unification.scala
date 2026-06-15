@@ -55,6 +55,7 @@ object Unification{
         assert(!t1.isInstanceOf[TypeVar])
         typeEnv(tId2) match{
           case SingletonTypeConstraint(t22) => unify(typeEnv, t1, t22)
+          //case NumTypeConstraint => ???
           case c => 
             typeEnv.updateEnvToSatisfy(t1, c, fail).map{ te =>
               Ok(te.replace(tId2, t1), t1)
@@ -73,7 +74,19 @@ object Unification{
       case (ct @ CellTypeVar(tv), t: CellType) => 
         Ok((typeEnv + (ct,t), t))
 
-      case (_, TypeParam(tp)) =>  fail
+      case (_, TypeParam(tp)) => 
+        // Allow conversion of Int to Num
+        if(typeEnv.constraintForTypeParam(tp) == NumTypeConstraint && 
+            t1 == IntType) 
+          Ok((typeEnv, t2))
+        else fail
+
+      case (TypeParam(tp), _) => 
+        // Allow conversion of Int to Num
+        if(typeEnv.constraintForTypeParam(tp) == NumTypeConstraint && 
+            t2 == IntType) 
+          Ok((typeEnv, t1))
+        else fail
 
       case (f1: FunctionType, f2 @ FunctionType(tc2,d2,r2)) => 
         assert(tc2.isEmpty)

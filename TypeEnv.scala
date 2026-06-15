@@ -127,12 +127,13 @@ class TypeEnv(
         case AnyTypeConstraint | OrdTypeConstraint | EqTypeConstraint => Ok(this)
         case CellTypeConstraint => 
           if(t.isInstanceOf[CellType]) Ok(this) else fail
+        case NumTypeConstraint => if(t.isInstanceOf[NumType]) Ok(this) else fail
       }
       case ListType(underlying) => c match{
         case EqTypeConstraint | OrdTypeConstraint => 
           updateEnvToSatisfy(underlying, c, fail)
         case AnyTypeConstraint => Ok(this)
-        case CellTypeConstraint => fail
+        case CellTypeConstraint | NumTypeConstraint => fail
       }
       case TupleType(cptTs) => c match{
         case EqTypeConstraint | OrdTypeConstraint => 
@@ -140,11 +141,12 @@ class TypeEnv(
             typeEnv.updateEnvToSatisfy(cptT, c, fail)
           Reply.fold(step _, this, cptTs)
         case AnyTypeConstraint => Ok(this)
-        case CellTypeConstraint => fail
+        case CellTypeConstraint | NumTypeConstraint => fail
       }
       case _ : FunctionType => c match{
         case AnyTypeConstraint => Ok(this)
-        case EqTypeConstraint | OrdTypeConstraint | CellTypeConstraint => fail
+        case _: TypeParamConstraint => fail
+        //case EqTypeConstraint | OrdTypeConstraint | CellTypeConstraint => fail
       }
       case TypeVar(tId) => 
         // This can happen by recursing via ListType(TypeVar(_)), e.g. the
@@ -155,8 +157,9 @@ class TypeEnv(
       case TypeParam(tp) => 
         if(constraintForTypeParam(tp).implies(c)) Ok(this) else fail
       case CellTypeVar(ctv) =>  c match{
-        case AnyTypeConstraint | OrdTypeConstraint | EqTypeConstraint | 
+        case  AnyTypeConstraint | OrdTypeConstraint | EqTypeConstraint | 
             CellTypeConstraint => Ok(this)
+        case NumTypeConstraint => ???
       }
     }
   }

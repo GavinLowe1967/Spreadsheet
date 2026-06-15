@@ -15,6 +15,7 @@ object TypeCheckerTest4{
       "def append[A](xs: List[A])(ys: List[A]) = foldr cons ys xs\n"+
       "def concat[A](xs: List[List[A]]) = foldr append[]xs \n" +
       "def after[A,B,C](f: B => C)(g: A => B)(x: A) = f(g x) \n" +
+//"def after[B,C](f: B => C) = { def af[A](g: A => B)(x: A): C = f(g x); af }\n"+
       "def map[A,B](f: A => B)(xs: List[A]): List[B] = " +
       "  if(isEmpty xs) [] else f(head xs) :: map f (tail xs) \n" +
       "def reverse[A](xs: List[A]) = {"+

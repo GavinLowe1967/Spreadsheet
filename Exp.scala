@@ -238,7 +238,10 @@ case class TupleLiteral(elems: List[Exp]) extends Exp
 // ==================================================================
 
 /** The application of a function represented by `f` to `args`. */
-case class FunctionApp(f: Exp, args: List[Exp]) extends Exp
+case class FunctionApp(f: Exp, args: List[Exp]) extends Exp{
+  /** The depth of nested function applications. */
+//  def depth: Int = f match{ case fa: FunctionApp => fa.depth+1; case _ => 1 }
+}
 
 // =======================================================
 

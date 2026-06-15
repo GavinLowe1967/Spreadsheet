@@ -100,12 +100,13 @@ $(DIR)/ParserTest.class: $(DIR)/CellParser.class $(DIR)/StatementParserTest.clas
 $(DIR)/TypeCheckerTest0.class: $(DIR)/TypeChecker.class	\
   $(DIR)/StatementParser.class
 
-$(DIR)/TypeCheckerTestExpr.class $(DIR)/TypeCheckerTestDecl.class $(DIR)/TypeCheckerTest1.class $(DIR)/TypeCheckerTest2.class $(DIR)/TypeCheckerTest3.class: $(DIR)/TypeCheckerTest0.class
+$(DIR)/TypeCheckerTestExpr.class $(DIR)/TypeCheckerTestDecl.class $(DIR)/TypeCheckerTest1.class $(DIR)/TypeCheckerTest2.class $(DIR)/TypeCheckerTest3.class $(DIR)/TypeCheckerConstraintTest.class: $(DIR)/TypeCheckerTest0.class
 
-$(DIR)/TypeCheckerTest.class: $(DIR)/TypeCheckerTestExpr.class	\
+$(DIR)/TypeCheckerTest.class: $(DIR)/TypeCheckerTestExpr.class		\
   $(DIR)/TypeCheckerTestDecl.class $(DIR)/TypeCheckerTest1.class	\
-  $(DIR)/TypeCheckerTest2.class $(DIR)/TypeCheckerTest3.class	\
-  $(DIR)/TypeCheckerTest4.class $(DIR)/TypeCheckerTest5.class
+  $(DIR)/TypeCheckerTest2.class $(DIR)/TypeCheckerTest3.class		\
+  $(DIR)/TypeCheckerTest4.class $(DIR)/TypeCheckerTest5.class		\
+  $(DIR)/TypeCheckerConstraintTest.class
 
 # ===== Model
 

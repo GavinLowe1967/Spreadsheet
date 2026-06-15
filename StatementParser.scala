@@ -30,6 +30,7 @@ object StatementParser extends Parser0 with StatementParserT{
       keyword("Eq") > (_ => EqTypeConstraint) 
       | keyword("Ord") > (_ => OrdTypeConstraint) 
       | keyword("CellType") > (_ => CellTypeConstraint)
+      | keyword("Num") > (_ => NumTypeConstraint)
       // | lit("Num") > (_ => NumTypeConstraint) // MemberOf(TypeT.NumTypes))
     ) 
     | success(AnyTypeConstraint)

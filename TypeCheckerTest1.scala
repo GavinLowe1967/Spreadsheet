@@ -156,7 +156,7 @@ object TypeCheckerTest1{
     assertFail(tcpss(
       "def f[A,B](x: A, y: B): A = x; for(if f(true, #A1)) val x = 2+3.4"))
     assertFail(tcpss("def f[A,B](x: A, y: B): A = x; for(if f(true, #A1)){ }"))
-printErrors = false
+// printErrors = false
   }
 
  // ==================================================================

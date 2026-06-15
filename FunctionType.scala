@@ -13,9 +13,15 @@ case class FunctionType(
     domain.map(_.asString).mkString("(", ",", ")")+" => "+
       (if(range == null) "<undefined type>" else range.asString)
 
-  def typeParams = 
-    (params.map(_._1) ++ domain.flatMap(_.typeParams) ++ range.typeParams
-    ).distinct
+  private val domainTParams: List[String] = domain.flatMap(_.typeParams).distinct
+
+  // /** The type parameter names in domain and range. */
+  // private def typeParams0: List[String] = (
+  //   domain.flatMap(_.typeParams) ++ (if(range == null) List() else range.typeParams)).distinct
+
+  /** The type parameter names in params, domain and range. */
+  def typeParams: List[String] = 
+    (params.map(_._1) ++ domainTParams ++ range.typeParams).distinct
 
   def typeVars = (domain.flatMap(_.typeVars) ++ range.typeVars).distinct
 
@@ -58,9 +64,41 @@ case class FunctionType(
   }
 
   def hasNullReturnFunction = finalNull
+
+  /** Does use of this require a concrete type parameter? */
+  def needsConcreteTParam = {
+    val tvs = domainTParams.distinct
+    params.exists{ case (tp,tc) => !tvs.contains(tp) }
+  }
+
+/*
+  /** Are numParams vectors of value parameters enough to define all the formal
+    * type parameters? */
+  def sufficientParams(numParams: Int): Boolean = 
+    params.isEmpty || numParams >= neededParamsFor(params.map(_._1))
+
+  /** How many vectors of value parameters are necessary to define the formal
+    * type parameters `fTParams`?  Or a value of at least
+    * FunctionType.Infinity if concrete type parameters will always be
+    * necessary. */ 
+  private def neededParamsFor(fTParams: List[String]): Int = {
+    require(fTParams.nonEmpty)
+    val missing = fTParams.filter(!domainTParams.contains(_))
+    if(missing.isEmpty) 1
+    else range match{
+      case ft: FunctionType => 1+ft.neededParamsFor(missing)
+      case _ => FunctionType.Infinity
+    }
+  }
+ */
 }
 
 object FunctionType{
   /** The type parameters for functions. */
   type TypeParameter = (TypeParam.TypeParamName, TypeParamConstraint)
+
+  /** Representation of infinity for use in neededParamsFor.  It is assumed that
+    * no function will ever have this number of vectors of value
+    * parameters! */
+  //private val Infinity = 1 << 30
 }
