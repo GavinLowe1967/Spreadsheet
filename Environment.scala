@@ -16,7 +16,7 @@ class Environment(
   userCells: Array[Array[Cell]], calculatedCells: Array[Array[Cell]],
   val height: Int, val width: Int, 
   private var nameMap: HashMap[String, Value],
-  tpMap: HashMap[TypeParamName, TypeT]
+  val tpMap: HashMap[TypeParamName, TypeT] // FIXME: remove "val"
 ){
   /* Note: indexing of cells is done by (column, row) coordinates, following the
    * spreadsheet convention. */
@@ -99,8 +99,9 @@ class Environment(
 
   /** Set the formal parameter ftp to have value atp. */
   private def setTP(ftp: String, atp: TypeT) = {
-    tpMap += ftp -> 
-      (atp match{ case TypeParam(atp1) => tpMap(atp1); case _ => atp })
+    assert(!atp.isInstanceOf[TypeParam])
+    tpMap += ftp -> atp
+    //  (atp match{ case TypeParam(atp1) => ???; tpMap(atp1); case _ => atp })
   }
 
   /** Extend this so as to set each element of ftps to have value the

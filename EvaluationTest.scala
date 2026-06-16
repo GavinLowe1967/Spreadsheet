@@ -250,8 +250,26 @@ object EvaluationTest{
     assert(eval("\"Hello\" <= \"World\"") == BoolValue(true))
     assert(eval("\"Hello\" >= \"World\"") == BoolValue(false))
     assert(eval("\"Hello\" >= \"Hello\"") == BoolValue(true))
-
   }
+
+  /** Tests on Num type class. */
+  def tests7() = {
+    // println("***")
+    assert(eval("{def zero[A <: Num](): A = 0; zero[Int]()}") == IntValue(0))
+    assert(eval("{def zero[A <: Num](): A = 0; zero[Float]()}") ==
+      FloatValue(0.0F))
+    assert(eval("{def zero[A <: Num]() = 0: A; zero[Float]()}") == 
+      FloatValue(0.0F))
+    val sumS = "def sum[A <: Num](xs: List[A]): A = "+
+      "if(isEmpty xs) 0 else head xs + sum[A](tail xs)"
+    assert(eval(s"{$sumS ; sum[Int] [1,2]}") == IntValue(3))
+    assert(eval(s"{$sumS ; sum[Float] [1.3,2.7]}") == FloatValue(4.0F))
+    val sumS1 = "def sum[A <: Num](xs: List[A]): A = "+
+      "if(isEmpty xs) 0 else head xs + sum(tail xs)"
+    assert(eval(s"{$sumS1 ; sum[1,2]}") == IntValue(3))
+    println(eval(s"{$sumS1 ; sum[Float] [1.3]}")) // FIXME
+  }
+
 
   def main(args: Array[String]) = {
     println("===EvaluationTest===")
@@ -262,6 +280,7 @@ object EvaluationTest{
     scriptTests()
     tests5() // val declarations with tuples
     tests6() // toString, + over Strings
+    tests7()
   }
 
 }

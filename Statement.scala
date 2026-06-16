@@ -101,6 +101,15 @@ case class FunctionDeclaration(
   private def mkFunctionType1(ps: List[ParameterList], rt: TypeT): TypeT = 
     if(ps.isEmpty) rt
     else FunctionType(List(), ps.head.map(_._2), mkFunctionType1(ps.tail, rt))
+
+  /** The return type of the function. */
+  private var rt: TypeT = null
+
+  /** Set the return type of the function. */
+  def setRT(t: TypeT) = { assert(ort.isEmpty); rt = t }
+
+  /** Get the return type of the function. */
+  def getRT = if(ort.nonEmpty) ort.get else{ assert(rt != null); rt }
 }
 
 // =======================================================

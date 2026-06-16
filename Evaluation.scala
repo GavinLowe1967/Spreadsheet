@@ -218,6 +218,7 @@ class Evaluation(executor: ExecutionT){
       case fv : FunctionValue =>
         evalList(env, args) match{
           case Left(vs) => 
+//println(s"Evaluation: $fa "+env.tpMap)
             fv(env, vs) match{
               case err: ErrorValue => maybeLiftError(e, err, true)
                   // Don't lift TypeErrors here, as that's confusing.  But
@@ -246,8 +247,21 @@ class Evaluation(executor: ExecutionT){
       }
       else liftError(e, err)
 
-    case TypedExp(e, _) => eval(env, e)
+    case TypedExp(e, t) => val v0 = eval(env, e); coerce(env, t, v0)
   } // end of eval
+
+  /** Coerce an Int to a Float, it t is a type parameter and the actual
+    * parameter is a Float. */
+  def coerce(env: Environment, t: TypeT, v: Value) = t match{ 
+    case TypeParam(tp) => 
+      if(env.getTP(tp) == Some(FloatType)) v match{
+        case IntValue(x) => FloatValue(x.toFloat); case _ => v
+      }
+      else v
+    case _ => v
+  }
+  // Should this coerce in other cases? 
+
 
   /** The result of evaluating exps if all succeed; or a relevant ErrorValue. */
   private def evalList(env: Environment, exps: List[Exp])

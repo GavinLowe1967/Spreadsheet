@@ -79,7 +79,8 @@ object Execution extends ExecutionT{
 
     case fd @ FunctionDeclaration(name, tParams, paramss, rt, body) => 
       assert(paramss.nonEmpty)
-      env.update(fd.getName, evalFn(env, tParams.map(_._1), paramss, body)); true
+      val fv = evalFn(env, tParams.map(_._1), paramss, fd.getRT, body)
+      env.update(fd.getName, fv); true
 
     case OperationDeclaration(name, body) =>
       view.addOperation(name) // Add to the "operations" menu
@@ -128,12 +129,20 @@ object Execution extends ExecutionT{
   } // end of perform
 
   /** The Value that represents the function that takes the elements of paramss
-    * in turn, and returns body.  This will be a FunctionValue if paramss is
-    * non-empty.  tParams is the formal type parameters.*/
+    * in turn, and returns body of type rt.  This will be a FunctionValue if
+    * paramss is non-empty.  tParams is the formal type parameters.*/
   private def evalFn(env: Environment, tParams: List[String], 
-    paramss: List[ParameterList], body: Exp)
+    paramss: List[ParameterList], rt: TypeT, body: Exp)
       : Value = 
-    if(paramss.isEmpty) eval(env, body)
+    if(paramss.isEmpty){
+//println(body)
+//println(env.tpMap)
+      val v0 = eval(env, body)
+//println(s"v0 = $v0")
+      // If the formal return type is a Num, actual return type is a Float,
+      // then coerce Int toFloat.
+      evaluation.coerce(env, rt, v0) 
+    }
     else{
       val params0 = paramss.head
       // Build a Scala function to capture the function of params0.  Note:
@@ -145,10 +154,13 @@ object Execution extends ExecutionT{
         require(args.length == params0.length)
         // Bind formal type parameters to actual type parameters (if present);
         // and bind params to values of args in env
+//println(s"setting $tParams -> $aTParams:"); println(env.tpMap); println(env1.tpMap)
+        val aTParams1 = aTParams.map{ case TypeParam(tp) => env1.getTP(tp).get; case atp => atp }
         val env2 = 
-          if(aTParams.nonEmpty) env.setTPs(tParams, aTParams) else env.clone
+          if(aTParams.nonEmpty) env.setTPs(tParams, aTParams1) else env.clone
+//println(s"$tParams -> $aTParams")
         for(((x,_),v) <- params0.zip(args)) env2.update(x, v)
-        evalFn(env2, List(), paramss.tail, body) 
+        evalFn(env2, List(), paramss.tail, rt, body) 
         // Note: type parameters dealt with at top level.
       }
       FunctionValue(f _)

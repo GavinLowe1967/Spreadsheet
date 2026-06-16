@@ -159,15 +159,8 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
         case "*" | "/" => 
           typeCheckTypeClassOp(te1, NumTypeConstraint, tl, right, tl)
 
-        // case "+" if tl == StringType => 
-        //   // + with String on left, anything on right.
-        //   typeCheck(te1, right).map{ case (te2, tr) => 
-        //     Ok((te2,StringType)) 
-        //   }.lift(right)
-
-        case "+" =>
-          if(tl == StringType)
-            // + with String on left, anything on right.
+        case "+" => // close here?
+          if(tl == StringType) // + with String on left, anything on right.
             typeCheck(te1, right).map{ case (te2, tr) =>
               Ok((te2,StringType))
             }.lift(right)
@@ -180,16 +173,14 @@ class BinOpTypeChecker(etc: ExpTypeCheckerT){
             typeCheckTypeClassOp(te1, NumTypeConstraint, tl, right, tl)
 
         case "-" => 
-          if(tl == RowType || tl == ColumnType) 
-            // tl,Int => tl or tl,tl => Int
-            close(te1,tl).map{ case (te2,`tl`) => 
-              typeCheck(te2, right).map{ case (te3, tr) =>
-                if(tr == IntType) Ok((te3, tl))
-                else if (tr == tl) Ok((te3, IntType))
-                else FailureR(
-                  s"Expected Int or ${tl.asString}, found ${tr.asString}")
-              }.lift(right)
-            }
+          if(tl == RowType || tl == ColumnType) // tl,Int => tl or tl,tl => Int
+            typeCheck(te1, right).map{ case (te3, tr) =>
+              if(tr == IntType) Ok((te3, tl))
+              else if (tr == tl) Ok((te3, IntType))
+              else FailureR(
+                s"Expected Int or ${tl.asString}, found ${tr.asString}")
+            }.lift(right)
+            
           else typeCheckTypeClassOp(te1, NumTypeConstraint, tl, right, tl)
 
         case "::" =>

@@ -60,6 +60,7 @@ object TypeChecker extends TypeCheckerT{
             case None =>
               // Typecheck body.  Add appropriate FunctionType value.
               typeCheckAndClose(te1, body).map{ case (te2, rt) =>
+                fd.setRT(rt)
                 val ft = fd.mkFunctionType(rt); Ok(te2.endScope.update(name, ft))
               }
           } // end of match
