@@ -219,6 +219,10 @@ class Evaluation(executor: ExecutionT){
         evalList(env, args) match{
           case Left(vs) => 
 //println(s"Evaluation: $fa "+env.tpMap)
+//             val atps = fa.getAtps
+//             val fv1 = if(atps == null) fv else FunctionValue(fv.f, atps) 
+// println(s"Evaluation: $fa; atps = $atps\n")
+            // fv.setATParams(atps)
             fv(env, vs) match{
               case err: ErrorValue => maybeLiftError(e, err, true)
                   // Don't lift TypeErrors here, as that's confusing.  But

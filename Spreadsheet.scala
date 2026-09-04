@@ -3,6 +3,7 @@ package spreadsheet
 import scala.swing._
 import event._
 import java.awt.Color
+import java.awt.Font
 
 /** The panel displaying the spreadsheet.
   * 
@@ -10,13 +11,12 @@ import java.awt.Color
 class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
   import Spreadsheet._
 
-  val height = model.height; val width = model.width 
+  private val env = model.getEnv
+  // private val height = env.height; private val width = env.width 
 
   preferredSize = new Dimension(800,550)
 
   private val spreadsheetModel = model // Avoid aliasing by Table!
-
-  private val env = model.getEnv
 
   /** An editable text field. */
   class MyTextField(text: String, background: Color) extends TextField(text){
@@ -30,12 +30,11 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
     xAlignment = Alignment.Right
   }
 
-  /** The table displaying the cells. */
-  private val table = new Table(height, width){
-    rowHeight = 25
+  /** Make the table displaying the cells. */
+  private def mkTable() = new Table(env.height, env.width){
+    rowHeight = Spreadsheet.rowHeight
     autoResizeMode = Table.AutoResizeMode.Off
-    showGrid = true
-    gridColor = new java.awt.Color(150, 150, 150)
+    showGrid = true; gridColor = new java.awt.Color(150, 150, 150)
 
     override def rendererComponent(
       isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int)
@@ -55,10 +54,9 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
           case CellWriteSource(_,_,d) =>
             val e = d.getExtent
             err+s"\nFrom cell write at line ${e.lineNumber}:\n"+e.asString
-          case _ => /* println(s"$this $forError");*/ err
+          case _ => err
         }
-
-        view.showSelection(/*cell1.*/forSelection) 
+        view.showSelection(forSelection) 
         new MyTextField(text, background)
       }
       else{
@@ -76,7 +74,7 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
     }
 
     reactions += {
-      case TableUpdated(table, rows, column) =>
+      case TableUpdated(tab, rows, column) =>
         for(row <- rows){
           val v = this(row, column)
           if(v != null){
@@ -91,15 +89,41 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
         }
       case e => println(e)
     }
-  } // end of table
+  } // end of mkTable
 
-  /** The headers for the rows. */
-  val rowHeader = new ListView((0 until height) map(_.toString)){
-    fixedCellWidth = 30; fixedCellHeight = table.rowHeight
+  viewportView = mkTable()
+
+  // =========
+
+  /** Add a new row with index `index`. */ 
+  private def addRow(index: Int): Unit = {
+    // Update env; add row to table and rowHeader.
+    env.addRow(index); viewportView = mkTable(); rowHeaderView = mkRowHeader()
+    // Re-run script.
+    spreadsheetModel.update()
   }
 
-  viewportView = table
-  rowHeaderView = rowHeader
+  /** The headers for the rows. */
+  private def mkRowHeader() = new ListView((0 until env.height) map(_.toString)){
+    fixedCellWidth = 30; fixedCellHeight = Spreadsheet.rowHeight
+
+    /** Create a popup menu, when the row header for `index` is pressed. */
+    def mkPopupMenu(index: Int) = new PopupMenu{
+      import Spreadsheet.mkMenuItem
+      contents += mkMenuItem("Insert row above"){ addRow(index) }
+      contents += mkMenuItem("Insert row below"){ addRow(index+1) }
+    }
+
+    listenTo(mouse.clicks, mouse.moves)
+
+    reactions += {
+      case m: MousePressed =>
+        val p = m.point; val index = peer.locationToIndex(p)
+        val menu = mkPopupMenu(index); menu.show(this, p.x, p.y)
+    }
+  }
+
+  rowHeaderView = mkRowHeader()
 }
 
 // =======================================================
@@ -112,5 +136,17 @@ object Spreadsheet{
     new Color(0.0F, 1.0F, 0.0F, 0.4F) // darker green
   val ErrorBackground = new Color(1.0F, 0.0F, 0.0F, 0.18F) // light red
   val StringTextColour = new Color(100,100,100) // grey
-  val DefaultTextColour = new Color(0,0,0) // black
+  val DefaultTextColour = new Color(0,0,0) // 
+  
+  /** Font to use in menus. */
+  val menuFont =  new Font(Font.SANS_SERIF, Font.PLAIN, 16)
+
+  /** Make a MenuItem for Action, using font menuFont. */
+  def mkMenuItem(name: String)(effect: => Unit): MenuItem = {
+    val item = new MenuItem(Action(name)(effect))
+    item.font = Spreadsheet.menuFont; item
+  }
+
+  /** Height of each row. */
+  val rowHeight = 25
 }

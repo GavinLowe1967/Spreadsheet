@@ -209,6 +209,8 @@ object EvaluationTest{
     val Height = 100; val Width = 26
     val model = new Model(Height,Width); model.setView(TestingView)
     val env = model.getEnv; val isCalculated = env.isCalculated _
+    //model.loadScript("haskell.dir", null)
+//println("=========")
     model.loadScript("evaluationTest.dir", null)
 
     assert(env("b1") == BoolValue(false) && env("b2") == BoolValue(true))
@@ -260,6 +262,11 @@ object EvaluationTest{
       FloatValue(0.0F))
     assert(eval("{def zero[A <: Num]() = 0: A; zero[Float]()}") == 
       FloatValue(0.0F))
+
+    // println(eval("{def f[A <: Num](x: A):A = 0:A; f(2.3)}"))
+//sys.exit()
+    // FIXME: should be FloatValue(0.0)
+
     val sumS = "def sum[A <: Num](xs: List[A]): A = "+
       "if(isEmpty xs) 0 else head xs + sum[A](tail xs)"
     assert(eval(s"{$sumS ; sum[Int] [1,2]}") == IntValue(3))
@@ -267,16 +274,62 @@ object EvaluationTest{
     val sumS1 = "def sum[A <: Num](xs: List[A]): A = "+
       "if(isEmpty xs) 0 else head xs + sum(tail xs)"
     assert(eval(s"{$sumS1 ; sum[1,2]}") == IntValue(3))
-    println(eval(s"{$sumS1 ; sum[Float] [1.3]}")) // FIXME
+    //println(eval(s"{$sumS1 ; sum[Float] [1.3]}")) // FIXME
   }
 
 
   def main(args: Array[String]) = {
+    // println(eval( 
+    //   "{def zip[A,B](xs: List[A])(ys: List[B]): List[(A,B)] = "+
+    //     "  if(isEmpty xs || isEmpty ys) [] "+
+    //     "  else (head xs, head ys) :: zip (tail xs) (tail ys)\n" +
+    //     "zip (2 to 5) (6 to 12)}"))
+
+    // println(eval( 
+    //   "{def zip[A,B](xs: List[A])(ys: List[B]): List[A] = zip xs ys\n" +
+    //     "zip [2] [6]}"))
+
+    // println(eval( 
+    //   "{def zip[A,B](xs: List[A])(ys: List[B]): List[(A,B)] = "+
+    //     "  if(isEmpty xs || isEmpty ys) [] "+
+    //     "  else (head xs, head ys) :: zip (tail xs) (tail ys)\n" +
+    //     "zip [2] [6]")) // (2 to 5) (6 to 12)}"))
+
+
+//    println(eval("{def apply[A](f: List[Int] => A) = f [3]; apply isEmpty}"))
+//sys.exit()
+    // println(eval("{def apply[AA,B](f: AA => B, x: AA) = f(x); apply(isEmpty, [3])}"))
+//    println(eval("{def apply[AA,B](f: AA => B)(x: AA) = f(x); def g(x: Int) = x == x; apply g 4}")) -- this works
+
+    // println(eval( -- this works
+    //   "{def append[AA](xs: List[AA])(ys: List[AA]): List[AA] = if(isEmpty xs) ys else append (tail xs) ys\n" +
+    //     "def concat[A](xs: List[List[A]]): List[A] = "+
+    //     "  if(isEmpty xs) [] else append (head xs)  (concat(tail xs)) \n"+
+    //     "concat [[3]]}"))
+
+/*
+    println(eval(
+      "{def loop[AA](xs: List[AA])(ys: List[AA]): List[AA] = loop xs ys\n" +
+        "def two[A](f: A => A => A, e: A): A = f e e\n" +
+        "two (loop, [3])}"))
+ */
+
+/*
+    assert(eval(
+      "{def apply[AA,B](f: AA => B)(x: AA) = f(x); "+
+        "def g[A <: Eq](x: A) = x == x; apply g 4}") == BoolValue(true))
+    assert(eval(
+      "{def apply[AA,B](f: AA => B)(x: AA) = f(x); apply isEmpty [3]}") == 
+      BoolValue(false))
+    assert(eval("{def after[A,B,C](f: B => C)(g: A => B)(x: A): C = f(g x)\n"+
+      "val nonEmpty = after not isEmpty; nonEmpty [3]}") == BoolValue(true))
+ */
     println("===EvaluationTest===")
     tests1() // basic expressions
     tests2() // blocks, if statements, list expressions
     tests3() // functions
     tests4() 
+ 
     scriptTests()
     tests5() // val declarations with tuples
     tests6() // toString, + over Strings

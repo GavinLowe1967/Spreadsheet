@@ -14,12 +14,7 @@ class View(model: Model) extends MainFrame with ViewT{
     model.reloadScript(); redisplay()
   }
 
-  private val menuFont =  new Font(Font.SANS_SERIF, Font.PLAIN, 16) //MONOSPACED
-
-  /** Make a MenuItem for Action, using font menuFont. */
-  private def mkMenuItem(name: String)(effect: => Unit): MenuItem = {
-    val item = new MenuItem(Action(name)(effect)); item.font = menuFont; item
-  }
+  import Spreadsheet.{mkMenuItem,menuFont}
 
   /** Menu for operations. */
   private val operationsMenu = new Menu("Operations"){

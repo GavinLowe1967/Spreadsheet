@@ -239,6 +239,15 @@ case class TupleLiteral(elems: List[Exp]) extends Exp
 
 /** The application of a function represented by `f` to `args`. */
 case class FunctionApp(f: Exp, args: List[Exp]) extends Exp{
+  /** The actual type parameters for this function application. */
+//  private var atps: List[TypeT] = null
+
+//  def setAtps(tps: List[TypeT]) = atps = tps 
+  // Note: setAtps might be called twice.  But in that case, this is an
+  // ambiguous function application, caught in ExpTypeChecker.
+
+//  def getAtps = atps
+
   /** The depth of nested function applications. */
 //  def depth: Int = f match{ case fa: FunctionApp => fa.depth+1; case _ => 1 }
 }

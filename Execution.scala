@@ -144,6 +144,7 @@ object Execution extends ExecutionT{
       evaluation.coerce(env, rt, v0) 
     }
     else{
+//println(s"evalFn build: $body;\n  tParams = $tParams; paramss = $paramss\n")
       val params0 = paramss.head
       // Build a Scala function to capture the function of params0.  Note:
       // env1 won't be used here.  Any names are interpreted in
@@ -155,9 +156,19 @@ object Execution extends ExecutionT{
         // Bind formal type parameters to actual type parameters (if present);
         // and bind params to values of args in env
 //println(s"setting $tParams -> $aTParams:"); println(env.tpMap); println(env1.tpMap)
-        val aTParams1 = aTParams.map{ case TypeParam(tp) => env1.getTP(tp).get; case atp => atp }
-        val env2 = 
-          if(aTParams.nonEmpty) env.setTPs(tParams, aTParams1) else env.clone
+// println(s"Execution.evalFn apply: body = $body;\n  tParams = $tParams; aTParams = $aTParams") 
+        val env2 = // env.clone
+          if(aTParams.nonEmpty && tParams.nonEmpty){
+            val aTParams1 = aTParams.map{ 
+              case TypeParam(tp) => val res = env1.getTP(tp).get; assert(res.typeParams.isEmpty, s"$tp -> $res"); res
+              case atp => atp 
+            }
+//println(s"  aTParams1 = $aTParams1;\n  args = $args\n") 
+            env.setTPs(tParams, aTParams1)
+          }
+          else env.clone
+// I think tParams can be empty if this Function doesn't correspond to a def
+
 //println(s"$tParams -> $aTParams")
         for(((x,_),v) <- params0.zip(args)) env2.update(x, v)
         evalFn(env2, List(), paramss.tail, rt, body) 

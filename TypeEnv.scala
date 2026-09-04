@@ -115,6 +115,9 @@ class TypeEnv(
   /** Get the constraint associated with tid. */
   def getConstraint(tid: TypeID): TypeConstraint = constraints(tid)
 
+  // def optGetConstraint(tid: TypeID): Option[TypeConstraint] =
+  //   constraints.get(tid)
+
   /** Test whether t can satisfy the constraint c.  If needs be, add constraints
     * to TypeVars within t.  Return the resulting environment if successful;
     * otherwise return fail.  Pre: c is not a SingletonTypeConstraint. */

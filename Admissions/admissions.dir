@@ -1,0 +1,91 @@
+/* Program for processing admissions shortlisting.  This expects to find
+ * columns with certain headers in row #0. */
+
+#include "haskell.dir"
+#include "spreadsheet.dir"
+
+/** The column with `title` in row #0. */
+def columnFor(title: String): Column = {
+  def search(c: Column): Column = { 
+    assert(c <= #Z); if(Cell(c,#0): String == title) c else search(c+1)
+  }
+  search(#A)
+}
+
+val Pre16Max = 100.0 // Maximum pre-16 school score
+val Post16Max = 60.0 // Maximum post-16 school score
+val GCSEDefault = 8.0 // Default GCSEs where this is missing
+
+/* Weights for various factors. */
+val Pre16Weight = 0.084; val Post16Weight = 0.2
+val PolarWeight = 0.6; val AcornWeight = 0.6; val FSMWeight = 1.0
+val TestWeight = 0.6; val ContextWeight = 1.0; val GCSEWeight = 0.3
+
+/* The columns for input data. */
+val pre16C = columnFor("Pre-16"); val post16C = columnFor("Post-16")
+val polarC = columnFor("Polar"); val acornC = columnFor("Acorn")
+val fsmC = columnFor("FSM"); val extraCC = columnFor("Extra contextual")
+val psC = columnFor("PS"); val refC = columnFor("Reference")
+val gcseC = columnFor("GCSE A*s"); val testC = columnFor("Test")
+/* The columns for output. */
+val contextC = columnFor("Total contextual")
+val totalC = columnFor("Total")
+
+/* Helper functions.  Each of these returns a float, where a higher value is
+ * advantageous to the candidate, but where scaling is still required.  Empty
+ * cells are treated appropriately. */
+/** Test score for the candidate in row `r`. */
+def test(r: Row): Float = toFloat(Cell(testC, r))
+/** Pre-16 school score, normalised to range 0 (good school) to Pre16Max (bad
+  * school). */
+def pre16(r: Row): Float = 
+  Cell(pre16C,r) match{ case n: Int => Pre16Max-toFloat n; case Empty => 0.0 }
+def post16(r: Row): Float = 
+/** Post-16 school score, normalised to range 0 (good school) to Post16Max
+  * (bad school). */
+  Cell(post16C,r) match{ 
+    case n: Int => Post16Max-toFloat n; case Empty => 0.0 
+  }
+/** Normalised Polar, in range [0..5).  High raw score = good area. */
+def polar(r: Row): Float = Cell(polarC,r) match{
+  case n: Int => { assert(0 < n && n <= 5); 5.0-toFloat n}; case Empty => 0.0 
+}
+/** Normalised Acorn, in range [0..5).  High raw score = bad area. */
+def acorn(r: Row): Float = Cell(acornC,r) match{ 
+  case n: Int => { assert(0 < n && n <= 5); toFloat n-1.0 }; case Empty => 0.0
+}
+/** Normalised Free school meals, in range [0..5). */
+def fsm(r: Row): Float = Cell(fsmC,r) match{ 
+  case n: Int => { assert(0 < n && n <= 5); 5.0-toFloat n }; case Empty => 0.0 
+}
+/** Extra contextual information. */
+def extraC(r: Row): Float = Cell(extraCC,r) match{ 
+  case n: Int => { assert(0 <= n); toFloat n }; case Empty => 0.0 
+}
+/** Personal statement.  Blank gives a large negative value. */
+def ps(r: Row): Float = Cell(psC,r) match{ 
+  case n: Int => { assert(0 <= n && n <= 10); toFloat n }; case Empty => -100.0 
+}
+/** Reference. */
+def ref(r: Row): Float = Cell(refC,r) match{ 
+  case n: Int => { assert(0 <= n && n <= 5); toFloat n }; case Empty => -100.0 
+}
+/** Number of GCSEs or default, capped at 12. */
+def gcse(r: Row): Float = Cell(gcseC,r) match{ 
+  case n: Int => { assert(0 <= n && n < 20); toFloat (min n 12) }
+  case Empty => GCSEDefault
+}
+
+val endRow = firstEmptyInColumn(#A) // Column after last candidate.
+
+for(r <- #1 until endRow){
+  // Calculate values for candidate in row r. 
+  val contextual =
+    pre16(r)*Pre16Weight + post16(r)*Post16Weight + 
+    polar(r)*PolarWeight + acorn(r)*AcornWeight + fsm(r)*FSMWeight +
+    extraC(r)
+  Cell(contextC,r) = contextual
+  Cell(totalC,r) = 
+    test(r)*TestWeight + contextual*ContextWeight + gcse(r)*GCSEWeight + 
+    ps(r) + ref(r)
+}

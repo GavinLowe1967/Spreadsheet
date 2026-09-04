@@ -3,7 +3,7 @@ package spreadsheet
 import scala.collection.mutable.HashMap
 
 /** The model. */
-class Model(val height: Int, val width: Int){
+class Model(val height0: Int, val width0: Int){
   /** The View, as seen from the Model. */ 
   private var view: ViewT = null
 
@@ -11,7 +11,7 @@ class Model(val height: Int, val width: Int){
   def setView(v: ViewT) = {view = v; Execution.setView(v) }
 
   /** The environment in which the script is executed. */
-  private val env = Environment(height, width, Model.initNameMap)
+  private val env = Environment(height0, width0, Model.initNameMap)
 
   /** Get the environment. */
   def getEnv = env
@@ -80,9 +80,10 @@ class Model(val height: Int, val width: Int){
     val file = new File(sheetName)
     if (!file.exists()) file.createNewFile()
     val bw = new BufferedWriter(new FileWriter(file.getAbsoluteFile()))
-    for(r <- 0 until height)  // Write row r
+    for(r <- 0 until env.height)  // Write row r
       bw.write(
-        (0 until width).map(c => env.getUserCell(c,r).asCSV).mkString(",") + "\n"
+        (0 until env.width).map(c => env.getUserCell(c,r).asCSV).mkString(",") +
+          "\n"
       )
     bw.close()
   }

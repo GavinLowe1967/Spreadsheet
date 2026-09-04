@@ -23,11 +23,13 @@ def uncurry[A,B,C](f: A => B => C)(p: (A,B)): C = { val (x,y) = p; f x y }
 // ========= List functions =========
 
 val nonEmpty = after not isEmpty
+//def nonEmpty[A](xs: List[A]) = ! (isEmpty xs)
 
 def singleton[A](xs: List[A]) = nonEmpty xs && isEmpty (tail xs)
 
 def map[A,B](f: A => B)(xs: List[A]): List[B] = 
   if(isEmpty xs) [] else f(head xs) :: map f (tail xs)
+
 
 def append[A](xs: List[A])(ys: List[A]): List[A] = 
   if(isEmpty xs) ys else head xs :: append (tail xs) ys
@@ -202,3 +204,5 @@ def power(x: Float)(n: Int): Float = {
   assert(n >= 0, "power with negative exponent")
   if(n == 0) 1.0 else if(n%2 == 0) power (x*x) (n/2) else x * power (x*x) (n/2)
 }
+
+

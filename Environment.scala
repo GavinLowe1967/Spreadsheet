@@ -13,8 +13,9 @@ import TypeParam.TypeParamName
   * @param nameMap A map from names declared in the script to their values.
   * @param tpMap A map from names of type parameters to corresponding types. */
 class Environment(
-  userCells: Array[Array[Cell]], calculatedCells: Array[Array[Cell]],
-  val height: Int, val width: Int, 
+  private var userCells: Array[Array[Cell]], 
+  private var calculatedCells: Array[Array[Cell]],
+  var height: Int, val width: Int, 
   private var nameMap: HashMap[String, Value],
   val tpMap: HashMap[TypeParamName, TypeT] // FIXME: remove "val"
 ){
@@ -41,7 +42,6 @@ class Environment(
 
   /** Set the value of cell(c,r) to v, and record that it was calculated. */
   def setCell(c: Int, r: Int, v: Cell) = {
-//println(s"setCell: $c $r $v ${v.source}")
     require(isEmpty(c,r) || v.isInstanceOf[MultipleWriteError])
     calculatedCells(c)(r) = v 
   }
@@ -49,7 +49,6 @@ class Environment(
   /** Get the value in cell (c,r), prioritising a calculated value. */
   def getCell1(c: Int, r: Int): Cell = {
     val v = calculatedCells(c)(r)
-//println(s"getCell1: $c $r $v ${v.source}")
     if(v.nonEmpty) v else userCells(c)(r)
   }
 
@@ -76,11 +75,27 @@ class Environment(
     userCells(c)(r) = pair._1; calculatedCells(c)(r) = pair._2
   }
 
+  /** Add a new row as row r; copy user cells across; clear calculated
+    * cells. */
+  def addRow(r: Int) = {
+    assert(0 <= r && r <= height)
+    val newUserCells = Array.ofDim[Cell](width,height+1)
+    val newCalculatedCells = Array.ofDim[Cell](width,height+1)
+    for(c <- 0 until width){
+      for(r1 <- 0 until r) newUserCells(c)(r1) = userCells(c)(r1)
+      newUserCells(c)(r) = Empty()
+      for(r1 <- r until height) newUserCells(c)(r1+1) = userCells(c)(r1)
+    }
+    userCells = newUserCells; calculatedCells = newCalculatedCells; height += 1
+  }
+
   /** Reset, corresponding to starting to rerun the script. */
   def reset() = {
     for(c <- 0 until width; r <- 0 until height) calculatedCells(c)(r) = Empty() 
     nameMap = Environment.initNameMap
   }
+
+  // Name mapping
 
   /** Add name -> v to the environment. */
   def update(name: String, v: Value) = nameMap += (name -> v)

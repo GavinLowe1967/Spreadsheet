@@ -212,12 +212,12 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
       case List() =>  sys.error(s"typeCheck $fa") // shouldn't happen
       case List((te1,t,i)) => 
         ne.setIndex(i)
-        fatc.checkFunctionApp(te1, t, args).lift(fa, true) 
+        fatc.checkFunctionApp(te1, fa, t, args).lift(fa, true) 
       case triples => 
         // Try the instance `triple`.
         def tryPair(triple: (TypeEnv,TypeT,Int)): (TypeCheckRes,Int) = {
           val (te1,t1,i) = triple
-          (fatc.checkFunctionApp(te1, t1.asInstanceOf[FunctionType], args), i)
+          (fatc.checkFunctionApp(te1, fa, t1.asInstanceOf[FunctionType], args), i)
         }
         // Find successes; there should be only one
         val results = triples.map(tryPair)
@@ -229,9 +229,9 @@ class ExpTypeChecker(dtc: TypeCheckerT) extends ExpTypeCheckerT{
         }
     }
     // General function applications
-    case FunctionApp(f, args) => 
+    case fa @ FunctionApp(f, args) => 
       typeCheck(typeEnv, f).lift(exp).map{ case (te1, ff) =>
-        fatc.checkFunctionApp(te1, ff, args).lift(exp, true)
+        fatc.checkFunctionApp(te1, fa, ff, args).lift(exp, true)
       }//.lift(exp, true)
 
     // Block

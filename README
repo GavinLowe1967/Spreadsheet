@@ -92,6 +92,8 @@ writes, lists.
 
 TypeCheckerTest2.scala: tests on polymorphism, higher-order functions.
 
+TypeCheckerConstraintTest.scala: tests using type constraints
+
 TypeCheckerTest3.scala: tests on for loops, overloading, and currying. 
 
 TypeCheckerTest4.scala: tests on a Haskell-style prelude.

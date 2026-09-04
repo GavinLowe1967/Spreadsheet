@@ -11,6 +11,11 @@ case class FunctionValue(f: FunctionValue.FunctionType) extends Value{
     * FunctionValue.apply when the script provides actual type parameters. */
   private var aTParams = List[TypeT]()
 
+  // def setATParams(atps: List[TypeT]) = { 
+  //   //assert(aTParams.isEmpty, s"aTParams = $aTParams; atps = $atps") 
+  //   aTParams = atps
+  // }
+
   def forError = "<function>" 
 }
 

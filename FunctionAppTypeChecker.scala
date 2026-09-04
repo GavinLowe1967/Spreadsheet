@@ -19,12 +19,28 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   /** Get a new Name. */
   private def newName(): Name = { nextNameIx += 1; "%"+nextNameIx } 
 
+  /** A map from formal type parameters to actual type parameters. */
+  type TPMap = Map[String,TypeT]
+
   /** Typecheck the application of a value of type t (not necessarily a
     * FunctionType) to args. */
-  def checkFunctionApp(typeEnv: TypeEnv, t: TypeT, args: List[Exp])
+  def checkFunctionApp(
+    typeEnv: TypeEnv, fa: FunctionApp, t: TypeT, args: List[Exp])
       : TypeCheckRes =
+// IMPROVE: extract args from fa
     t match{
-      case ft: FunctionType => checkFunctionApp1(typeEnv, ft, args)
+      case ft @ FunctionType(ftParams,_,_) => 
+        checkFunctionApp1(typeEnv, ft, args).map{ case (te, res, tpMap) => 
+          if(tpMap.size == ftParams.length){
+            assert(tpMap.keys.toList.sorted == ftParams.map(_._1).sorted,
+              s"tpMap = $tpMap, ftParams = $ftParams")
+            val atParams = ftParams.map{ case (tp,_) => tpMap(tp) }
+// println(s"checkFunctionApp: $fa\n t = $t;\n  args = $args; ftParams = $ftParams; atParams = $atParams;\n  tpMap = $tpMap\n") 
+//             fa.setAtps(atParams)
+          }
+          // Otherwise I think closing will fail ***
+          Ok((te, res))
+        }
       case _ => FailureR("Non-function applied as function")
     }
 
@@ -35,7 +51,7 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
   /** Typecheck the application of a function of type ft to args. */
   private 
   def checkFunctionApp1(typeEnv: TypeEnv, ft: FunctionType, args: List[Exp])
-      : TypeCheckRes = {
+      : Reply[(TypeEnv, TypeT, TPMap)] = {
     val FunctionType(tParams, domain, range) = ft
     if(domain.length != args.length)
       FailureR(s"Expected ${domain.length} arguments, found "+args.length)
@@ -47,8 +63,14 @@ class FunctionAppTypeChecker(etc: ExpTypeCheckerT){
           typeEnv.newScope, ft.usedTParams, domain, range)
       checkFunctionApp2(te1, domain1, range1, ft.typeParams.toSet, args).map{
         case (te2, res0) => 
+          // Map from formal type parameters to actual type parameters.
+          val tpMap =  
+            for((tp,(TypeVar(tv),_)) <- typeMap) yield{
+            val SingletonTypeConstraint(t) = te2.getConstraint(tv); (tp -> t)
+          }
+          //if(tpMap.nonEmpty) println(tpMap)
           val (te3, res) = subTypeParamsInResult(te2, ft.unusedTParams, res0)
-          Ok((te3.endScope, res))
+          Ok((te3.endScope, res, tpMap))
       }
     }
   }
