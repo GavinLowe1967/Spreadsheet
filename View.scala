@@ -88,6 +88,8 @@ class View(model: Model) extends MainFrame with ViewT{
     }
   }
 
+  //println(spreadsheet.columnHeaderView)
+
   // contents = new BoxPanel(Orientation.Vertical) {
   //   border = Swing.EmptyBorder(10)
   //   // contents += new ScrollPane(selectionBox){    

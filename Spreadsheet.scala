@@ -2,8 +2,8 @@ package spreadsheet
 
 import scala.swing._
 import event._
-import java.awt.Color
-import java.awt.Font
+import java.awt.{Color,Font}
+import java.awt.event.{MouseEvent,MouseAdapter}
 
 /** The panel displaying the spreadsheet.
   * 
@@ -89,6 +89,26 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
         }
       case e => println(e)
     }
+    
+    /** Create a pop-up menu when the header for column `index` is pressed. */
+    private def mkPopupMenu(index: Int) = new PopupMenu{
+      import Spreadsheet.mkMenuItem
+      contents += mkMenuItem("Insert column left"){ addColumn(index) }
+      contents += mkMenuItem("Insert column right"){ addColumn(index+1) }
+    }
+
+    private val table = this
+    private val tableHeader = peer.getTableHeader
+
+    /** Mouse listener for the top header. */
+    private val mouseListener = new MouseAdapter{
+      override def mouseClicked(e: MouseEvent): Unit = {
+        val index = tableHeader.getColumnModel.getColumnIndexAtX(e.getX)
+        val menu = mkPopupMenu(index); menu.show(table, e.getX, e.getY)
+      }
+    }
+
+    tableHeader.addMouseListener(mouseListener)
   } // end of mkTable
 
   viewportView = mkTable()
@@ -99,6 +119,14 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
   private def addRow(index: Int): Unit = {
     // Update env; add row to table and rowHeader.
     env.addRow(index); viewportView = mkTable(); rowHeaderView = mkRowHeader()
+    // Re-run script.
+    spreadsheetModel.update()
+  }
+
+  /** Add a new column with index `index`. */
+  private def addColumn(index: Int): Unit = {
+    // Update env; add column to table 
+    env.addColumn(index); viewportView = mkTable()
     // Re-run script.
     spreadsheetModel.update()
   }
@@ -121,9 +149,11 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
         val p = m.point; val index = peer.locationToIndex(p)
         val menu = mkPopupMenu(index); menu.show(this, p.x, p.y)
     }
-  }
+  } // end of mkRowHeader
 
   rowHeaderView = mkRowHeader()
+
+  //println(s"columnHeaderView = "+columnHeaderView)
 }
 
 // =======================================================

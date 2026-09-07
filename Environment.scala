@@ -15,7 +15,7 @@ import TypeParam.TypeParamName
 class Environment(
   private var userCells: Array[Array[Cell]], 
   private var calculatedCells: Array[Array[Cell]],
-  var height: Int, val width: Int, 
+  var height: Int, var width: Int, 
   private var nameMap: HashMap[String, Value],
   val tpMap: HashMap[TypeParamName, TypeT] // FIXME: remove "val"
 ){
@@ -79,14 +79,26 @@ class Environment(
     * cells. */
   def addRow(r: Int) = {
     assert(0 <= r && r <= height)
-    val newUserCells = Array.ofDim[Cell](width,height+1)
-    val newCalculatedCells = Array.ofDim[Cell](width,height+1)
-    for(c <- 0 until width){
-      for(r1 <- 0 until r) newUserCells(c)(r1) = userCells(c)(r1)
-      newUserCells(c)(r) = Empty()
-      for(r1 <- r until height) newUserCells(c)(r1+1) = userCells(c)(r1)
+    val newUserCells = Array.tabulate[Cell](width,height+1){ case (c1,r1) =>
+      if(r1 < r) userCells(c1)(r1) else if(r1 == r) Empty() 
+      else userCells(c1)(r1-1)
     }
+    val newCalculatedCells = Array.ofDim[Cell](width,height+1)
     userCells = newUserCells; calculatedCells = newCalculatedCells; height += 1
+  }
+
+  /** Add a new column as column c; copy user cells across; clear calculated
+    * cells. */
+  def addColumn(c: Int) = {
+    assert(0 <= c && c <= width)
+    val newUserCells = Array.tabulate[Cell](width+1,height){ case (c1,r1) =>
+      if(c1 < c) userCells(c1)(r1) else if(c1 == c) Empty() 
+      else userCells(c1-1)(r1)
+    }
+    // Note: avoid copying rows by reference, as this would mess up undoing. 
+    val newCalculatedCells = Array.ofDim[Cell](width+1,height)
+    userCells = newUserCells; calculatedCells = newCalculatedCells; width += 1
+
   }
 
   /** Reset, corresponding to starting to rerun the script. */
