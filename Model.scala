@@ -11,7 +11,7 @@ class Model(val height0: Int, val width0: Int){
   def setView(v: ViewT) = {view = v; Execution.setView(v) }
 
   /** The environment in which the script is executed. */
-  private val env = Environment(height0, width0, Model.initNameMap)
+  private var env = Environment(height0, width0, Model.initNameMap)
 
   /** Get the environment. */
   def getEnv = env
@@ -95,7 +95,9 @@ class Model(val height0: Int, val width0: Int){
       val source = scala.io.Source.fromFile(file)
       val lines = source.getLines().toArray
       source.close()
-      for(r <- 0 until lines.length){
+      val height = lines.length; val width = CSVParser(lines(0)).length
+      env = Environment(height, width, Model.initNameMap)
+      for(r <- 0 until height){
         val fields = CSVParser(lines(r)).toArray 
         for(c <- 0 until fields.length) 
           env.setUserCell(c, r, fields(c).withCSource(CellSource(c,r)))

@@ -75,6 +75,9 @@ class Environment(
     userCells(c)(r) = pair._1; calculatedCells(c)(r) = pair._2
   }
 
+  private def clearCalculatedCells() = 
+    calculatedCells = Array.ofDim[Cell](width,height)
+
   /** Add a new row as row r; copy user cells across; clear calculated
     * cells. */
   def addRow(r: Int) = {
@@ -83,8 +86,17 @@ class Environment(
       if(r1 < r) userCells(c1)(r1) else if(r1 == r) Empty() 
       else userCells(c1)(r1-1)
     }
-    val newCalculatedCells = Array.ofDim[Cell](width,height+1)
-    userCells = newUserCells; calculatedCells = newCalculatedCells; height += 1
+    userCells = newUserCells; height += 1; clearCalculatedCells()
+  }
+
+  /** Delete row r; copy user cells across; clear calculated cells. */
+  def deleteRow(r: Int) = {
+    println(s"deleteRow($r)")
+    assert(0 <= r && r < height)
+    val newUserCells = Array.tabulate[Cell](width,height-1){ case (c1,r1) =>
+      if(r1 < r) userCells(c1)(r1) else userCells(c1)(r1+1)
+    }
+    userCells = newUserCells; height -= 1; clearCalculatedCells()
   }
 
   /** Add a new column as column c; copy user cells across; clear calculated
@@ -96,9 +108,15 @@ class Environment(
       else userCells(c1-1)(r1)
     }
     // Note: avoid copying rows by reference, as this would mess up undoing. 
-    val newCalculatedCells = Array.ofDim[Cell](width+1,height)
-    userCells = newUserCells; calculatedCells = newCalculatedCells; width += 1
+    userCells = newUserCells; width += 1; clearCalculatedCells()
+  }
 
+  def deleteColumn(c: Int) = {
+    assert(0 <= c && c < width)
+    val newUserCells = Array.tabulate[Cell](width-1,height){ case (c1,r1) =>
+      if(c1 < c) userCells(c1)(r1) else userCells(c1+1)(r1)
+    }
+    userCells = newUserCells; width -= 1; clearCalculatedCells()
   }
 
   /** Reset, corresponding to starting to rerun the script. */

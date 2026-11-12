@@ -11,7 +11,7 @@ import java.awt.event.{MouseEvent,MouseAdapter}
 class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
   import Spreadsheet._
 
-  private val env = model.getEnv
+  private def env = model.getEnv
   // private val height = env.height; private val width = env.width 
 
   preferredSize = new Dimension(800,550)
@@ -95,6 +95,7 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
       import Spreadsheet.mkMenuItem
       contents += mkMenuItem("Insert column left"){ addColumn(index) }
       contents += mkMenuItem("Insert column right"){ addColumn(index+1) }
+      contents += mkMenuItem("Delete column"){ deleteColumn(index) }
     }
 
     private val table = this
@@ -113,23 +114,45 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
 
   viewportView = mkTable()
 
-  // =========
+  // ========= Add or remove rows or columns
+
+  /** Update based on the rows in `env` having changed. */
+  private def updateForRows() = {
+    // Rebuild table and rowHeader.
+    viewportView = mkTable(); rowHeaderView = mkRowHeader()
+    // Re-run script.
+    spreadsheetModel.update()
+  }
 
   /** Add a new row with index `index`. */ 
   private def addRow(index: Int): Unit = {
-    // Update env; add row to table and rowHeader.
-    env.addRow(index); viewportView = mkTable(); rowHeaderView = mkRowHeader()
-    // Re-run script.
-    spreadsheetModel.update()
+    // Update env; add row to table and rowHeader; re-run script.
+    env.addRow(index); updateForRows()
+  }
+
+  /** Delete the row with index `index`. */
+  private def deleteRow(index: Int): Unit = {
+    env.deleteRow(index); updateForRows()
+  }
+
+  /** Update based on the columns in `env` having changed. */
+  private def updateForCols() = {
+    // Rebuild table; re-run script
+    viewportView = mkTable(); spreadsheetModel.update()
   }
 
   /** Add a new column with index `index`. */
   private def addColumn(index: Int): Unit = {
     // Update env; add column to table 
-    env.addColumn(index); viewportView = mkTable()
-    // Re-run script.
-    spreadsheetModel.update()
+    env.addColumn(index); updateForCols()
   }
+
+  /** Delete the column with index `index`. */
+  private def deleteColumn(index: Int): Unit = {
+    env.deleteColumn(index); updateForCols()
+  }
+
+  // ============
 
   /** The headers for the rows. */
   private def mkRowHeader() = new ListView((0 until env.height) map(_.toString)){
@@ -140,20 +163,20 @@ class Spreadsheet(model: Model, view: ViewT) extends ScrollPane{
       import Spreadsheet.mkMenuItem
       contents += mkMenuItem("Insert row above"){ addRow(index) }
       contents += mkMenuItem("Insert row below"){ addRow(index+1) }
+      contents += mkMenuItem("Delete row"){ deleteRow(index) }
     }
 
     listenTo(mouse.clicks, mouse.moves)
 
     reactions += {
       case m: MousePressed =>
-        val p = m.point; val index = peer.locationToIndex(p)
+        val p = m.point; val index = peer.locationToIndex(p) // println(index)
         val menu = mkPopupMenu(index); menu.show(this, p.x, p.y)
     }
   } // end of mkRowHeader
 
   rowHeaderView = mkRowHeader()
 
-  //println(s"columnHeaderView = "+columnHeaderView)
 }
 
 // =======================================================
