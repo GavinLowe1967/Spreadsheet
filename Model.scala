@@ -73,16 +73,38 @@ class Model(val height0: Int, val width0: Int){
     view.redisplay()
   }
 
+  /** Open file fname, returning a BufferdWriter. */
+  private def openFile(fname: String): java.io.BufferedWriter = {
+    import java.io._
+    val file = new File(fname)
+    if (!file.exists()) file.createNewFile()
+    new BufferedWriter(new FileWriter(file.getAbsoluteFile()))
+  }
+
   /** Save the current sheet.  This writes just user input values. */
   def saveSheet() = {
 // FIXME: check sheetName != null ... java.awt.FileDialog -- or FileChooser
-    import java.io._
-    val file = new File(sheetName)
-    if (!file.exists()) file.createNewFile()
-    val bw = new BufferedWriter(new FileWriter(file.getAbsoluteFile()))
+    // import java.io._
+    // val file = new File(sheetName)
+    // if (!file.exists()) file.createNewFile()
+    // val bw = new BufferedWriter(new FileWriter(file.getAbsoluteFile()))
+    val bw = openFile(sheetName)
     for(r <- 0 until env.height)  // Write row r
       bw.write(
         (0 until env.width).map(c => env.getUserCell(c,r).asCSV).mkString(",") +
+          "\n"
+      )
+    bw.close()
+  }
+
+  /** Export the current sheet as CSV: both user and calculated values. */
+  def exportSheet() = {
+    val i = sheetName.lastIndexWhere(_ == '.')
+    val fname = sheetName.take(i)+"-out"+sheetName.drop(i)
+    val bw = openFile(fname)
+    for(r <- 0 until env.height)  // Write row r
+      bw.write(
+        (0 until env.width).map(c => env.getCell(c,r).asCSV).mkString(",") +
           "\n"
       )
     bw.close()

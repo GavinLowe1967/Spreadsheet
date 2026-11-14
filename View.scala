@@ -32,6 +32,7 @@ class View(model: Model) extends MainFrame with ViewT{
     contents += new Menu("File"){
       font = menuFont
       contents += mkMenuItem("Save sheet"){ model.saveSheet() }
+      contents += mkMenuItem("Export sheet"){ model.exportSheet() }
       contents += new Separator
       contents += mkMenuItem("Exit"){ sys.exit() }
     }
@@ -41,13 +42,6 @@ class View(model: Model) extends MainFrame with ViewT{
     contents += Swing.HStrut(5)
   }
 
-  // private val saveButton = Button("Save"){
-  //   model.saveSheet()
-  // }
-
-  // private val buttonPanel = new BoxPanel(Orientation.Horizontal){
-  //   contents += reloadButton // ; contents += saveButton
-  // }
 
   // ========= Text boxes
 

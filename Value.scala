@@ -352,6 +352,9 @@ trait ErrorValue extends Cell{
   def <= (other: Ord) = sys.error(s"<= applied to $this")
   // Note: forError is the value that appears in the cell itself, and the
   // selection box.
+
+  /** Export as CSV: the first line if the error message. */
+  override def asCSV = "\""+forError.takeWhile(_ != '\n')+"\""
 }
 
 /** A type error arising from evaluation of an expression. */
